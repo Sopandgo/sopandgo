@@ -1,0 +1,46 @@
+# ==========================================
+# Caddy Configuration for SopAndGo
+# Acts as the main entry point and reverse proxy
+# ==========================================
+
+# Listen on port 80 inside the container
+:80 {
+	# Trust X-Forwarded-* from an outer reverse proxy (e.g. Coolify, Traefik).
+	# Without this, {scheme} is always "http" behind TLS termination and SvelteKit
+	# sees the wrong URL (cookies, CSRF, enhanced forms / client navigations break).
+	map {header.X-Forwarded-Proto} {trusted_proto} {
+		https https
+		http http
+		default {scheme}
+	}
+	map {header.X-Forwarded-Host} {trusted_host} {
+		"" {host}
+		default {header.X-Forwarded-Host}
+	}
+
+	# --- 1. Direct Backend Access ---
+	# This route bypasses the SvelteKit frontend entirely.
+	# It is intended for external scripts (Python, curl, etc.) or integrations
+	# that need to communicate directly with the Go API.
+	# Usage: POST http://localhost:8087/sopandgo/api/...
+	handle_path /sopandgo/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	# --- 2. SvelteKit Frontend ---
+	# Handles all standard user traffic (UI, Server-Side Rendering).
+	handle {
+		reverse_proxy 127.0.0.1:3000 {
+			# Pass original request headers to SvelteKit.
+			# Crucial for accurate CSRF protection and redirect generation.
+			header_up Host {trusted_host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-Host {trusted_host}
+			header_up X-Forwarded-Proto {trusted_proto}
+		}
+	}
+
+	# --- 3. Performance ---
+	# Enable modern compression for faster load times
+	encode zstd gzip
+}

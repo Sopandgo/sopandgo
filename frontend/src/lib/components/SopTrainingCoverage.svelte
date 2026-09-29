@@ -1,0 +1,45 @@
+<script lang="ts">
+	import type { SOPTrainingCoverage, TrainingMember } from '$lib/sdk/types';
+
+	let { items = [] } = $props<{ items?: SOPTrainingCoverage[] }>();
+
+	const rows = $derived(
+		[...(items ?? [])].sort((a, b) => (b.unsigned?.length ?? 0) - (a.unsigned?.length ?? 0))
+	);
+</script>
+
+<ul class="list">
+	{#each rows as row (row.sop_id)}
+		<li class="border-b border-base-200/80 last:border-b-0">
+			<div class="flex flex-col gap-2 px-4 py-3 sm:px-5">
+				<div class="flex flex-wrap items-center justify-between gap-2">
+					<a href={`/sops/${row.sop_id}/v/latest`} class="font-semibold hover:text-primary">
+						{row.title}
+					</a>
+					{#if row.has_published}
+						<span class="text-xs font-mono uppercase tracking-tighter opacity-60">
+							Version {row.version}
+						</span>
+					{/if}
+				</div>
+				{#if !row.has_published}
+					<p class="text-sm text-base-content/60">No published version yet.</p>
+				{:else if (row.unsigned ?? []).length === 0}
+					<p class="text-sm text-success">Everyone who can sign has signed this version.</p>
+				{:else}
+					<p class="text-sm text-base-content/80">
+						Still to sign:
+						{row.unsigned.map((person: TrainingMember) => person.display_name).join(', ')}
+					</p>
+					{#if (row.signed ?? []).length > 0}
+						<p class="text-xs text-base-content/60">
+							Signed: {row.signed.map((person: TrainingMember) => person.display_name).join(', ')}
+						</p>
+					{/if}
+				{/if}
+			</div>
+		</li>
+	{:else}
+		<li class="p-8 text-center text-sm text-base-content/60">No published SOPs yet.</li>
+	{/each}
+</ul>

@@ -1,0 +1,105 @@
+<script>
+  import { enhance } from '$app/forms';
+  import Alert from './Alert.svelte';
+
+  /**
+   * @typedef {{
+   *   ok?: boolean,
+   *   error?: string
+   * }} PasswordResult
+   */
+
+  /** @type {{
+   *   form: any,
+   *   actionName?: string,
+   *   resultKey?: string,
+   *   userId?: string | null,
+   *   legend?: string | null,
+   *   showLogoutWarning?: boolean,
+   *   onSuccess?: (() => void) | null
+   * }} */
+  let {
+    form,
+    actionName = 'changePassword',
+    resultKey = 'changePassword',
+    userId = null,
+    showLogoutWarning = true,
+    onSuccess = null
+  } = $props();
+
+  let loading = $state(false);
+
+  /** @type {PasswordResult | undefined} */
+  const result = $derived(form?.[resultKey]);
+  const hasError = $derived(!!result?.error);
+  const isOk = $derived(!!result?.ok);
+</script>
+
+<div class="flex flex-col gap-4 items-center">
+  {#if result?.error}
+    <Alert variant="error" message={result.error} class="w-xs shadow-lg" />
+  {/if}
+
+  {#if isOk}
+    <Alert variant="success" message="Password updated." class="w-xs shadow-lg" />
+  {/if}
+
+  <form
+    method="POST"
+    action={`?/${actionName}`}
+    use:enhance={() => {
+  loading = true;
+  return async ({ update }) => {
+    await update();
+    loading = false;
+  };
+}}
+
+  >
+    {#if userId}
+      <input type="hidden" name="user_id" value={userId} />
+    {/if}
+
+    <fieldset class="fieldset">
+
+      <label class="label" for="new_password">
+        New password
+      </label>
+      <input
+        id="new_password"
+        name="new_password"
+        type="password"
+        class="input {hasError ? 'input-error' : ''}"
+        placeholder="New password"
+        minlength="12"
+        autocomplete="new-password"
+        required
+      />
+
+      <label class="label" for="confirm_password">
+        Confirm new password
+      </label>
+      <input
+        id="confirm_password"
+        name="confirm_password"
+        type="password"
+        class="input {hasError ? 'input-error' : ''}"
+        placeholder="Confirm new password"
+        minlength="12"
+        autocomplete="new-password"
+        required
+      />
+
+      <button type="submit" class="btn btn-primary mt-4 w-full" disabled={loading}>
+        {#if loading}
+          <span class="loading loading-spinner"></span>
+        {/if}
+        Update password
+      </button>
+      {#if showLogoutWarning}
+        <Alert variant="warning" message="Warning: This will log you out of all devices."/>
+      {/if}
+    </fieldset>
+  </form>
+
+</div>

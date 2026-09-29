@@ -1,0 +1,28 @@
+# Dependency directories
+node_modules/
+frontend/node_modules/
+backend/vendor/
+
+# Build outputs
+frontend/build/
+frontend/.svelte-kit/
+backend/bin/
+
+# Local data and secrets
+backend/data/
+backend/tmp/
+.env
+.env.*
+!.env.example
+
+# Version control
+.git/
+.gitignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker related
+Dockerfile
+docker-compose.yml

@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+@plugin "daisyui";
+
+@plugin "daisyui" {
+  themes: corporate --default, business --prefersdark;
+}
+
+
+
+html,
+body {
+	height: 100%;
+	margin: 0;
+}
+
+.app-layout {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+
+.app-content {
+	flex: 1;
+}
