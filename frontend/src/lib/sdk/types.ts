@@ -1,4 +1,5 @@
 export type UserRole = 'admin' | 'approver' | 'editor' | 'viewer' | 'auditor';
+export type ThemePreference = 'light' | 'dark' | 'system';
 
 export interface User {
     /** UUID v4 */
@@ -11,6 +12,8 @@ export interface User {
     must_change_password: boolean;
     /** BCP 47 tag from the supported locale list */
     locale: string;
+    /** light, dark, or system */
+    theme: ThemePreference;
     /** ISO 8601 Timestamp */
     created_at: string;
 }

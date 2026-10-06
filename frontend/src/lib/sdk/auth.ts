@@ -101,6 +101,15 @@ export const auth = (client: Client, event: RequestEvent) => {
             if (!res.ok) throw new Error('UPDATE_LOCALE_FAILED');
         },
 
+        updateTheme: async (theme: string): Promise<void> => {
+            const res = await client.fetch('/auth/me/theme', {
+                method: 'PATCH',
+                body: { theme }
+            });
+            if (res.status === 400) throw new Error('UNSUPPORTED_THEME');
+            if (!res.ok) throw new Error('UPDATE_THEME_FAILED');
+        },
+
         updatePassword: async (newPassword: string): Promise<void> => {
             const res = await client.fetch('/auth/me/update-password', {
                 method: 'PATCH',

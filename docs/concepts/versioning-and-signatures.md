@@ -118,7 +118,7 @@ The app compares each user’s acknowledgment history to the **currently publish
 In the UI, the same breakdown appears on:
 
 - the **home dashboard** (`/dashboard`) — summary, “action required” lists, and links to sign the latest version; see `docs/concepts/home-dashboard.md`
-- **Your profile** (`/profile`) — full **Training / Signatures** card alongside account settings
+- **Your profile** (`/profile`) — full **Training / Signatures** card. Language, appearance, and password are on `/profile/settings`.
 
 The categories are:
 

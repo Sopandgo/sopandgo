@@ -87,6 +87,7 @@ func (s *Server) registerRoutes() {
 	// user
 	s.mux.HandleFunc("PATCH /api/auth/me/update-password", protected(s.handleUpdatePassword))
 	s.mux.HandleFunc("PATCH /api/auth/me/locale", protected(s.handleUpdateMyLocale))
+	s.mux.HandleFunc("PATCH /api/auth/me/theme", protected(s.handleUpdateMyTheme))
 	s.mux.HandleFunc("GET /api/auth/me", protected(s.handleGetMe))
 	s.mux.HandleFunc("GET /api/auth/me/signature-status", protected(s.handleGetMySignatureStatus))
 

@@ -15,6 +15,7 @@ type User struct {
 	IsActive           bool      `json:"is_active"`
 	MustChangePassword bool      `json:"must_change_password"`
 	Locale             string    `json:"locale"`
+	Theme              string    `json:"theme"`
 	CreatedAt          time.Time `json:"created_at"`
 }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
+    import { resolve } from '$app/paths';
     import { ArchiveIcon, CircleUserIcon, LogOutIcon, LogsIcon, SettingsIcon, ShieldUserIcon, UsersIcon } from 'lucide-svelte';
     import Avatar from '$lib/components/Avatar.svelte';
     import * as m from '$lib/paraglide/messages.js';
@@ -10,9 +11,9 @@
 <div class="navbar sticky top-0 z-50 bg-base-100 shadow-sm">
     <div class="navbar-start">
         {#if user}
-            {@render logo("/dashboard")}
+            {@render logo('/dashboard')}
         {:else}
-            {@render logo("/")}
+            {@render logo('/')}
         {/if}
     </div>
 
@@ -47,9 +48,15 @@
                         class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
                     >
                         <li>
-                            <a href="/profile" class="w-full text-left flex gap-4 items-center">
+                            <a href={resolve('/profile')} class="w-full text-left flex gap-4 items-center">
                                 <CircleUserIcon size={16}/>
                                 {user.display_name}
+                            </a>
+                        </li>
+                        <li>
+                            <a href={resolve('/profile/settings')} class="w-full text-left flex gap-4 items-center">
+                                <SettingsIcon size={16}/>
+                                {m.nav_account_settings()}
                             </a>
                         </li>
 
@@ -57,31 +64,31 @@
                             <div class="divider my-0"></div> 
 
                             <li>
-                                <a href="/admin/users" class="w-full text-left flex gap-4 items-center">
+                                <a href={resolve('/admin/users')} class="w-full text-left flex gap-4 items-center">
                                     <UsersIcon size={16}/>
                                     {m.nav_users()}
                                 </a>
                             </li>
                             <li>
-                                <a href="/admin/sessions" class="w-full text-left flex gap-4 items-center">
+                                <a href={resolve('/admin/sessions')} class="w-full text-left flex gap-4 items-center">
                                     <ShieldUserIcon size={16}/>
                                     {m.nav_sessions()}
                                 </a>
                             </li>
                             <li>
-                                <a href="/admin/audit-logs" class="w-full text-left flex gap-4 items-center">
+                                <a href={resolve('/admin/audit-logs')} class="w-full text-left flex gap-4 items-center">
                                     <LogsIcon size={16}/>
                                     {m.nav_audit_logs()}
                                 </a>
                             </li>
                             <li>
-                                <a href="/admin/settings" class="w-full text-left flex gap-4 items-center">
+                                <a href={resolve('/admin/settings')} class="w-full text-left flex gap-4 items-center">
                                     <SettingsIcon size={16}/>
                                     {m.nav_settings()}
                                 </a>
                             </li>
                             <li>
-                                <a href="/admin/backup" class="w-full text-left flex gap-4 items-center">
+                                <a href={resolve('/admin/backup')} class="w-full text-left flex gap-4 items-center">
                                     <ArchiveIcon size={16}/>
                                     {m.nav_backup()}
                                 </a>
@@ -104,7 +111,7 @@
                     </ul>
                 </div>
             {:else}
-                <a href="/login" class="btn btn-ghost">
+                <a href={resolve('/login')} class="btn btn-ghost">
                     {m.nav_login()}
                 </a>
             {/if}
@@ -112,8 +119,8 @@
     </div>
 </div>
 
-{#snippet logo(url:string)}
-    <a href={url} class="flex-1 flex gap-4 items-center">
+{#snippet logo(url: '/' | '/dashboard')}
+    <a href={resolve(url)} class="flex-1 flex gap-4 items-center">
         <div
             tabindex="0"
             role="button"

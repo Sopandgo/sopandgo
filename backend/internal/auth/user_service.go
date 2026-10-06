@@ -15,6 +15,23 @@ import (
 )
 
 var ErrInvalidLocale = errors.New("unsupported locale")
+var ErrInvalidTheme = errors.New("unsupported theme")
+
+const (
+	ThemeLight  = "light"
+	ThemeDark   = "dark"
+	ThemeSystem = "system"
+)
+
+// NormalizeTheme accepts light, dark, or system.
+func NormalizeTheme(theme string) (string, bool) {
+	switch strings.TrimSpace(strings.ToLower(theme)) {
+	case ThemeLight, ThemeDark, ThemeSystem:
+		return strings.TrimSpace(strings.ToLower(theme)), true
+	default:
+		return "", false
+	}
+}
 
 // RegisterUser handles hashing, creation, and logging in a SINGLE transaction.
 func (s *Service) RegisterUser(
@@ -365,4 +382,18 @@ func (s *Service) SetUserLocale(userID, locale string) error {
 		return err
 	}
 	return updateUserLocaleRecord(s.db, userID, tag)
+}
+
+// SetUserTheme stores light, dark, or system on the account.
+func (s *Service) SetUserTheme(userID, theme string) error {
+	tag, ok := NormalizeTheme(theme)
+	if !ok {
+		return ErrInvalidTheme
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, err := getUserByIDRecord(s.db, userID); err != nil {
+		return err
+	}
+	return updateUserThemeRecord(s.db, userID, tag)
 }

@@ -474,6 +474,16 @@ var migrations = []migration{
 			return err
 		},
 	},
+	// v23: per-user appearance (light, dark, or system)
+	{
+		version: 23,
+		up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`
+				ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'system';
+			`)
+			return err
+		},
+	},
 }
 
 func LatestSchemaVersion() int {

@@ -66,12 +66,26 @@ func TestAPI_LocalePreference(t *testing.T) {
 	}
 	var profile struct {
 		Locale string `json:"locale"`
+		Theme  string `json:"theme"`
 	}
 	if err := json.Unmarshal(me.Body.Bytes(), &profile); err != nil {
 		t.Fatal(err)
 	}
 	if profile.Locale != "en" {
 		t.Fatalf("default locale %q", profile.Locale)
+	}
+	if profile.Theme != auth.ThemeSystem {
+		t.Fatalf("default theme %q", profile.Theme)
+	}
+
+	badTheme := authed(http.MethodPatch, "/api/auth/me/theme", map[string]string{"theme": "sepia"})
+	if badTheme.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for sepia, got %d %s", badTheme.Code, badTheme.Body.String())
+	}
+
+	setTheme := authed(http.MethodPatch, "/api/auth/me/theme", map[string]string{"theme": "dark"})
+	if setTheme.Code != http.StatusOK {
+		t.Fatalf("set dark %d %s", setTheme.Code, setTheme.Body.String())
 	}
 
 	bad := authed(http.MethodPatch, "/api/auth/me/locale", map[string]string{"locale": "fr"})
@@ -90,6 +104,9 @@ func TestAPI_LocalePreference(t *testing.T) {
 	}
 	if profile.Locale != "de" {
 		t.Fatalf("locale after patch %q", profile.Locale)
+	}
+	if profile.Theme != auth.ThemeDark {
+		t.Fatalf("theme after patch %q", profile.Theme)
 	}
 
 	adminLogin, _ := json.Marshal(map[string]string{

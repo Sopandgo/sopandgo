@@ -49,6 +49,28 @@ func (s *Server) handleUpdateMyLocale(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"locale": tag})
 }
 
+func (s *Server) handleUpdateMyTheme(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Theme string `json:"theme"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	userID := GetUserID(r.Context())
+	if err := s.authService.SetUserTheme(userID, req.Theme); err != nil {
+		if errors.Is(err, auth.ErrInvalidTheme) {
+			http.Error(w, "unsupported theme", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "failed to update theme", http.StatusInternalServerError)
+		return
+	}
+	tag, _ := auth.NormalizeTheme(req.Theme)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"theme": tag})
+}
+
 func (s *Server) handleGetMySignatureStatus(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r.Context())
 

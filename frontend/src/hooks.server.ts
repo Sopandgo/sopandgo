@@ -1,6 +1,7 @@
 import { createSDK } from '$lib/sdk';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { cookieName, getTextDirection, isLocale } from '$lib/paraglide/runtime';
+import { themeAttribute } from '$lib/theme';
 import { sequence } from '@sveltejs/kit/hooks';
 import { redirect, type Handle } from '@sveltejs/kit';
 
@@ -59,14 +60,14 @@ const handleAuth: Handle = async ({ event, resolve }) => {
     }
 
     if (user?.must_change_password) {
-        const allowedWhileForced = pathname === '/profile' || pathname === '/logout';
+        const allowedWhileForced = pathname === '/profile/settings' || pathname === '/logout';
         if (!allowedWhileForced) {
-            throw redirect(303, '/profile');
+            throw redirect(303, '/profile/settings');
         }
     }
 
     if (routeId.includes('(guest)') && user) {
-        throw redirect(303, user.must_change_password ? '/profile' : '/dashboard');
+        throw redirect(303, user.must_change_password ? '/profile/settings' : '/dashboard');
     }
 
     return resolve(event);
@@ -77,7 +78,10 @@ const handleParaglide: Handle = ({ event, resolve }) =>
         event.request = request;
         return resolve(event, {
             transformPageChunk: ({ html }) =>
-                html.replace('%paraglide.lang%', locale).replace('%paraglide.dir%', getTextDirection(locale))
+                html
+                    .replace('%paraglide.lang%', locale)
+                    .replace('%paraglide.dir%', getTextDirection(locale))
+                    .replace('%theme%', themeAttribute(event.locals.user?.theme ?? 'system'))
         });
     });
 

@@ -35,6 +35,6 @@ Detailed field semantics for signature status are described in `docs/concepts/ve
 
 ## Related pages
 
-- **`/profile`** — Full account view; includes the same signature breakdown in a **Training / Signatures** card plus password change.
+- **`/profile`** — Account details and the same signature breakdown in a **Training / Signatures** card. Language, appearance, and password change are on **`/profile/settings`**.
 - **`/sops`** — Browse, search, tag filters, and favorite toggles for the whole library.
 - **`/sops/{sop_id}`** — The same team signature list for one SOP, for admin and approver (`GET /api/sops/{sop_id}/training`).
