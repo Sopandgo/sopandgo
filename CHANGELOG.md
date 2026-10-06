@@ -2,6 +2,18 @@
 
 All notable releases of sopandgo are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
 
+## 1.0.1
+
+The interface, emails, notifications, and PDF chrome now ship in English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, and Swedish. SOP titles and Markdown stay in the language the author wrote.
+
+- Each user can set a preferred language. Admins set the organization language used for shared notifications and PDF chrome.
+- Profile includes a light, dark, or system theme preference.
+- The change-password and settings screens use a layout that fits smaller windows.
+
+### Upgrading
+
+From 1.0.0: export a backup, then `docker compose pull` and `docker compose up -d`. The image name in `docker-compose.yml` stays `ghcr.io/sopandgo/sopandgo:1`. No database migration in this release requires a special step.
+
 ## 1.0.0
 
 First stable release for self-hosted labs and small research teams.
