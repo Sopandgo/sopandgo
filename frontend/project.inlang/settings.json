@@ -10,6 +10,17 @@
 	"baseLocale": "en",
 	"locales": [
 		"en",
-		"de"
+		"de",
+		"fr",
+		"es",
+		"pt",
+		"zh",
+		"it",
+		"nl",
+		"pl",
+		"ja",
+		"ko",
+		"tr",
+		"sv"
 	]
 }

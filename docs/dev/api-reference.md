@@ -28,7 +28,7 @@ Protected routes expect `Authorization: Bearer <access_token>`. Login/refresh re
 - Public: `GET /api/health`, login, refresh, logout, reset-password completion.
 - Everything else: bearer access token, plus optional `requireScope(...)` (see `api.go`).
 - Bootstrap / `must_change_password`: only `GET /api/auth/me`, `PATCH /api/auth/me/update-password`, `PATCH /api/auth/me/locale`, and `PATCH /api/auth/me/theme` until the password is changed.
-- `GET /api/auth/me` includes `locale` and `theme`. `PATCH /api/auth/me/locale` with `{ "locale": "<tag>" }` stores a tag from the supported list (`en`, `de` today) and rejects anything else with 400. `PATCH /api/auth/me/theme` with `{ "theme": "light" }`, `"dark"`, or `"system"` stores that preference and rejects anything else with 400.
+- `GET /api/auth/me` includes `locale` and `theme`. `PATCH /api/auth/me/locale` with `{ "locale": "<tag>" }` stores a tag from the supported list (`en`, `de`, `fr`, `es`, `pt`, `zh`, `it`, `nl`, `pl`, `ja`, `ko`, `tr`, `sv`) and rejects anything else with 400. `PATCH /api/auth/me/theme` with `{ "theme": "light" }`, `"dark"`, or `"system"` stores that preference and rejects anything else with 400.
 - `GET /api/admin/settings/email` includes `default_locale`. `PATCH /api/admin/settings/default-locale` with `{ "default_locale": "<tag>" }` sets the organization language used for shared notifications and PDF chrome (admin only).
 - **Admin HTTP tools** (users, sessions, audit log UI APIs, integrity, mail, integrations, backups) require the `admin:integrity` scope (admin role). The `auditor` role has an `audit:read` scope in RBAC, but **no audit-log routes currently require it** — audit listing is admin-only. Auditors can still use the normal signed-in SOP read surfaces.
 

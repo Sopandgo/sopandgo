@@ -88,9 +88,9 @@ func TestAPI_LocalePreference(t *testing.T) {
 		t.Fatalf("set dark %d %s", setTheme.Code, setTheme.Body.String())
 	}
 
-	bad := authed(http.MethodPatch, "/api/auth/me/locale", map[string]string{"locale": "fr"})
+	bad := authed(http.MethodPatch, "/api/auth/me/locale", map[string]string{"locale": "xx"})
 	if bad.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400 for fr, got %d %s", bad.Code, bad.Body.String())
+		t.Fatalf("expected 400 for xx, got %d %s", bad.Code, bad.Body.String())
 	}
 
 	ok := authed(http.MethodPatch, "/api/auth/me/locale", map[string]string{"locale": "de"})
@@ -152,13 +152,13 @@ func TestAPI_LocalePreference(t *testing.T) {
 		t.Fatalf("stored default locale %q", got)
 	}
 
-	badDefault, _ := json.Marshal(map[string]string{"default_locale": "fr"})
+	badDefault, _ := json.Marshal(map[string]string{"default_locale": "xx"})
 	req = httptest.NewRequest(http.MethodPatch, "/api/admin/settings/default-locale", bytes.NewReader(badDefault))
 	req.Header.Set("Authorization", "Bearer "+adminTokens.AccessToken)
 	req.Header.Set("Content-Type", "application/json")
 	rec = httptest.NewRecorder()
 	env.API.ServeHTTP(rec, req)
 	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400 for org fr, got %d", rec.Code)
+		t.Fatalf("expected 400 for org xx, got %d", rec.Code)
 	}
 }

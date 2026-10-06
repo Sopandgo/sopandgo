@@ -5,12 +5,20 @@ Thanks for helping improve sopandgo. This project targets small labs that need v
 ## Development setup
 
 1. Copy `.env.example` → `.env` and set at least `ORIGIN` and `SMTP_SECRET_ENCRYPTION_KEY` for full mail testing.
-2. Prefer Docker for an end-to-end stack: `docker compose up -d --build`
+2. Build the app from this checkout (labs pull the published image instead; see [docs/ops/releasing.md](docs/ops/releasing.md)):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+That local image is tagged `ghcr.io/sopandgo/sopandgo:1` on your machine. Run `docker compose pull` when you want the published image back.
+
 3. Or run components separately:
     - Backend: `cd backend && go run cmd/sopandgo/main.go`
     - Frontend: `cd frontend && npm install && npm run dev`
 
 New to the product surface? [docs/ops/evaluating.md](docs/ops/evaluating.md) covers demo users and a short local tour.
+
 ## Tests
 
 Run before opening a PR:
@@ -26,6 +34,12 @@ cd frontend && npm test
 - Update docs under `docs/` when behavior or APIs change.
 - Do not commit `.env`, `backend/data/`, or real secrets.
 - Database migrations are **append-only** (`backend/internal/storage/migrations.go`) — never edit a shipped migration; add a new version instead.
+
+## Releases
+
+Merging to `main` is not a release. Labs do not receive a change until someone tags `main` after the merge. Do not tag from a pull request branch.
+
+The steps, image names, and rules are in [docs/ops/releasing.md](docs/ops/releasing.md).
 
 ## Scope guidance
 

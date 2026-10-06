@@ -28,10 +28,11 @@ Edit `.env` and set at least:
 - **`SMTP_SECRET_ENCRYPTION_KEY`** — 32-byte AES key as base64 or hex (`openssl rand -base64 32`)
 - Leave **`SEED_DEMO_DATA=true`** (the default) so the first boot inserts demo users and a sample SOP
 
-3. Start the stack:
+3. Start the stack. This pulls the published image. You do not set a version, check out a tag, or build from source.
 
 ```bash
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 4. Open **`ORIGIN`** (default [http://localhost:8087](http://localhost:8087)).
@@ -59,7 +60,7 @@ Demo accounts are for local exploration only. For a real lab, set **`SEED_DEMO_D
 
 You do not need real SMTP for a first look: use **manual links** mail mode in Settings if you invite another user.
 
-The sign-in page has a language control (English or German). After sign-in, change your language and appearance (light, dark, or system) on **Profile → Account settings**. Admins set the organization language on **Settings**; that language is used for shared notifications and PDF chrome. The seeded sample SOP stays in the English Markdown it was written in.
+The sign-in page has a language control (supported locales include English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, and Swedish). After sign-in, change your language and appearance (light, dark, or system) on **Profile → Account settings**. Admins set the organization language on **Settings**; that language is used for shared notifications and PDF chrome. The seeded sample SOP stays in the English Markdown it was written in.
 
 ## After the trial
 

@@ -1,29 +1,121 @@
 name: Release
 
-# Create a GitHub Release only when an explicit version tag is pushed.
-# Do not auto-bump on every main commit — public releases should be intentional.
+# Publish a GitHub Release and container image only when an explicit version tag
+# is pushed. Pushing to main runs CI only. Do not auto-bump from commit messages.
 
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish, for example v1.0.1. Does not move or delete the tag."
+        required: true
+        type: string
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Require a changelog section
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$INPUT_TAG"
+          else
+            TAG="$REF_NAME"
+          fi
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag must look like v1.2.3 or v1.2.0-rc.1, got: $TAG"
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          export TAG VERSION
+          python3 << 'PY'
+          import os, re
+          from pathlib import Path
+
+          tag = os.environ["TAG"]
+          version = os.environ["VERSION"]
+          text = Path("CHANGELOG.md").read_text(encoding="utf-8")
+          match = re.search(rf"(?m)^## {re.escape(version)}\s*$", text)
+          if not match:
+              raise SystemExit(f"CHANGELOG.md has no heading ## {version}")
+          rest = text[match.end():]
+          nxt = re.search(r"(?m)^## ", rest)
+          end = match.end() + (nxt.start() if nxt else len(rest))
+          notes = text[match.start():end].strip() + "\n"
+          Path("release-notes.md").write_text(notes, encoding="utf-8")
+
+          stable = re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version) is not None
+          image = "ghcr.io/sopandgo/sopandgo"
+          tags = [f"{image}:{version}"]
+          if stable:
+              major, minor, _patch = version.split(".")
+              tags.extend([
+                  f"{image}:{major}.{minor}",
+                  f"{image}:{major}",
+                  f"{image}:latest",
+              ])
+
+          out = Path(os.environ["GITHUB_OUTPUT"])
+          with out.open("a", encoding="utf-8") as fh:
+              fh.write(f"tag={tag}\n")
+              fh.write(f"version={version}\n")
+              fh.write(f"stable={'true' if stable else 'false'}\n")
+              fh.write(f"prerelease={'false' if stable else 'true'}\n")
+              fh.write("tags<<EOF\n")
+              fh.write("\n".join(tags) + "\n")
+              fh.write("EOF\n")
+          PY
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: APP_VERSION=${{ steps.version.outputs.version }}
+          tags: ${{ steps.version.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Create GitHub release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          generateReleaseNotes: true
+          tag: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          bodyFile: release-notes.md
+          prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
+          makeLatest: ${{ steps.version.outputs.stable == 'true' }}
+          allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}

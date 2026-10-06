@@ -9,6 +9,6 @@ describe('supported locales', () => {
         const supported = JSON.parse(readFileSync(listPath, 'utf8')) as string[];
         const settings = JSON.parse(readFileSync(settingsPath, 'utf8')) as { locales: string[] };
         expect(settings.locales).toEqual(supported);
-        expect(supported).toEqual(['en', 'de']);
+        expect(supported).toEqual(['en', 'de', 'fr', 'es', 'pt', 'zh', 'it', 'nl', 'pl', 'ja', 'ko', 'tr', 'sv']);
     });
 });

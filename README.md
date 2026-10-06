@@ -1,6 +1,6 @@
 # sopandgo
 > [!NOTE]
-> **Stability:** From **1.0.0** onward, upgrades are intended to be forward-compatible: take a backup, pull the new image, restart, and let append-only database migrations run. Prefer tagged releases. See [Upgrading](#upgrading) below.
+> **Stability:** From **1.0.0** onward, upgrades are intended to be forward-compatible: take a backup, pull the image, restart, and let append-only database migrations run. The compose file stays on version **1**. See [Upgrading](#upgrading) below.
 
 A small, self-hosted SOP management system for labs and small research organizations.
 
@@ -79,7 +79,7 @@ The security model is documented in detail under `docs/concepts/security-model.m
 
 ## Features (1.0)
 
-Self-hosted SOP management with invite-only auth, RBAC, immutable versioned content (draft → RC → published), acknowledgments, home dashboard, tags and favorites, audit trail, mail (SMTP/Resend or manual links), optional publish notices, Slack/Gotify/HTTP webhooks, backup/restore, PDF export, and Word import. The interface, emails, notifications, and PDF chrome ship in English and German. SOP titles and Markdown stay in the language the author wrote. Adding another interface language is a catalog change; see [Architecture](docs/dev/architecture.md#languages).
+Self-hosted SOP management with invite-only auth, RBAC, immutable versioned content (draft → RC → published), acknowledgments, home dashboard, tags and favorites, audit trail, mail (SMTP/Resend or manual links), optional publish notices, Slack/Gotify/HTTP webhooks, backup/restore, PDF export, and Word import. The interface, emails, notifications, and PDF chrome ship in English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, and Swedish. SOP titles and Markdown stay in the language the author wrote. Adding another interface language is a catalog change; see [Architecture](docs/dev/architecture.md#languages).
 
 Pending-acknowledgment reminder digests and lifecycle emails for RC/reject/archive are **out of scope for 1.0** — the dashboard and training coverage are the nudge surfaces; publish notices are the email surface.
 
@@ -120,13 +120,14 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
   - `PDF_GENERATOR_VERSION` controls append-only artifact generation/backfill versioning.
 - **Backups:** Admins can use **Backup** (`/admin/backup`) to export a `.zip`, validate archives, and stage a restore (restart required). Optional automatic uploads to S3 use `BACKUP_S3_*` in `.env` (see `docs/ops/backup-and-restore.md`).
 
-See `docs/ops/deployment.md` for the full environment variable reference. Version tags: `docs/ops/releasing.md`.
+See `docs/ops/deployment.md` for the full environment variable reference. How versions ship: `docs/ops/releasing.md`.
 
 3. **Launch**
 ```bash
-  docker compose up -d --build
+  docker compose pull
+  docker compose up -d
 ```
-(`docker-compose` with a hyphen also works if that is what your system provides.)
+The compose file uses the published image `ghcr.io/sopandgo/sopandgo:1`. You do not set a version. (`docker-compose` with a hyphen also works if that is what your system provides.)
 
 4. **Access the app**
 
@@ -151,9 +152,17 @@ Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`
 ### Upgrading
 
 1. Export a backup from **Backup** (or copy `backend/data` while the container is stopped).
-2. Pull / rebuild the new image (`docker compose up -d --build` or your usual image tag).
-3. Restart. The backend applies **append-only** schema migrations automatically.
-4. Confirm the app boots and spot-check a published SOP and a recent backup export.
+2. Pull and start again:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+3. The backend applies **append-only** schema migrations automatically.
+4. Confirm the app boots and spot-check a published SOP and a recent backup export. The footer shows the exact release, such as `v1.0.1`.
+
+You do not edit a version number for a normal update. The image name `1` moves forward for compatible releases and does not jump to 2.0.0. To roll back, or to move to a future major version, see [docs/ops/deployment.md](docs/ops/deployment.md).
 
 Do not run a newer database against an older application binary; restore from backup if you need to roll back the app version.
 
