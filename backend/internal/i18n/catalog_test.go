@@ -28,8 +28,8 @@ func TestFallbackAndMissingKey(t *testing.T) {
 	if got := Fallback(" DE "); got != "de" {
 		t.Fatalf("normalize: got %q", got)
 	}
-	if _, ok := Normalize("it"); ok {
-		t.Fatal("it should not be supported")
+	if _, ok := Normalize("xx"); ok {
+		t.Fatal("xx should not be supported")
 	}
 	got := T("de", "mail.published.no_summary", nil)
 	if got != "Es wurde keine Änderungszusammenfassung erfasst." {

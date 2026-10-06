@@ -59,7 +59,7 @@ Demo accounts are for local exploration only. For a real lab, set **`SEED_DEMO_D
 
 You do not need real SMTP for a first look: use **manual links** mail mode in Settings if you invite another user.
 
-The sign-in page has a language control (English, German, French, Spanish, Portuguese, or Chinese). After sign-in, change your language and appearance (light, dark, or system) on **Profile → Account settings**. Admins set the organization language on **Settings**; that language is used for shared notifications and PDF chrome. The seeded sample SOP stays in the English Markdown it was written in.
+The sign-in page has a language control (supported locales include English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, and Swedish). After sign-in, change your language and appearance (light, dark, or system) on **Profile → Account settings**. Admins set the organization language on **Settings**; that language is used for shared notifications and PDF chrome. The seeded sample SOP stays in the English Markdown it was written in.
 
 ## After the trial
 
