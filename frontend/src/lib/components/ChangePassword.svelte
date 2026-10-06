@@ -36,7 +36,7 @@
   const isOk = $derived(!!result?.ok);
 </script>
 
-<div class="flex flex-col gap-4 items-center">
+<div class="flex w-full flex-col gap-4">
   {#if result?.error}
     <Alert variant="error" message={result.error} class="w-xs shadow-lg" />
   {/if}
@@ -46,6 +46,7 @@
   {/if}
 
   <form
+    class="w-full"
     method="POST"
     action={`?/${actionName}`}
     use:enhance={() => {
@@ -70,7 +71,7 @@
         id="new_password"
         name="new_password"
         type="password"
-        class="input {hasError ? 'input-error' : ''}"
+        class="input w-full {hasError ? 'input-error' : ''}"
         placeholder={m.password_new()}
         minlength="12"
         autocomplete="new-password"
@@ -84,7 +85,7 @@
         id="confirm_password"
         name="confirm_password"
         type="password"
-        class="input {hasError ? 'input-error' : ''}"
+        class="input w-full {hasError ? 'input-error' : ''}"
         placeholder={m.password_confirm()}
         minlength="12"
         autocomplete="new-password"

@@ -38,7 +38,7 @@
     <title>{m.page_account_settings()}</title>
 </svelte:head>
 
-<div class="mx-auto flex w-full max-w-xl flex-col gap-6">
+<div class="flex w-full flex-col gap-6">
     <Card>
         <div class="card-body">
             <CardPageHeading>
@@ -63,9 +63,10 @@
 
     {#if mustChange}
         <Alert variant="warning" message={m.profile_bootstrap_warning()} />
-        {@render passwordCard()}
     {/if}
 
+    <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <div class="flex flex-col gap-6 {mustChange ? 'order-2 lg:order-1' : ''}">
     <Card>
         <div class="card-body gap-4">
             <h2 class="card-title text-xs font-bold tracking-widest uppercase opacity-60">
@@ -130,8 +131,10 @@
             </form>
         </div>
     </Card>
+        </div>
 
-    {#if !mustChange}
-        {@render passwordCard()}
-    {/if}
+        <div class={mustChange ? 'order-1 lg:order-2' : ''}>
+            {@render passwordCard()}
+        </div>
+    </div>
 </div>
