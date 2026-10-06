@@ -1,0 +1,8 @@
+# Source builds for contributors. Lab installs use docker-compose.yml only.
+# docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+services:
+  sopandgo:
+    build:
+      context: .
+      args:
+        APP_VERSION: dev

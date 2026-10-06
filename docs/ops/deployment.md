@@ -32,10 +32,11 @@ The directory contains:
 ### Using docker compose
 A **`docker-compose.yml`** is in the repository root ( **`sopandgo`** app + **`gotenberg`** for PDF by default). Copy **`.env.example`** to **`.env`** and set variables there; Compose substitutes `${VAR}` from `.env` automatically.
 
-Start the stack (build on first run or after Dockerfile changes):
+Start the stack. The compose file uses the published image `ghcr.io/sopandgo/sopandgo:1`. You do not choose a version number.
 
 ```sh
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Initial Credentials:
@@ -62,7 +63,7 @@ Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left o
 | `BODY_SIZE_LIMIT` | `52428800` | Max request size (bytes). Default is ~50MB. |
 | `AUDIT_STRICT_TYPES` | `false` | If `true`, audit writes reject unknown `event_type`/`entity_type` values (recommended once all extensions use canonical types). |
 | `SMTP_SECRET_ENCRYPTION_KEY` | - | **Required to save outbound secrets in the UI** (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer) **and to send mail or integration notifications that need those secrets.** A 32-byte AES-256 key, provided as **base64** or **hex** (64 hex chars, optional `0x` prefix). Used only to encrypt secrets stored in SQLite—not for signing JWTs. Generate: `openssl rand -base64 32`. If unset, the server starts, but the admin UI cannot persist those credentials until this is set and the process is restarted. |
-| `APP_VERSION` | `dev` | Label in the footer and in admin **export** `manifest.json`. Set this to the release tag (without the leading `v`) when building an image. Local `npm run dev` ignores this and shows `git describe` instead. The root `package.json` version is not used. |
+| `APP_VERSION` | baked into the image | Label in the footer and in admin **export** `manifest.json`. Release images set this at build time (for example `1.0.1`). Labs do not set it. Contributor source builds and `go run` use `dev`. Local `npm run dev` ignores this and shows `git describe` instead. The root `package.json` version is not used. |
 | `PDF_EXPORT_ENABLED` | `true` | When `true`, PDF artifact generation/download is enabled (requires a renderer when not `none`). |
 | `PDF_RENDERER` | `gotenberg` | `gotenberg` or `none`. |
 | `GOTENBERG_URL` | `http://gotenberg:3000` | Base URL of the Gotenberg service (default compose service name: `gotenberg`). |
@@ -151,11 +152,16 @@ During backup export, mutating API requests may return `503` briefly while a mai
 
 ### Upgrading
 
-From **1.0.0** onward:
+From **1.0.0** onward, the image tag in `docker-compose.yml` is `ghcr.io/sopandgo/sopandgo:1`. That name moves to each new 1.x release. A normal update does not edit the tag.
 
 1. Export a backup (admin UI) or stop the container and copy the data directory.
-2. Deploy the new image / rebuild compose.
-3. Start the app; append-only migrations in `backend/internal/storage/migrations.go` apply automatically.
-4. Verify login and a published SOP.
+2. `docker compose pull` and `docker compose up -d`.
+3. Append-only migrations in `backend/internal/storage/migrations.go` apply automatically on startup.
+4. Verify login and a published SOP. The footer shows the exact release, such as `v1.0.1`.
 
-Do not point an older binary at a database that has already been migrated by a newer release — restore from backup instead.
+### Rollback and a future major version
+
+These are not part of a normal install or update.
+
+- **Roll back** to an exact release by changing the image tag in `docker-compose.yml` from `1` to that release, for example `ghcr.io/sopandgo/sopandgo:1.0.1`, then pull and start. If the database was already migrated by a newer release, restore the backup instead. Do not point an older binary at a database that has already been migrated.
+- **Move to 2.x** only when a release note says to. Change the image tag from `1` to `2`. Until then, leave it at `1`. The name `latest` can move to 2.0.0; the lab tag `1` does not.

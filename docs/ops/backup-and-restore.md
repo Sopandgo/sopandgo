@@ -65,7 +65,7 @@ Export is also available via the API: `GET /api/admin/backups/export` (admin aut
 
 Environment variable (optional):
 
-- **`APP_VERSION`** — recorded in export `manifest.json` for traceability (defaults to `dev` if unset).
+- **`APP_VERSION`** — recorded in export `manifest.json` for traceability. Release images bake this in at build time. Labs do not set it. It is `dev` when the process is started without that value.
 
 ---
 
