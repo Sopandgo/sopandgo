@@ -10,10 +10,6 @@ The interface, emails, notifications, and PDF chrome now ship in English, German
 - Profile includes a light, dark, or system theme preference.
 - The change-password and settings screens use a layout that fits smaller windows.
 
-### Upgrading
-
-From 1.0.0: export a backup, then `docker compose pull` and `docker compose up -d`. The image name in `docker-compose.yml` stays `ghcr.io/sopandgo/sopandgo:1`. No database migration in this release requires a special step.
-
 ## 1.0.0
 
 First stable release for self-hosted labs and small research teams.
