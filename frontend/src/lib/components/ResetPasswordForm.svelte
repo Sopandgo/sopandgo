@@ -1,17 +1,19 @@
 <script lang="ts">
+    import * as m from '$lib/paraglide/messages.js';
+
     // Receive 'form' (action result) and 'token' (from URL)
     let { form, token } = $props(); 
 </script>
 
 <div class="card w-full max-w-sm shadow-2xl bg-base-100">
     <form method="POST" class="card-body">
-        <h2 class="card-title justify-center mb-4">Set New Password</h2>
+        <h2 class="card-title justify-center mb-4">{m.reset_heading()}</h2>
 
         <input type="hidden" name="token" value={token} />
 
         <div class="form-control">
             <label class="label" for="password">
-                <span class="label-text">New Password</span>
+                <span class="label-text">{m.reset_new_password()}</span>
             </label>
             <input 
                 type="password" 
@@ -32,7 +34,7 @@
         {/if}
 
         <div class="form-control mt-6">
-            <button class="btn btn-primary">Set Password</button>
+            <button class="btn btn-primary">{m.reset_submit()}</button>
         </div>
     </form>
 </div>

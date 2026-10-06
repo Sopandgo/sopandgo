@@ -459,6 +459,21 @@ var migrations = []migration{
 			return err
 		},
 	},
+	// v22: per-user UI locale and organization default for shared outbound text
+	{
+		version: 22,
+		up: func(tx *sql.Tx) error {
+			if _, err := tx.Exec(`
+				ALTER TABLE users ADD COLUMN locale TEXT NOT NULL DEFAULT 'en';
+			`); err != nil {
+				return err
+			}
+			_, err := tx.Exec(`
+				ALTER TABLE app_settings ADD COLUMN default_locale TEXT NOT NULL DEFAULT 'en';
+			`)
+			return err
+		},
+	},
 }
 
 func LatestSchemaVersion() int {

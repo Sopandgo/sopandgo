@@ -27,7 +27,9 @@ Protected routes expect `Authorization: Bearer <access_token>`. Login/refresh re
 
 - Public: `GET /api/health`, login, refresh, logout, reset-password completion.
 - Everything else: bearer access token, plus optional `requireScope(...)` (see `api.go`).
-- Bootstrap / `must_change_password`: only `GET /api/auth/me` and `PATCH /api/auth/me/update-password` until the password is changed.
+- Bootstrap / `must_change_password`: only `GET /api/auth/me`, `PATCH /api/auth/me/update-password`, and `PATCH /api/auth/me/locale` until the password is changed.
+- `GET /api/auth/me` includes `locale`. `PATCH /api/auth/me/locale` with `{ "locale": "<tag>" }` stores a tag from the supported list (`en`, `de` today) and rejects anything else with 400.
+- `GET /api/admin/settings/email` includes `default_locale`. `PATCH /api/admin/settings/default-locale` with `{ "default_locale": "<tag>" }` sets the organization language used for shared notifications and PDF chrome (admin only).
 - **Admin HTTP tools** (users, sessions, audit log UI APIs, integrity, mail, integrations, backups) require the `admin:integrity` scope (admin role). The `auditor` role has an `audit:read` scope in RBAC, but **no audit-log routes currently require it** — audit listing is admin-only. Auditors can still use the normal signed-in SOP read surfaces.
 
 ## Common status codes

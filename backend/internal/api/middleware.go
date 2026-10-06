@@ -44,8 +44,8 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 
 // withPasswordChangeGuard loads the account on every protected request.
 // Inactive users are rejected, and authorization uses the stored role.
-// Accounts flagged to change their password may only call GET /api/auth/me
-// and PATCH /api/auth/me/update-password.
+// Accounts flagged to change their password may only call GET /api/auth/me,
+// PATCH /api/auth/me/update-password, and PATCH /api/auth/me/locale.
 func (s *Server) withPasswordChangeGuard(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := GetUserID(r.Context())
@@ -67,7 +67,8 @@ func (s *Server) withPasswordChangeGuard(next http.HandlerFunc) http.HandlerFunc
 		if user.MustChangePassword {
 			path := r.URL.Path
 			allowed := (r.Method == http.MethodGet && path == "/api/auth/me") ||
-				(r.Method == http.MethodPatch && path == "/api/auth/me/update-password")
+				(r.Method == http.MethodPatch && path == "/api/auth/me/update-password") ||
+				(r.Method == http.MethodPatch && path == "/api/auth/me/locale")
 			if !allowed {
 				http.Error(w, "password change required", http.StatusForbidden)
 				return

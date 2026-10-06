@@ -1,3 +1,7 @@
+<script>
+	import * as m from '$lib/paraglide/messages.js';
+</script>
+
 <div role="note" class="alert alert-info shadow-sm">
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
@@ -14,17 +18,15 @@
 		/>
 	</svg>
 	<div class="text-sm">
-		<strong class="font-semibold">Self-hosted lab tool.</strong>
-		From 1.0, upgrades are backup, then a new image, then an automatic database migration. sopandgo
-		is a practical tooling aid — not a QMS, not compliance software, and not validated for regulated
-		use. See the
+		<strong class="font-semibold">{m.landing_scope_strong()}</strong>
+		{m.landing_scope_body()}
 		<a
 			class="link font-medium"
 			href="https://github.com/Sopandgo/sopandgo/blob/main/README.md"
 			rel="noreferrer"
 			target="_blank"
-			>README</a
+			>{m.landing_readme()}</a
 		>
-		for scope and the upgrade steps.
+		{m.landing_scope_after()}
 	</div>
 </div>

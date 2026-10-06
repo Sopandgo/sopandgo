@@ -1,4 +1,5 @@
 import { fail } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
 import type { IntegrationEvent } from '$lib/sdk/types';
 
@@ -32,18 +33,38 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
+    saveDefaultLocale: async ({ locals, request }) => {
+        const fd = await request.formData();
+        const default_locale = String(fd.get('locale') ?? '').trim();
+        if (!default_locale) {
+            return fail(400, { saveDefaultLocale: { error: m.error_choose_language() } });
+        }
+        try {
+            await locals.api.admin.updateDefaultLocale(default_locale);
+            return { saveDefaultLocale: { ok: true, locale: default_locale } };
+        } catch (err) {
+            console.error('Default locale update failed:', err);
+            const unsupported = err instanceof Error && err.message === 'UNSUPPORTED_LOCALE';
+            return fail(unsupported ? 400 : 500, {
+                saveDefaultLocale: {
+                    error: unsupported ? m.error_language_unavailable() : m.error_org_language()
+                }
+            });
+        }
+    },
+
     saveTransport: async ({ locals, request }) => {
         const fd = await request.formData();
         const mail_transport = String(fd.get('mail_transport') ?? '').trim() as 'smtp' | 'resend';
         if (mail_transport !== 'smtp' && mail_transport !== 'resend') {
-            return fail(400, { saveTransport: { error: 'Select SMTP or Resend.' } });
+            return fail(400, { saveTransport: { error: m.error_select_transport() } });
         }
         try {
             await locals.api.admin.updateMailTransport(mail_transport);
             return { saveTransport: { ok: true, transport: mail_transport } };
         } catch (err) {
             console.error('Mail transport update failed:', err);
-            return fail(500, { saveTransport: { error: 'Could not update outbound transport.' } });
+            return fail(500, { saveTransport: { error: m.error_transport_update() } });
         }
     },
 
@@ -54,7 +75,7 @@ export const actions: Actions = {
 
         if (!from_address) {
             return fail(400, {
-                saveResend: { error: 'From address is required.' },
+                saveResend: { error: m.error_from_required() },
                 resendValues: { from_address }
             });
         }
@@ -67,15 +88,14 @@ export const actions: Actions = {
             if (code === 'SMTP_ENCRYPTION_KEY_MISSING') {
                 return fail(400, {
                     saveResend: {
-                        error:
-                            'The server is not configured with SMTP_SECRET_ENCRYPTION_KEY. The same key encrypts stored API secrets; add a 32-byte key to the environment and restart.'
+                        error: m.error_encryption_key_secrets()
                     },
                     resendValues: { from_address }
                 });
             }
             console.error('Resend save failed:', err);
             return fail(500, {
-                saveResend: { error: 'Could not save Resend settings.' },
+                saveResend: { error: m.error_resend_save() },
                 resendValues: { from_address }
             });
         }
@@ -85,14 +105,14 @@ export const actions: Actions = {
         const fd = await request.formData();
         const mail_mode = String(fd.get('mail_mode') ?? '').trim() as 'smtp' | 'manual_links';
         if (mail_mode !== 'smtp' && mail_mode !== 'manual_links') {
-            return fail(400, { saveMode: { error: 'Select a valid mail mode.' } });
+            return fail(400, { saveMode: { error: m.error_mail_mode() } });
         }
         try {
             await locals.api.admin.updateMailMode(mail_mode);
             return { saveMode: { ok: true, mode: mail_mode } };
         } catch (err) {
             console.error('Mail mode update failed:', err);
-            return fail(500, { saveMode: { error: 'Could not update mail mode.' } });
+            return fail(500, { saveMode: { error: m.error_mail_mode_update() } });
         }
     },
 
@@ -106,7 +126,7 @@ export const actions: Actions = {
 
         if (!host || !port || !username || !from_address) {
             return fail(400, {
-                save: { error: 'Host, port, username, and from address are required.' },
+                save: { error: m.error_smtp_fields() },
                 values: { host, port, username, from_address }
             });
         }
@@ -125,15 +145,14 @@ export const actions: Actions = {
             if (code === 'SMTP_ENCRYPTION_KEY_MISSING') {
                 return fail(400, {
                     save: {
-                        error:
-                            'The server is not configured with SMTP_SECRET_ENCRYPTION_KEY. Add a 32-byte key to the environment (e.g. openssl rand -base64 32) and restart.'
+                        error: m.error_encryption_key_smtp()
                     },
                     values: { host, port, username, from_address }
                 });
             }
             console.error('SMTP save failed:', err);
             return fail(500, {
-                save: { error: 'Could not save SMTP settings.' },
+                save: { error: m.error_smtp_save() },
                 values: { host, port, username, from_address }
             });
         }
@@ -144,7 +163,7 @@ export const actions: Actions = {
         const test_to = String(fd.get('test_to') ?? '').trim().toLowerCase();
 
         if (!test_to || !test_to.includes('@')) {
-            return fail(400, { test: { error: 'Enter a valid recipient email address.' } });
+            return fail(400, { test: { error: m.error_test_email() } });
         }
 
         try {
@@ -155,14 +174,13 @@ export const actions: Actions = {
             if (msg === 'MAIL_TEST_NOT_READY' || msg === 'SMTP_NOT_READY') {
                 return fail(400, {
                     test: {
-                        error:
-                            'Complete email settings for the selected transport (SMTP or Resend) and ensure SMTP_SECRET_ENCRYPTION_KEY is set on the server.'
+                        error: m.error_mail_not_ready()
                     }
                 });
             }
             console.error('SMTP test failed:', err);
             return fail(500, {
-                test: { error: msg === 'SMTP_TEST_FAILED' ? 'Could not send test email.' : msg }
+                test: { error: msg === 'SMTP_TEST_FAILED' ? m.error_test_email_failed() : msg }
             });
         }
     },
@@ -180,14 +198,13 @@ export const actions: Actions = {
             if (code === 'SMTP_ENCRYPTION_KEY_MISSING') {
                 return fail(400, {
                     saveSlack: {
-                        error:
-                            'SMTP_SECRET_ENCRYPTION_KEY is required to store the Slack webhook URL. Set it and restart.'
+                        error: m.error_slack_key()
                     }
                 });
             }
             console.error('Slack save failed:', err);
             return fail(500, {
-                saveSlack: { error: code.startsWith('slack') || code.includes('URL') ? code : 'Could not save Slack settings.' }
+                saveSlack: { error: code.startsWith('slack') || code.includes('URL') ? code : m.error_slack_save() }
             });
         }
     },
@@ -206,14 +223,13 @@ export const actions: Actions = {
             if (code === 'SMTP_ENCRYPTION_KEY_MISSING') {
                 return fail(400, {
                     saveGotify: {
-                        error:
-                            'SMTP_SECRET_ENCRYPTION_KEY is required to store the Gotify token. Set it and restart.'
+                        error: m.error_gotify_key()
                     }
                 });
             }
             console.error('Gotify save failed:', err);
             return fail(500, {
-                saveGotify: { error: 'Could not save Gotify settings.' }
+                saveGotify: { error: m.error_gotify_save() }
             });
         }
     },
@@ -232,14 +248,13 @@ export const actions: Actions = {
             if (code === 'SMTP_ENCRYPTION_KEY_MISSING') {
                 return fail(400, {
                     saveWebhook: {
-                        error:
-                            'SMTP_SECRET_ENCRYPTION_KEY is required to store a webhook bearer token. Set it and restart.'
+                        error: m.error_webhook_key()
                     }
                 });
             }
             console.error('Webhook save failed:', err);
             return fail(500, {
-                saveWebhook: { error: 'Could not save webhook settings.' }
+                saveWebhook: { error: m.error_webhook_save() }
             });
         }
     },
@@ -251,10 +266,10 @@ export const actions: Actions = {
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : '';
             if (msg === 'INTEGRATION_TEST_NOT_READY') {
-                return fail(400, { testSlack: { error: 'Save a Slack webhook URL first.' } });
+                return fail(400, { testSlack: { error: m.error_slack_test_first() } });
             }
             console.error('Slack test failed:', err);
-            return fail(500, { testSlack: { error: 'Could not send Slack test notification.' } });
+            return fail(500, { testSlack: { error: m.error_slack_test() } });
         }
     },
 
@@ -265,10 +280,10 @@ export const actions: Actions = {
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : '';
             if (msg === 'INTEGRATION_TEST_NOT_READY') {
-                return fail(400, { testGotify: { error: 'Save Gotify URL and token first.' } });
+                return fail(400, { testGotify: { error: m.error_gotify_test_first() } });
             }
             console.error('Gotify test failed:', err);
-            return fail(500, { testGotify: { error: 'Could not send Gotify test notification.' } });
+            return fail(500, { testGotify: { error: m.error_gotify_test() } });
         }
     },
 
@@ -279,10 +294,10 @@ export const actions: Actions = {
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : '';
             if (msg === 'INTEGRATION_TEST_NOT_READY') {
-                return fail(400, { testWebhook: { error: 'Save a webhook URL first.' } });
+                return fail(400, { testWebhook: { error: m.error_webhook_test_first() } });
             }
             console.error('Webhook test failed:', err);
-            return fail(500, { testWebhook: { error: 'Could not send webhook test notification.' } });
+            return fail(500, { testWebhook: { error: m.error_webhook_test() } });
         }
     }
 };

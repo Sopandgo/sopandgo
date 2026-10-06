@@ -2,6 +2,7 @@
     import { enhance } from '$app/forms';
     import { ArchiveIcon, CircleUserIcon, LogOutIcon, LogsIcon, SettingsIcon, ShieldUserIcon, UsersIcon } from 'lucide-svelte';
     import Avatar from '$lib/components/Avatar.svelte';
+    import * as m from '$lib/paraglide/messages.js';
 
     let { user } = $props();
 </script>
@@ -17,11 +18,11 @@
 
     {#if user?.role === 'admin'}
         <div class="navbar-center">
-            <div class="badge badge-lg badge-dash badge-error">Admin</div>
+            <div class="badge badge-lg badge-dash badge-error">{m.role_admin()}</div>
         </div>
     {:else if user?.role === 'auditor'}
         <div class="navbar-center">
-            <div class="badge badge-lg badge-dash badge-info">Auditor</div>
+            <div class="badge badge-lg badge-dash badge-info">{m.role_auditor()}</div>
         </div>
     {/if}
 
@@ -35,9 +36,9 @@
                         class="btn btn-ghost btn-circle avatar avatar-placeholder"
                     >
                         {#if user.role === 'admin'}
-                            <Avatar displayName={user.display_name} color={"error"} size="md" />
+                            <Avatar displayName={user.display_name} color="error" size="md" />
                         {:else}
-                            <Avatar displayName={user.display_name} color={"secondary"} size="md" />
+                            <Avatar displayName={user.display_name} color="secondary" size="md" />
 
                         {/if}
                     </div>
@@ -58,31 +59,31 @@
                             <li>
                                 <a href="/admin/users" class="w-full text-left flex gap-4 items-center">
                                     <UsersIcon size={16}/>
-                                    Users
+                                    {m.nav_users()}
                                 </a>
                             </li>
                             <li>
                                 <a href="/admin/sessions" class="w-full text-left flex gap-4 items-center">
                                     <ShieldUserIcon size={16}/>
-                                    Sessions
+                                    {m.nav_sessions()}
                                 </a>
                             </li>
                             <li>
                                 <a href="/admin/audit-logs" class="w-full text-left flex gap-4 items-center">
                                     <LogsIcon size={16}/>
-                                    Audit Logs
+                                    {m.nav_audit_logs()}
                                 </a>
                             </li>
                             <li>
                                 <a href="/admin/settings" class="w-full text-left flex gap-4 items-center">
                                     <SettingsIcon size={16}/>
-                                    Settings
+                                    {m.nav_settings()}
                                 </a>
                             </li>
                             <li>
                                 <a href="/admin/backup" class="w-full text-left flex gap-4 items-center">
                                     <ArchiveIcon size={16}/>
-                                    Backup
+                                    {m.nav_backup()}
                                 </a>
                             </li>
                         {/if}
@@ -96,7 +97,7 @@
                                     class="text-error w-full font-bold text-left flex gap-4 items-center"
                                 >
                                     <LogOutIcon size={16} strokeWidth={3}/>
-                                    Logout
+                                    {m.nav_logout()}
                                 </button>
                             </form>
                         </li>
@@ -104,7 +105,7 @@
                 </div>
             {:else}
                 <a href="/login" class="btn btn-ghost">
-                    Login
+                    {m.nav_login()}
                 </a>
             {/if}
         </div>
@@ -118,7 +119,7 @@
             role="button"
             class="btn btn-ghost btn-circle avatar avatar-placeholder"
         >
-            <img src="/favicon.svg" alt="sopandgo icon" />
+            <img src="/favicon.svg" alt={m.page_home()} />
         </div>
         <span class="font-semibold">
             SOP and GO

@@ -79,7 +79,7 @@ The security model is documented in detail under `docs/concepts/security-model.m
 
 ## Features (1.0)
 
-Self-hosted SOP management with invite-only auth, RBAC, immutable versioned content (draft → RC → published), acknowledgments, home dashboard, tags and favorites, audit trail, mail (SMTP/Resend or manual links), optional publish notices, Slack/Gotify/HTTP webhooks, backup/restore, PDF export, and Word import.
+Self-hosted SOP management with invite-only auth, RBAC, immutable versioned content (draft → RC → published), acknowledgments, home dashboard, tags and favorites, audit trail, mail (SMTP/Resend or manual links), optional publish notices, Slack/Gotify/HTTP webhooks, backup/restore, PDF export, and Word import. The interface, emails, notifications, and PDF chrome ship in English and German. SOP titles and Markdown stay in the language the author wrote. Adding another interface language is a catalog change; see [Architecture](docs/dev/architecture.md#languages).
 
 Pending-acknowledgment reminder digests and lifecycle emails for RC/reject/archive are **out of scope for 1.0** — the dashboard and training coverage are the nudge surfaces; publish notices are the email surface.
 

@@ -62,7 +62,7 @@ The Go backend uses a "Chain of Responsibility" for API protection:
     * **General limiter:** Protects other rate-limited endpoints (token bucket: burst 10; refill 20 req/s).
     * **Proxy awareness:** Client IP for rate limits is `RemoteAddr`, unless that peer is the loopback proxy (Caddy on `127.0.0.1`). In that case the last `X-Forwarded-For` hop is used, because Caddy appends the address it observed. Client-supplied prefixes and `X-Real-Ip` are ignored.
 2. **`withAuth`:** Extracts the PASETO from the `Authorization` header, verifies the signature, and injects the `user_id` and token `role` into the Request Context.
-3. **`withPasswordChangeGuard`:** Loads the user. Inactive accounts are rejected. The context role is replaced with the role stored in the database, so a demotion applies before `requireScope` runs. Accounts flagged to change their password may only call `GET /api/auth/me` and `PATCH /api/auth/me/update-password`.
+3. **`withPasswordChangeGuard`:** Loads the user. Inactive accounts are rejected. The context role is replaced with the role stored in the database, so a demotion applies before `requireScope` runs. Accounts flagged to change their password may only call `GET /api/auth/me`, `PATCH /api/auth/me/update-password`, and `PATCH /api/auth/me/locale`.
 4. **`requireScope`:** Checks the context role against a map of required permissions (Scopes). If the role lacks the necessary scope (e.g., a `viewer` trying to access `admin:integrity`), it returns `403 Forbidden`.
 
 

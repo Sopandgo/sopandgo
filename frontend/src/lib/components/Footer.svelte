@@ -1,4 +1,6 @@
 <script>
+  import * as m from '$lib/paraglide/messages.js';
+
   const raw = String(__APP_VERSION__ || 'dev').replace(/^v/, '');
   const versionLabel = raw === 'dev' ? 'dev' : `v${raw}`;
 </script>
@@ -7,16 +9,16 @@
   <aside class="grid-flow-col items-center">
     <img
       src="/favicon.svg"
-      alt="SOP and GO logo"
+      alt={m.footer_logo_alt()}
       class="h-12 w-12"
-      title="Based on the Go Gopher by Renee French (CC BY 4.0)" 
+      title={m.footer_gopher()}
     />
     <p>
       <span class="font-semibold">
         SOP and GO
       </span>
       <br />
-      © {new Date().getFullYear()} Leopold Dürrauer · {versionLabel} · MIT License
+      © {new Date().getFullYear()} Leopold Dürrauer · {versionLabel} · {m.footer_license()}
     </p>
   </aside>
   <nav class="grid-flow-col gap-4 md:place-self-center md:justify-self-end">
@@ -24,11 +26,11 @@
       href="https://duerrauer.com"
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Dr. Leopold Dürrauer Website"
+      aria-label={m.footer_author_site()}
     >
        <img
         src="/duerrauer.svg"
-        alt="Dürrauer logo"
+        alt={m.footer_duerrauer_alt()}
         class="h-8 w-8"
       />
     </a>
@@ -36,11 +38,11 @@
       href="https://github.com/Sopandgo/sopandgo"
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="GitHub repository"
+      aria-label={m.footer_github()}
     >
        <img
         src="/github.svg"
-        alt="GitHub logo"
+        alt={m.footer_github_alt()}
         class="h-8 w-8"
       />
     </a>    

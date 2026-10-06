@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 	"github.com/sopandgo/sopandgo/backend/internal/secrets"
 )
 
@@ -84,14 +85,14 @@ func (s *Service) Dispatch(ctx context.Context, ev Event) {
 
 // SendTest sends a test notification to a single channel using stored credentials
 // (works even when the channel is currently disabled).
-func (s *Service) SendTest(ctx context.Context, channel string) error {
+func (s *Service) SendTest(ctx context.Context, channel, locale string) error {
 	if s == nil || s.store == nil {
 		return ErrNotConfigured
 	}
 	ev := Event{
 		Type:       EventTest,
-		Title:      "SOPandGO test notification",
-		Message:    "If you received this, the " + channel + " integration is configured correctly.",
+		Title:      i18n.T(locale, "notify.test.title", nil),
+		Message:    i18n.T(locale, "notify.test.message", map[string]string{"channel": channel}),
 		OccurredAt: time.Now().UTC(),
 	}
 

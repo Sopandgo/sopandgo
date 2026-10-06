@@ -3,6 +3,7 @@
     import type { User } from '$lib/sdk/types';
     import Alert from '$lib/components/Alert.svelte';
     import { SignatureIcon } from 'lucide-svelte';
+    import * as m from '$lib/paraglide/messages.js';
 
     // 1. Define the shape locally
     interface SignFormResult {
@@ -25,13 +26,13 @@
 <div class="bg-base-100 rounded-box shadow-md border border-success w-full">
 
     <div class="p-4 pb-2 text-xs tracking-widest uppercase font-bold text-success">
-        Approve this Standard Operating Procedure
+        {m.ack_approve_title()}
     </div>
     <div class="card-body">
         <p class="text-sm opacity-70">
-            By signing, you approve the content of this SOP and set it's state to 'published'.
+            {m.ack_approve_body()}
             <br/>
-            Old versions will be automatically superseded.
+            {m.ack_approve_supersede()}
         </p>
 
         <form
@@ -51,7 +52,7 @@
 
             <div class="form-control w-full my-4">
                 <label class="label" for="user_display_name">
-                    <span class="label-text">Type your full name to confirm: <span class="font-bold">{user.display_name}</span></span>
+                    <span class="label-text">{m.ack_type_name()} <span class="font-bold">{user.display_name}</span></span>
                 </label>
                 <input
                     id="user_display_name"
@@ -69,10 +70,10 @@
                 <button class="btn btn-success" disabled={loading}>
                     {#if loading}
                         <span class="loading loading-spinner loading-xs"></span>
-                        Signing...
+                        {m.ack_signing()}
                     {:else}
                         <SignatureIcon class="w-4 h-4" />
-                        Approve and Publish
+                        {m.ack_approve_publish()}
                     {/if}
                 </button>
             </div>

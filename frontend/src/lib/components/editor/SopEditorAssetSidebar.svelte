@@ -8,6 +8,8 @@
         LoaderCircleIcon,
         FileUpIcon
     } from 'lucide-svelte';
+    import * as m from '$lib/paraglide/messages.js';
+    import { getLocale } from '$lib/paraglide/runtime';
     import type { SOPAsset } from '$lib/sdk/types';
     import type { ActionData } from '../../../routes/(app)/sops/[sop_id]/new/$types';
 
@@ -44,7 +46,7 @@
         if (!file) return;
 
         if (content.trim().length > 0) {
-            importError = 'Clear the document before importing from Word.';
+            importError = m.error_import_docx_clear();
             return;
         }
 
@@ -55,7 +57,7 @@
             const { markdown } = await importDocxToMarkdown(file);
             content = markdown;
         } catch (e) {
-            const msg = e instanceof Error ? e.message : 'Could not import this file.';
+            const msg = e instanceof Error ? e.message : m.error_import_docx_failed();
             importError = msg;
         } finally {
             importing = false;
@@ -68,10 +70,10 @@
         <div class="card-body p-4 gap-3">
             <h3 class="card-title text-sm uppercase tracking-wider opacity-70 flex items-center gap-2">
                 <FileUpIcon class="w-4 h-4" />
-                Import from Word
+                {m.editor_import_word()}
             </h3>
             <p class="text-xs text-base-content/60">
-                Only when the draft is empty. Converts .docx to markdown in the editor.
+                {m.editor_import_help()}
             </p>
             <input
                 bind:this={docxInput}
@@ -86,7 +88,7 @@
                 type="button"
                 class="btn btn-secondary btn-block"
                 disabled={!canImportDocx || importing}
-                title={canImportDocx ? 'Import a Word document (.docx)' : 'Clear the document to import from Word'}
+                title={canImportDocx ? m.editor_import_title() : m.editor_import_blocked()}
                 onclick={openDocxPicker}
             >
                 {#if importing}
@@ -94,11 +96,11 @@
                 {:else}
                     <FileUpIcon class="w-5 h-5 shrink-0" />
                 {/if}
-                Choose .docx file
+                {m.editor_choose_docx()}
             </button>
             {#if !canImportDocx}
                 <p class="text-xs text-base-content/60">
-                    Clear the document in the editor to import again.
+                    {m.editor_clear_to_import()}
                 </p>
             {/if}
             {#if importError}
@@ -113,7 +115,7 @@
         <div class="card-body p-4">
             <h3 class="card-title text-sm uppercase tracking-wider opacity-70 flex items-center gap-2">
                 <PaperclipIcon class="w-4 h-4" />
-                Assets
+                {m.editor_assets()}
             </h3>
             
             <div class="divider my-1"></div>
@@ -126,7 +128,7 @@
 
             {#if safeAssets.length > 0}
                 <ul class="flex flex-col gap-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                    {#each safeAssets as asset}
+                    {#each safeAssets as asset (asset.id)}
                         <li class="flex items-center justify-between p-2 rounded-lg hover:bg-base-200 group border border-transparent hover:border-base-300 transition-all">
                             <div class="flex items-center gap-3 overflow-hidden">
                                 <div class="bg-base-200 p-2 rounded-md text-primary">
@@ -137,7 +139,7 @@
                                         {asset.file_name}
                                     </span>
                                     <span class="text-xs opacity-50 truncate">
-                                        {new Date(asset.created_at).toLocaleDateString()}
+                                        {new Date(asset.created_at).toLocaleDateString(getLocale())}
                                     </span>
                                 </div>
                             </div>
@@ -145,7 +147,7 @@
                             <button 
                                 type="button"
                                 class="btn btn-ghost btn-xs btn-square opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Copy Markdown Link"
+                                title={m.editor_copy_link()}
                                 onclick={() => copyToClipboard(`![${asset.file_name}](assets/${encodeURIComponent(asset.file_name)})`)}
                             >
                                 <CopyIcon class="w-4 h-4" />
@@ -155,8 +157,8 @@
                 </ul>
             {:else}
                 <div class="text-center py-8 opacity-50">
-                    <p class="text-sm">No assets yet.</p>
-                    <p class="text-xs mt-1">Use Upload Asset below.</p>
+                    <p class="text-sm">{m.editor_no_assets()}</p>
+                    <p class="text-xs mt-1">{m.editor_no_assets_help()}</p>
                 </div>
             {/if}
 
@@ -165,7 +167,7 @@
             <button 
                 type="button" 
                 class="btn btn-secondary" 
-                aria-label="Upload Asset"
+                aria-label={m.editor_upload()}
                 onclick={() => fileInput.click()}
                 disabled={uploading}
             >
@@ -174,7 +176,7 @@
                 {:else}
                     <UploadIcon class="h-5 w-5 shrink-0" />
                 {/if}
-                Upload Asset
+                {m.editor_upload()}
             </button>
         </div>
     </div>
@@ -208,7 +210,7 @@
     
     <div class="alert shadow-sm text-sm">
         <span>
-            <strong>Tip:</strong> Uploading here refreshes the list instantly.
+            <strong>{m.editor_tip()}</strong> {m.editor_tip_body()}
         </span>
     </div>
 </div>

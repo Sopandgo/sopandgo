@@ -1,5 +1,6 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
+    import * as m from '$lib/paraglide/messages.js';
 
     let { form } = $props();
     let loading = $state(false);
@@ -24,10 +25,10 @@
             }}
         >
             <fieldset class="fieldset w-full">
-                <legend class="fieldset-legend text-lg font-bold">Login</legend>
+                <legend class="fieldset-legend text-lg font-bold">{m.login_heading()}</legend>
 
                 <div class="w-full">
-                    <label class="label mb-1" for="email">Email</label>
+                    <label class="label mb-1" for="email">{m.common_email()}</label>
                     <input 
                         id="email"
                         name="email" 
@@ -40,7 +41,7 @@
                 </div>
 
                 <div class="w-full mt-2">
-                    <label class="label mb-1" for="password">Password</label>
+                    <label class="label mb-1" for="password">{m.common_password()}</label>
                     <input 
                         id="password"
                         name="password" 
@@ -55,7 +56,7 @@
                     {#if loading}
                         <span class="loading loading-spinner"></span>
                     {/if}
-                    Login
+                    {m.login_submit()}
                 </button>
             </fieldset>
         </form>

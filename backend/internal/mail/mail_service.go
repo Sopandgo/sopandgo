@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 )
 
-func (s *Service) SendWelcomeEmail(recipientEmail string, userID string) error {
+func (s *Service) SendWelcomeEmail(recipientEmail string, userID string, locale string) error {
 	// 1. Prepare Content
-	subject := "Welcome to SOPandGO!"
-	body := "Hello! We are glad to have you."
+	subject := i18n.T(locale, "mail.welcome.subject", nil)
+	body := i18n.T(locale, "mail.welcome.body", nil)
 
 	// 2. Attempt to Send
 	// If this fails, we generally do NOT want to audit log a "success" or "sent" event.
@@ -53,13 +54,13 @@ func (s *Service) SendWelcomeEmail(recipientEmail string, userID string) error {
 	return nil
 }
 
-func (s *Service) SendUserWelcomeEmail(recipientEmail, userID, userDisplayName, inviteURL string) error {
+func (s *Service) SendUserWelcomeEmail(recipientEmail, userID, userDisplayName, inviteURL, locale string) error {
 	// 1. Prepare Content
-	subject := "Welcome to SOPandGO!"
-	body := fmt.Sprintf("Hi %s,\n\nYour SOPandGO user account has been created by your admin.\n\nPlease use this link to set your password:\n%s\n\nCheers!",
-		userDisplayName,
-		inviteURL,
-	)
+	subject := i18n.T(locale, "mail.invite.subject", nil)
+	body := i18n.T(locale, "mail.invite.body", map[string]string{
+		"name": userDisplayName,
+		"url":  inviteURL,
+	})
 	// 2. Attempt to Send
 	// If this fails, we generally do NOT want to audit log a "success" or "sent" event.
 	if err := s.sender.Send([]string{recipientEmail}, subject, body); err != nil {
@@ -97,18 +98,21 @@ func (s *Service) SendUserWelcomeEmail(recipientEmail, userID, userDisplayName, 
 
 // SendSOPPublishedEmail tells one reader that a version is now the published procedure.
 // Delivery failure is the caller's concern; publish itself must not depend on this succeeding.
-func (s *Service) SendSOPPublishedEmail(recipientEmail, recipientName, sopTitle string, version int, summary, link string) error {
+func (s *Service) SendSOPPublishedEmail(recipientEmail, recipientName, sopTitle string, version int, summary, link, locale string) error {
 	if strings.TrimSpace(summary) == "" {
-		summary = "No change summary was recorded."
+		summary = i18n.T(locale, "mail.published.no_summary", nil)
 	}
-	subject := fmt.Sprintf("Published: %s (version %d)", sopTitle, version)
-	body := fmt.Sprintf("Hi %s,\n\n%s version %d was published.\n\nWhat changed:\n%s\n\nOpen the SOP:\n%s\n",
-		recipientName,
-		sopTitle,
-		version,
-		summary,
-		link,
-	)
+	subject := i18n.T(locale, "mail.published.subject", map[string]string{
+		"title":   sopTitle,
+		"version": fmt.Sprintf("%d", version),
+	})
+	body := i18n.T(locale, "mail.published.body", map[string]string{
+		"name":    recipientName,
+		"title":   sopTitle,
+		"version": fmt.Sprintf("%d", version),
+		"summary": summary,
+		"url":     link,
+	})
 	if err := s.sender.Send([]string{recipientEmail}, subject, body); err != nil {
 		payload := map[string]string{
 			"recipient": recipientEmail,
@@ -132,13 +136,13 @@ func (s *Service) SendSOPPublishedEmail(recipientEmail, recipientName, sopTitle 
 }
 
 // SendPasswordResetEmail is sent when an admin manually triggers a reset for an EXISTING user.
-func (s *Service) SendPasswordResetEmail(recipientEmail, userID, userDisplayName, resetURL string) error {
+func (s *Service) SendPasswordResetEmail(recipientEmail, userID, userDisplayName, resetURL, locale string) error {
 	// 1. Prepare Content
-	subject := "Reset your SOPandGO password"
-	body := fmt.Sprintf("Hi %s,\n\nAn administrator has requested a password reset for your account.\n\nPlease use the link below to set a new password:\n%s\n\nThis link will expire in 24 hours.\n\nBest,\nThe SOPandGO Team",
-		userDisplayName,
-		resetURL,
-	)
+	subject := i18n.T(locale, "mail.reset.subject", nil)
+	body := i18n.T(locale, "mail.reset.body", map[string]string{
+		"name": userDisplayName,
+		"url":  resetURL,
+	})
 
 	// 2. Attempt to Send
 	if err := s.sender.Send([]string{recipientEmail}, subject, body); err != nil {

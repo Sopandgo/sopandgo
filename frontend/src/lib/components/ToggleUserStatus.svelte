@@ -1,5 +1,6 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
+    import * as m from '$lib/paraglide/messages.js';
     import type { User } from '$lib/sdk/types';
 
     let { user, currentUserId } = $props<{
@@ -22,7 +23,7 @@
             disabled={true}
         />
         <span class="text-xs opacity-60">
-            {user.is_active ? 'active' : 'disabled'}
+            {user.is_active ? m.common_active() : m.common_disabled()}
         </span>
     {:else}
         <form 
@@ -36,7 +37,7 @@
 
                     if (result.type === 'failure') {
                         const data = result.data as { updateStatus?: { error?: string } };
-                        alert(data?.updateStatus?.error || 'Failed to update status');
+                        alert(data?.updateStatus?.error || m.error_update_status_alert());
                     }
                 };
             }}
@@ -56,7 +57,7 @@
                     disabled={loading}
                 />
                 <span class="text-xs opacity-60 group-hover:opacity-100 transition-opacity">
-                    {user.is_active ? 'active' : 'disabled'}
+                    {user.is_active ? m.common_active() : m.common_disabled()}
                 </span>
             </button>
         </form>

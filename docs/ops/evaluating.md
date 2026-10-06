@@ -59,6 +59,8 @@ Demo accounts are for local exploration only. For a real lab, set **`SEED_DEMO_D
 
 You do not need real SMTP for a first look: use **manual links** mail mode in Settings if you invite another user.
 
+The sign-in page has a language control (English or German). After sign-in, change your own language on **Profile**. Admins set the organization language on **Settings**; that language is used for shared notifications and PDF chrome. The seeded sample SOP stays in the English Markdown it was written in.
+
 ## After the trial
 
 - Tear down with `docker compose down` (add `-v` only if you also want to remove named volumes; the default bind mount `./backend/data` remains on disk until you delete it).

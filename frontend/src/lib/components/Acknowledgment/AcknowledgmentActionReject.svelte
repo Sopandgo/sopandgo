@@ -3,6 +3,7 @@
     import type { User } from '$lib/sdk/types';
     import Alert from '$lib/components/Alert.svelte';
     import { BanIcon } from 'lucide-svelte';
+    import * as m from '$lib/paraglide/messages.js';
 
     // 1. Define the shape locally
     interface SignFormResult {
@@ -25,11 +26,11 @@
 <div class="bg-base-100 rounded-box shadow-md border border-error w-full">
 
     <div class="p-4 pb-2 text-xs tracking-widest uppercase font-bold text-error">
-        Reject this Standard Operating Procedure
+        {m.ack_reject_title()}
     </div>
     <div class="card-body">
         <p class="text-sm opacity-70">
-            With this action, you permanently reject this release candidate.
+            {m.ack_reject_body()}
         </p>
 
         <form
@@ -49,14 +50,14 @@
 
             <div class="form-control w-full my-4">
                 <label class="label" for="reason">
-                    <span class="label-text">Provide a <strong>reason for rejecting</strong>:</span>
+                    <span class="label-text">{m.ack_reject_reason_before()} <strong>{m.ack_reject_reason_strong()}</strong>{m.ack_reject_reason_after()}</span>
                 </label>
                 <input
                     id="reason"
                     name="reason"
                     type="text"
                     class="input input-bordered w-full mt-4 {form?.error ? 'input-error' : ''}"
-                    placeholder="Rejected because ..."
+                    placeholder={m.ack_reject_placeholder()}
                     value={form?.inputName ?? ''} 
                     required
                     autocomplete="off"
@@ -67,10 +68,10 @@
                 <button class="btn btn-error" disabled={loading}>
                     {#if loading}
                         <span class="loading loading-spinner loading-xs"></span>
-                        Rejecting ...
+                        {m.ack_rejecting()}
                     {:else}
                         <BanIcon class="w-4 h-4" />
-                        Reject Release Candidate
+                        {m.ack_reject_button()}
                     {/if}
                 </button>
             </div>

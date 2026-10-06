@@ -1,5 +1,6 @@
 <script>
   import { enhance } from '$app/forms';
+  import * as m from '$lib/paraglide/messages.js';
   import Alert from './Alert.svelte';
 
   /**
@@ -41,7 +42,7 @@
   {/if}
 
   {#if isOk}
-    <Alert variant="success" message="Password updated." class="w-xs shadow-lg" />
+    <Alert variant="success" message={m.password_updated()} class="w-xs shadow-lg" />
   {/if}
 
   <form
@@ -63,28 +64,28 @@
     <fieldset class="fieldset">
 
       <label class="label" for="new_password">
-        New password
+        {m.password_new()}
       </label>
       <input
         id="new_password"
         name="new_password"
         type="password"
         class="input {hasError ? 'input-error' : ''}"
-        placeholder="New password"
+        placeholder={m.password_new()}
         minlength="12"
         autocomplete="new-password"
         required
       />
 
       <label class="label" for="confirm_password">
-        Confirm new password
+        {m.password_confirm()}
       </label>
       <input
         id="confirm_password"
         name="confirm_password"
         type="password"
         class="input {hasError ? 'input-error' : ''}"
-        placeholder="Confirm new password"
+        placeholder={m.password_confirm()}
         minlength="12"
         autocomplete="new-password"
         required
@@ -94,10 +95,10 @@
         {#if loading}
           <span class="loading loading-spinner"></span>
         {/if}
-        Update password
+        {m.password_update()}
       </button>
       {#if showLogoutWarning}
-        <Alert variant="warning" message="Warning: This will log you out of all devices."/>
+        <Alert variant="warning" message={m.password_logout_warning()}/>
       {/if}
     </fieldset>
   </form>

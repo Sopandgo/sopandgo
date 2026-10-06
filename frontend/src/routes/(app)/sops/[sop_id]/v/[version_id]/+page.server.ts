@@ -1,4 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
 import type { PageServerLoad, Actions } from './$types';
 import { env } from '$env/dynamic/private';
 
@@ -55,12 +56,12 @@ export const actions: Actions = {
         const versionId = params.version_id;
 
         if (!locals.user) {
-            return fail(401, { error: 'Unauthorized', inputName });
+            return fail(401, { error: m.error_unauthorized(), inputName });
         }
 
         if (inputName !== locals.user.display_name) {
             return fail(400, { 
-                error: `Name verification failed. Please enter "${locals.user.display_name}" exactly.`,
+                error: m.error_name_mismatch({ name: locals.user.display_name }),
                 inputName
             });
         }
@@ -71,7 +72,7 @@ export const actions: Actions = {
         } catch (err) {
             console.error('Sign Action Error:', err);
             return fail(500, { 
-                error: 'Failed to sign the document. Please try again.',
+                error: m.error_sign_failed(),
                 inputName 
             });
         }
@@ -80,31 +81,31 @@ export const actions: Actions = {
     // --- Lifecycle Actions ---
 
     promote: async ({ locals, params }) => {
-        if (!locals.user) return fail(401, { error: 'Unauthorized' });
+        if (!locals.user) return fail(401, { error: m.error_unauthorized() });
 
         try {
             await locals.api.sops.promoteToRC(params.version_id);
             return { success: true };
         } catch (err) {
             console.error('Promote Action Error:', err);
-            return fail(500, { error: 'Failed to promote to Release Candidate.' });
+            return fail(500, { error: m.error_promote_failed() });
         }
     },
 
     approve: async ({ request, locals, params }) => {
-        if (!locals.user) return fail(401, { error: 'Unauthorized' });
+        if (!locals.user) return fail(401, { error: m.error_unauthorized() });
 
         const formData = await request.formData();
         const inputName = formData.get('user_display_name')?.toString().trim();
         const versionId = params.version_id;
 
         if (!locals.user) {
-            return fail(401, { error: 'Unauthorized', inputName });
+            return fail(401, { error: m.error_unauthorized(), inputName });
         }
 
         if (inputName !== locals.user.display_name) {
             return fail(400, { 
-                error: `Name verification failed. Please enter "${locals.user.display_name}" exactly.`,
+                error: m.error_name_mismatch({ name: locals.user.display_name }),
                 inputName
             });
         }
@@ -114,18 +115,18 @@ export const actions: Actions = {
             return { success: true };
         } catch (err) {
             console.error('Approve Action Error:', err);
-            return fail(500, { error: 'Failed to approve and publish SOP.' });
+            return fail(500, { error: m.error_approve_failed() });
         }
     },
 
     reject: async ({ request, locals, params }) => {
-        if (!locals.user) return fail(401, { error: 'Unauthorized' });
+        if (!locals.user) return fail(401, { error: m.error_unauthorized() });
 
         const formData = await request.formData();
         const reason = formData.get('reason')?.toString().trim();
 
         if (!reason) {
-            return fail(400, { error: 'A reason must be provided to reject an SOP.' });
+            return fail(400, { error: m.error_reject_reason() });
         }
 
         try {
@@ -133,31 +134,31 @@ export const actions: Actions = {
             return { success: true };
         } catch (err) {
             console.error('Reject Action Error:', err);
-            return fail(500, { error: 'Failed to reject the Release Candidate.' });
+            return fail(500, { error: m.error_reject_failed() });
         }
     },
 
     favorite: async ({ locals, params }) => {
         const sopId = params.sop_id;
-        if (!sopId) return fail(400, { error: 'Missing sop_id' });
+        if (!sopId) return fail(400, { error: m.error_missing_sop() });
         try {
             await locals.api.sops.favorite(sopId);
             return { success: true };
         } catch (err) {
             console.error('favorite', err);
-            return fail(500, { error: 'Failed to favorite' });
+            return fail(500, { error: m.error_favorite_failed() });
         }
     },
 
     unfavorite: async ({ locals, params }) => {
         const sopId = params.sop_id;
-        if (!sopId) return fail(400, { error: 'Missing sop_id' });
+        if (!sopId) return fail(400, { error: m.error_missing_sop() });
         try {
             await locals.api.sops.unfavorite(sopId);
             return { success: true };
         } catch (err) {
             console.error('unfavorite', err);
-            return fail(500, { error: 'Failed to unfavorite' });
+            return fail(500, { error: m.error_unfavorite_failed() });
         }
     }
 };

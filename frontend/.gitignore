@@ -21,3 +21,6 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+# Paraglide output is gitignored from inside src/lib/paraglide.
+# Do not ignore that directory here: Vite will not import gitignored files.
+project.inlang/cache/

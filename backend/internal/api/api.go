@@ -18,17 +18,17 @@ type Config struct {
 }
 
 type Server struct {
-	Config               Config
-	auditLogger          *audit.Logger
-	authService          *auth.Service
-	sopService           *sop.Service
-	mailService          *mail.Service
-	smtpSettings         *mail.SMTPSettingsStore
-	notifyService        *notify.Service
-	integrationSettings  *notify.SettingsStore
-	backupSvc            *backup.Service
-	s3Backup             *backup.S3Scheduler
-	mux                  *http.ServeMux
+	Config              Config
+	auditLogger         *audit.Logger
+	authService         *auth.Service
+	sopService          *sop.Service
+	mailService         *mail.Service
+	smtpSettings        *mail.SMTPSettingsStore
+	notifyService       *notify.Service
+	integrationSettings *notify.SettingsStore
+	backupSvc           *backup.Service
+	s3Backup            *backup.S3Scheduler
+	mux                 *http.ServeMux
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -86,6 +86,7 @@ func (s *Server) registerRoutes() {
 
 	// user
 	s.mux.HandleFunc("PATCH /api/auth/me/update-password", protected(s.handleUpdatePassword))
+	s.mux.HandleFunc("PATCH /api/auth/me/locale", protected(s.handleUpdateMyLocale))
 	s.mux.HandleFunc("GET /api/auth/me", protected(s.handleGetMe))
 	s.mux.HandleFunc("GET /api/auth/me/signature-status", protected(s.handleGetMySignatureStatus))
 
@@ -222,6 +223,9 @@ func (s *Server) registerRoutes() {
 	)
 	s.mux.HandleFunc("PATCH /api/admin/settings/mail-mode", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPatchMailMode)),
+	)
+	s.mux.HandleFunc("PATCH /api/admin/settings/default-locale", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminPatchDefaultLocale)),
 	)
 	// admin / integrations (Slack, Gotify, generic webhook)
 	s.mux.HandleFunc("GET /api/admin/settings/integrations", protected(

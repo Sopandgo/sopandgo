@@ -1,4 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
+import { isLocale } from '$lib/paraglide/runtime';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -16,6 +18,21 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
+    setLocale: async ({ locals, request }) => {
+        const fd = await request.formData();
+        const locale = String(fd.get('locale') ?? '').trim();
+        if (!isLocale(locale)) {
+            return fail(400, { setLocale: { error: 'unsupported' } });
+        }
+        try {
+            await locals.api.auth.updateLocale(locale);
+        } catch (err) {
+            console.error('Locale update failed:', err);
+            return fail(400, { setLocale: { error: 'failed' } });
+        }
+        throw redirect(303, '/profile');
+    },
+
     changePassword: async ({ locals, request }) => {
         const fd = await request.formData();
         const new_password = String(fd.get('new_password') ?? '');
@@ -23,14 +40,14 @@ export const actions: Actions = {
 
         if (new_password !== confirm_password) {
             return fail(400, { 
-                changePassword: { error: 'Passwords do not match.' } 
+                changePassword: { error: m.error_passwords_mismatch() } 
             });
         }
 
         const user_id = locals.user?.id;
         if (!user_id) {
             return fail(401, { 
-                changePassword: { error: 'Not authenticated.' } 
+                changePassword: { error: m.error_not_authenticated() } 
             });
         }
 
@@ -46,8 +63,8 @@ export const actions: Actions = {
             
             // Map SDK errors to user messages
             const msg = err.message === 'WEAK_PASSWORD' 
-                ? 'Password must be at least 12 characters and include at least 3 of: lowercase, uppercase, number, and symbol.'
-                : 'Failed to update password. Please try again.';
+                ? m.error_weak_password()
+                : m.error_password_update_failed();
 
             return fail(400, { 
                 changePassword: { error: msg } 

@@ -5,6 +5,7 @@
     ShieldXIcon,
     LoaderCircleIcon
   } from "lucide-svelte";
+  import * as m from '$lib/paraglide/messages.js';
 
   interface Props {
     assetId: string;
@@ -41,19 +42,19 @@
   {#if status === 'loading'}
     <div class="flex items-center gap-1 px-3 py-1 text-xs opacity-50 italic">
       <LoaderCircleIcon class="size-4 animate-spin" />
-      {#if size !== 'small'}Checking...{/if}
+      {#if size !== 'small'}{m.integrity_checking()}{/if}
     </div>
 
   {:else if status === 'success'}
     <div class="badge badge-success badge-outline gap-1 h-7">
       <ShieldCheckIcon class="size-3" />
-      {#if size !== 'small'}Verified{/if}
+      {#if size !== 'small'}{m.integrity_verified()}{/if}
     </div>
 
   {:else if status === 'error'}
     <div class="badge badge-error badge-outline gap-1 h-7">
       <ShieldXIcon class="size-3" />
-      {#if size !== 'small'}Corrupt / Missing{/if}
+      {#if size !== 'small'}{m.integrity_corrupt()}{/if}
     </div>
 
   {:else}
@@ -62,7 +63,7 @@
       onclick={handleVerify}
     >
       <ShieldQuestionMarkIcon class="size-3" />
-      {#if size !== 'small'}Verify File{/if}
+      {#if size !== 'small'}{m.integrity_verify()}{/if}
     </button>
   {/if}
 </div>

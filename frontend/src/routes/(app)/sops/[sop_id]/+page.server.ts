@@ -1,4 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
@@ -27,15 +28,15 @@ export const actions: Actions = {
     const tagId = String(form.get('tag_id') ?? '').trim();
     const sopId = params.sop_id;
 
-    if (!sopId) return fail(400, { message: 'Missing sop_id' });
-    if (!tagId) return fail(400, { message: 'Missing tag_id' });
+    if (!sopId) return fail(400, { message: m.error_missing_sop() });
+    if (!tagId) return fail(400, { message: m.error_missing_tag() });
 
     try {
       await locals.api.sops.attachTag(sopId, tagId);
       return { success: true };
     } catch (err) {
       console.error('ATTACH_TAG Error:', err);
-      return fail(500, { message: 'Failed to attach tag' });
+      return fail(500, { message: m.error_attach_tag() });
     }
   },
 
@@ -44,15 +45,15 @@ export const actions: Actions = {
     const tagId = String(form.get('tag_id') ?? '').trim();
     const sopId = params.sop_id;
 
-    if (!sopId) return fail(400, { message: 'Missing sop_id' });
-    if (!tagId) return fail(400, { message: 'Missing tag_id' });
+    if (!sopId) return fail(400, { message: m.error_missing_sop() });
+    if (!tagId) return fail(400, { message: m.error_missing_tag() });
 
     try {
       await locals.api.sops.detachTag(sopId, tagId);
       return { success: true };
     } catch (err) {
       console.error('DETACH_TAG Error:', err);
-      return fail(500, { message: 'Failed to detach tag' });
+      return fail(500, { message: m.error_detach_tag() });
     }
   },
 
@@ -61,8 +62,8 @@ export const actions: Actions = {
     const title = String(form.get('title') ?? '').trim();
     const sopId = params.sop_id;
 
-    if (!sopId) return fail(400, { message: 'Missing sop_id' });
-    if (!title) return fail(400, { message: 'Missing title' });
+    if (!sopId) return fail(400, { message: m.error_missing_sop() });
+    if (!title) return fail(400, { message: m.error_missing_title() });
 
     try {
       const { id } = await locals.api.tags.create(title);
@@ -72,33 +73,33 @@ export const actions: Actions = {
       console.error('CREATE_AND_ATTACH_TAG Error:', err);
 
       if (err?.message === 'TAG_ALREADY_EXISTS') {
-        return fail(409, { message: 'Tag already exists' });
+        return fail(409, { message: m.error_tag_exists() });
       }
-      return fail(500, { message: 'Failed to create/attach tag' });
+      return fail(500, { message: m.error_create_tag() });
     }
   },
 
   favorite: async ({ locals, params }) => {
     const sopId = params.sop_id;
-    if (!sopId) return fail(400, { message: 'Missing sop_id' });
+    if (!sopId) return fail(400, { message: m.error_missing_sop() });
     try {
       await locals.api.sops.favorite(sopId);
       return { success: true };
     } catch (err) {
       console.error('favorite', err);
-      return fail(500, { message: 'Failed to favorite' });
+      return fail(500, { message: m.error_favorite_failed() });
     }
   },
 
   unfavorite: async ({ locals, params }) => {
     const sopId = params.sop_id;
-    if (!sopId) return fail(400, { message: 'Missing sop_id' });
+    if (!sopId) return fail(400, { message: m.error_missing_sop() });
     try {
       await locals.api.sops.unfavorite(sopId);
       return { success: true };
     } catch (err) {
       console.error('unfavorite', err);
-      return fail(500, { message: 'Failed to unfavorite' });
+      return fail(500, { message: m.error_unfavorite_failed() });
     }
   }
 };

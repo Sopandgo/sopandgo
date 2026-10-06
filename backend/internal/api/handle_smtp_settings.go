@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 )
 
@@ -106,6 +107,30 @@ func (s *Server) handleAdminPatchMailMode(w http.ResponseWriter, r *http.Request
 	}
 	_ = s.auditLogger.Log(nil, audit.EventMailModeUpdated, audit.EntitySystem, "mail", &actorID, payload)
 
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) handleAdminPatchDefaultLocale(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		DefaultLocale string `json:"default_locale"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	if err := s.smtpSettings.SetDefaultLocale(req.DefaultLocale); err != nil {
+		if errors.Is(err, i18n.ErrUnsupportedLocale) {
+			http.Error(w, "unsupported locale", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "failed to update default locale", http.StatusInternalServerError)
+		return
+	}
+	tag, _ := i18n.Normalize(req.DefaultLocale)
+	actorID := GetUserID(r.Context())
+	_ = s.auditLogger.Log(nil, audit.EventDefaultLocaleUpdated, audit.EntitySystem, "locale", &actorID, map[string]string{
+		"default_locale": tag,
+	})
 	w.WriteHeader(http.StatusNoContent)
 }
 

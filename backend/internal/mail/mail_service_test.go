@@ -48,7 +48,7 @@ func TestService_SendWelcomeEmail(t *testing.T) {
 			auditor := &MockAuditor{}
 			service, _ := NewService(sender, auditor)
 
-			err := service.SendWelcomeEmail("test@demo.local", "user-1")
+			err := service.SendWelcomeEmail("test@demo.local", "user-1", "en")
 
 			if (err != nil) != tt.expectedErr {
 				t.Errorf("Expected error: %v, got: %v", tt.expectedErr, err)
@@ -80,7 +80,7 @@ func TestService_SendUserWelcomeEmail(t *testing.T) {
 			auditor := &MockAuditor{}
 			service, _ := NewService(sender, auditor)
 
-			err := service.SendUserWelcomeEmail("test@demo.local", "user-1", "Alice", "http://invite")
+			err := service.SendUserWelcomeEmail("test@demo.local", "user-1", "Alice", "http://invite", "en")
 
 			if (err != nil) != tt.expectedErr {
 				t.Errorf("Expected error: %v, got: %v", tt.expectedErr, err)
@@ -101,7 +101,7 @@ func TestService_SendSOPPublishedEmail(t *testing.T) {
 	auditor := &MockAuditor{}
 	service, _ := NewService(sender, auditor)
 
-	err := service.SendSOPPublishedEmail("reader@demo.local", "Rae", "Water Protocol", 2, "Add the rinse step", "http://lab/sops/1/v/latest")
+	err := service.SendSOPPublishedEmail("reader@demo.local", "Rae", "Water Protocol", 2, "Add the rinse step", "http://lab/sops/1/v/latest", "en")
 	if err != nil {
 		t.Fatalf("send: %v", err)
 	}
@@ -110,6 +110,26 @@ func TestService_SendSOPPublishedEmail(t *testing.T) {
 	}
 	if auditor.LastEventType != "email_sent" {
 		t.Fatalf("audit %q", auditor.LastEventType)
+	}
+}
+
+func TestService_SendSOPPublishedEmail_GermanKeepsTitle(t *testing.T) {
+	sender := &MockSender{SendFunc: func(to []string, subject, body string) error { return nil }}
+	auditor := &MockAuditor{}
+	service, _ := NewService(sender, auditor)
+
+	err := service.SendSOPPublishedEmail("reader@demo.local", "Rae", "Water Protocol", 2, "Add the rinse step", "http://lab/sops/1/v/latest", "de")
+	if err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	if !strings.Contains(sender.LastSubject, "Veröffentlicht: Water Protocol") {
+		t.Fatalf("subject %q", sender.LastSubject)
+	}
+	if !strings.Contains(sender.LastBody, "Add the rinse step") || !strings.Contains(sender.LastBody, "Water Protocol") {
+		t.Fatalf("body should keep authored text, got %q", sender.LastBody)
+	}
+	if strings.Contains(sender.LastBody, "What changed") {
+		t.Fatalf("expected German chrome, got %q", sender.LastBody)
 	}
 }
 
@@ -130,7 +150,7 @@ func TestService_SendPasswordResetEmail(t *testing.T) {
 			auditor := &MockAuditor{}
 			service, _ := NewService(sender, auditor)
 
-			err := service.SendPasswordResetEmail("test@demo.local", "user-1", "Alice", "http://reset")
+			err := service.SendPasswordResetEmail("test@demo.local", "user-1", "Alice", "http://reset", "en")
 
 			if (err != nil) != tt.expectedErr {
 				t.Errorf("Expected error: %v, got: %v", tt.expectedErr, err)

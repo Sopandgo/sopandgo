@@ -1,4 +1,5 @@
 import { fail, error } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -8,7 +9,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         return { sessions };
     } catch (err) {
         console.error('Failed to load sessions:', err);
-        throw error(500, 'Failed to load system sessions');
+        throw error(500, m.error_sessions_load());
     }
 };
 
@@ -18,7 +19,7 @@ export const actions: Actions = {
         const user_id = String(fd.get('user_id') ?? '').trim();
 
         if (!user_id) {
-            return fail(400, { revokeUserSessions: { error: 'Missing user_id.' } });
+            return fail(400, { revokeUserSessions: { error: m.error_missing_user() } });
         }
 
         try {
@@ -28,7 +29,7 @@ export const actions: Actions = {
         } catch (err) {
             console.error('Revoke user sessions failed:', err);
             return fail(500, {
-                revokeUserSessions: { error: 'Failed to revoke user sessions.' }
+                revokeUserSessions: { error: m.error_revoke_user_failed() }
             });
         }
     },
@@ -38,7 +39,7 @@ export const actions: Actions = {
         const reason = String(fd.get('reason') ?? '').trim();
 
         if (!reason) {
-            return fail(400, { revokeAllSessions: { error: 'Reason is required for global revocation.' } });
+            return fail(400, { revokeAllSessions: { error: m.error_revoke_reason() } });
         }
 
         try {
@@ -50,8 +51,8 @@ export const actions: Actions = {
             
             // Pass through specific SDK errors if they exist
             const message = err.message === 'REASON_REQUIRED' 
-                ? 'A valid reason must be provided.' 
-                : 'Failed to perform global session revocation.';
+                ? m.error_revoke_reason_valid() 
+                : m.error_revoke_all_failed();
 
             return fail(500, { revokeAllSessions: { error: message } });
         }

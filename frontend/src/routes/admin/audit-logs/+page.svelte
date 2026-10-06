@@ -3,6 +3,8 @@
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
     import { LogsIcon, Link } from 'lucide-svelte';
+    import { entityTitle, eventTitle } from '$lib/audit/present';
+    import * as m from '$lib/paraglide/messages.js';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
@@ -196,49 +198,53 @@
     }
 </script>
 
+<svelte:head>
+    <title>{m.page_audit_logs()}</title>
+</svelte:head>
+
 <div class="flex flex-col gap-6">
     <Card>
         <div class="card-body">
             <CardPageHeading>
                 <LogsIcon class="w-8 h-8" />
-                Audit Logs
+                {m.audit_heading()}
             </CardPageHeading>
 
             <div class="flex flex-col gap-1 mt-1">
                 <span class="text-sm font-medium text-base-content/70">
-                    Monitor system activity.
+                    {m.audit_monitor()}
                 </span> 
                 <div class="flex items-center gap-1.5 text-xs text-base-content/50 select-none">
                     <Link class="size-3.5" />
-                    <span>Entries are hash-chained for integrity.</span>
+                    <span>{m.audit_chained()}</span>
                 </div>
             </div>
 
             <form class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" onsubmit={(e) => { e.preventDefault(); applyFilters(); }}>
                 <label class="form-control w-full">
-                    <div class="label"><span class="label-text text-xs">Event type</span></div>
+                    <div class="label"><span class="label-text text-xs">{m.audit_event_type()}</span></div>
                     <div class="relative">
                         <input
                             class="input input-bordered w-full"
-                            placeholder="Search event type"
+                            placeholder={m.audit_search_event()}
                             bind:value={eventTypeQuery}
                             onfocus={() => { showEventTypeOptions = true; }}
                             oninput={() => { showEventTypeOptions = true; filterType = ''; }}
                             onblur={() => { setTimeout(() => { showEventTypeOptions = false; }, 120); }}
                         />
                         {#if filterType}
-                            <button type="button" class="btn btn-ghost btn-xs absolute right-2 top-2" onclick={clearEventTypeSelection}>Clear</button>
+                            <button type="button" class="btn btn-ghost btn-xs absolute right-2 top-2" onclick={clearEventTypeSelection}>{m.common_clear()}</button>
                         {/if}
                         {#if showEventTypeOptions}
                             <ul class="menu bg-base-100 border border-base-300 rounded-box w-full mt-1 absolute z-20 shadow-lg">
-                                <li><button type="button" class="text-left" onclick={clearEventTypeSelection}>All events</button></li>
+                                <li><button type="button" class="text-left" onclick={clearEventTypeSelection}>{m.audit_all_events()}</button></li>
                                 {#if filteredEventTypes.length === 0}
-                                    <li><span class="text-xs opacity-60">No matching event type</span></li>
+                                    <li><span class="text-xs opacity-60">{m.audit_no_event()}</span></li>
                                 {:else}
                                     {#each filteredEventTypes as option (option)}
                                         <li>
                                             <button type="button" class="text-left w-full" onclick={() => selectEventType(option)} title={option}>
-                                                <span class="font-medium block truncate">{option}</span>
+                                                <span class="font-medium block truncate">{eventTitle(option)}</span>
                                             </button>
                                         </li>
                                     {/each}
@@ -248,29 +254,29 @@
                     </div>
                 </label>
                 <label class="form-control w-full">
-                    <div class="label"><span class="label-text text-xs">Entity type</span></div>
+                    <div class="label"><span class="label-text text-xs">{m.audit_entity_type()}</span></div>
                     <div class="relative">
                         <input
                             class="input input-bordered w-full"
-                            placeholder="Search entity type"
+                            placeholder={m.audit_search_entity()}
                             bind:value={entityTypeQuery}
                             onfocus={() => { showEntityTypeOptions = true; }}
                             oninput={() => { showEntityTypeOptions = true; filterEntityType = ''; }}
                             onblur={() => { setTimeout(() => { showEntityTypeOptions = false; }, 120); }}
                         />
                         {#if filterEntityType}
-                            <button type="button" class="btn btn-ghost btn-xs absolute right-2 top-2" onclick={clearEntityTypeSelection}>Clear</button>
+                            <button type="button" class="btn btn-ghost btn-xs absolute right-2 top-2" onclick={clearEntityTypeSelection}>{m.common_clear()}</button>
                         {/if}
                         {#if showEntityTypeOptions}
                             <ul class="menu bg-base-100 border border-base-300 rounded-box w-full mt-1 absolute z-20 shadow-lg">
-                                <li><button type="button" class="text-left" onclick={clearEntityTypeSelection}>All entities</button></li>
+                                <li><button type="button" class="text-left" onclick={clearEntityTypeSelection}>{m.audit_all_entities()}</button></li>
                                 {#if filteredEntityTypes.length === 0}
-                                    <li><span class="text-xs opacity-60">No matching entity type</span></li>
+                                    <li><span class="text-xs opacity-60">{m.audit_no_entity()}</span></li>
                                 {:else}
                                     {#each filteredEntityTypes as option (option)}
                                         <li>
                                             <button type="button" class="text-left w-full" onclick={() => selectEntityType(option)} title={option}>
-                                                <span class="font-medium block truncate">{option}</span>
+                                                <span class="font-medium block truncate">{entityTitle(option)}</span>
                                             </button>
                                         </li>
                                     {/each}
@@ -280,11 +286,11 @@
                     </div>
                 </label>
                 <label class="form-control w-full">
-                    <div class="label"><span class="label-text text-xs">Actor user ID</span></div>
+                    <div class="label"><span class="label-text text-xs">{m.audit_actor()}</span></div>
                     <div class="relative">
                         <input
                             class="input input-bordered w-full"
-                            placeholder="Search actor by name or id"
+                            placeholder={m.audit_search_actor()}
                             bind:value={actorQuery}
                             onfocus={() => { showActorOptions = true; }}
                             oninput={() => { showActorOptions = true; filterActorUserId = ''; }}
@@ -299,9 +305,9 @@
                                 type="button"
                                 class="btn btn-ghost btn-xs absolute right-2 top-2"
                                 onclick={clearActorSelection}
-                                aria-label="Clear selected actor"
+                                aria-label={m.audit_clear_actor()}
                             >
-                                Clear
+                                {m.common_clear()}
                             </button>
                         {/if}
                         {#if showActorOptions}
@@ -312,11 +318,11 @@
                                         class="text-left"
                                         onclick={clearActorSelection}
                                     >
-                                        All actors
+                                        {m.audit_all_actors()}
                                     </button>
                                 </li>
                                 {#if filteredUsers.length === 0}
-                                    <li><span class="text-xs opacity-60">No matching user found</span></li>
+                                    <li><span class="text-xs opacity-60">{m.audit_no_user()}</span></li>
                                 {:else}
                                     {#each filteredUsers as user (user.id)}
                                         <li>
@@ -336,11 +342,11 @@
                     </div>
                 </label>
                 <label class="form-control w-full">
-                    <div class="label"><span class="label-text text-xs">SOP ID</span></div>
+                    <div class="label"><span class="label-text text-xs">{m.audit_sop_id()}</span></div>
                     <div class="relative">
                         <input
                             class="input input-bordered w-full"
-                            placeholder="Search SOP by title or id"
+                            placeholder={m.audit_search_sop()}
                             bind:value={sopQuery}
                             onfocus={() => { showSopOptions = true; }}
                             oninput={() => { showSopOptions = true; filterSopId = ''; }}
@@ -355,9 +361,9 @@
                                 type="button"
                                 class="btn btn-ghost btn-xs absolute right-2 top-2"
                                 onclick={clearSopSelection}
-                                aria-label="Clear selected SOP"
+                                aria-label={m.audit_clear_sop()}
                             >
-                                Clear
+                                {m.common_clear()}
                             </button>
                         {/if}
 
@@ -369,11 +375,11 @@
                                         class="text-left"
                                         onclick={clearSopSelection}
                                     >
-                                        All SOPs
+                                        {m.audit_all_sops()}
                                     </button>
                                 </li>
                                 {#if filteredSops.length === 0}
-                                    <li><span class="text-xs opacity-60">No matching SOP found</span></li>
+                                    <li><span class="text-xs opacity-60">{m.audit_no_sop()}</span></li>
                                 {:else}
                                     {#each filteredSops as sop (sop.id)}
                                         <li>
@@ -393,8 +399,8 @@
                     </div>
                 </label>
                 <div class="md:col-span-2 lg:col-span-4 flex gap-2">
-                    <button type="submit" class="btn btn-primary btn-sm">Apply filters</button>
-                    <button type="button" class="btn btn-ghost btn-sm" onclick={resetFilters}>Reset</button>
+                    <button type="submit" class="btn btn-primary btn-sm">{m.audit_apply()}</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick={resetFilters}>{m.common_reset()}</button>
                 </div>
             </form>
         </div>
@@ -417,7 +423,7 @@
             >«</button>
             
             <button class="join-item btn pointer-events-none min-w-[100px]">
-                Page {currentPage + 1} / {totalPages}
+                {m.common_page_of({ page: String(currentPage + 1), total: String(totalPages) })}
             </button>
             
             <button 

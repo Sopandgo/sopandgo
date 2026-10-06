@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SOPTrainingCoverage, TrainingMember } from '$lib/sdk/types';
+	import * as m from '$lib/paraglide/messages.js';
 
 	let { items = [] } = $props<{ items?: SOPTrainingCoverage[] }>();
 
@@ -18,28 +19,28 @@
 					</a>
 					{#if row.has_published}
 						<span class="text-xs font-mono uppercase tracking-tighter opacity-60">
-							Version {row.version}
+							{m.common_version({ version: String(row.version) })}
 						</span>
 					{/if}
 				</div>
 				{#if !row.has_published}
-					<p class="text-sm text-base-content/60">No published version yet.</p>
+					<p class="text-sm text-base-content/60">{m.training_no_published()}</p>
 				{:else if (row.unsigned ?? []).length === 0}
-					<p class="text-sm text-success">Everyone who can sign has signed this version.</p>
+					<p class="text-sm text-success">{m.training_all_signed()}</p>
 				{:else}
 					<p class="text-sm text-base-content/80">
-						Still to sign:
+						{m.training_still()}
 						{row.unsigned.map((person: TrainingMember) => person.display_name).join(', ')}
 					</p>
 					{#if (row.signed ?? []).length > 0}
 						<p class="text-xs text-base-content/60">
-							Signed: {row.signed.map((person: TrainingMember) => person.display_name).join(', ')}
+							{m.training_signed()} {row.signed.map((person: TrainingMember) => person.display_name).join(', ')}
 						</p>
 					{/if}
 				{/if}
 			</div>
 		</li>
 	{:else}
-		<li class="p-8 text-center text-sm text-base-content/60">No published SOPs yet.</li>
+		<li class="p-8 text-center text-sm text-base-content/60">{m.training_empty()}</li>
 	{/each}
 </ul>

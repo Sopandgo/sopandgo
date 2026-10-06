@@ -5,6 +5,7 @@
     import Alert from '../Alert.svelte';
     import AcknowledgmentActionApprove from './AcknowledgmentActionApprove.svelte';
     import AcknowledgmentActionReject from './AcknowledgmentActionReject.svelte';
+    import * as m from '$lib/paraglide/messages.js';
 
     // 1. Define the shape of the form data here (or in a shared types file)
     interface SignFormResult {
@@ -51,7 +52,7 @@
 
         {#if hasSigned}
             <div class="mt-8">    
-                <Alert variant="info" message="You have  acknowledged this version." />
+                <Alert variant="info" message={m.ack_you_signed()} />
             </div>
         {/if}
     {/if}

@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
@@ -7,7 +8,7 @@ export const actions: Actions = {
         const title = formData.get('title')?.toString();
 
         if (!title) {
-            return fail(400, { message: 'Title is required' });
+            return fail(400, { message: m.error_title_required() });
         }
 
         try {
@@ -21,7 +22,7 @@ export const actions: Actions = {
             console.error('Create SOP Error:', err);
             
             return fail(500, { 
-                message: 'Failed to create SOP. Please try again.', 
+                message: m.error_create_sop(), 
                 title 
             });
         }

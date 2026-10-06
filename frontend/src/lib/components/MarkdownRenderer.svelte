@@ -2,6 +2,7 @@
     import { marked } from 'marked';
     import type { SOPAsset } from '$lib/sdk/types';
     import { sanitizeSopHtml } from '$lib/security/sanitizeSopHtml';
+    import * as m from '$lib/paraglide/messages.js';
 
     interface Props {
         content?: string;
@@ -35,7 +36,7 @@
                                 title="${title || ''}"
                                 class="rounded-xl border border-base-300 shadow-lg" 
                             />
-                            ${text ? `<figcaption class="mt-4 text-sm opacity-60 italic">Figure: ${text}</figcaption>` : ''}
+                            ${text ? `<figcaption class="mt-4 text-sm opacity-60 italic">${m.figure_caption({ text })}</figcaption>` : ''}
                         </figure>
                     `;
                 }

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
+    import * as m from '$lib/paraglide/messages.js';
     import type { User, UserRole } from '$lib/sdk/types';
 
     // Define the interface locally to avoid $types dependency
@@ -20,13 +21,13 @@
     let loading = $state(false);
     const isSelf = $derived(currentUserId && user.id === currentUserId);
 
-    const ROLE_OPTIONS: { value: UserRole; label: string; description: string }[] = [
-        { value: 'admin', label: 'Admin', description: 'Full system access' },
-        { value: 'editor', label: 'Editor', description: 'Can create and edit SOPs' },
-        { value: 'approver', label: 'Approver', description: 'Can sign off on SOP versions' },
-        { value: 'auditor', label: 'Auditor', description: 'SOP read access (audit log UI is admin-only today)' },
-        { value: 'viewer', label: 'Viewer', description: 'Read-only access' }
-    ];
+    const ROLE_OPTIONS = $derived<{ value: UserRole; label: string; description: string }[]>([
+        { value: 'admin', label: m.role_admin(), description: m.role_desc_admin() },
+        { value: 'editor', label: m.role_editor(), description: m.role_desc_editor() },
+        { value: 'approver', label: m.role_approver(), description: m.role_desc_approver() },
+        { value: 'auditor', label: m.role_auditor(), description: m.role_desc_auditor() },
+        { value: 'viewer', label: m.role_viewer(), description: m.role_desc_viewer() }
+    ]);
 </script>
 
 <div class="flex items-center gap-2">
@@ -36,7 +37,7 @@
             disabled={true}
             value={user.role}
         >
-            {#each ROLE_OPTIONS as opt}
+            {#each ROLE_OPTIONS as opt (opt.value)}
                 <option value={opt.value}>{opt.label}</option>
             {/each}
         </select>
@@ -51,7 +52,7 @@
                     loading = false;
                     if (result.type === 'failure') {
                         const data = result.data as FormResult;
-                        alert(data?.updateRole?.error || 'Failed to update role');
+                        alert(data?.updateRole?.error || m.error_update_role_alert());
                     }
                 };
             }}
@@ -65,7 +66,7 @@
                 value={user.role}
                 onchange={(e) => e.currentTarget.form?.requestSubmit()}
             >
-                {#each ROLE_OPTIONS as opt}
+                {#each ROLE_OPTIONS as opt (opt.value)}
                     <option value={opt.value} title={opt.description}>
                         {opt.label}
                     </option>

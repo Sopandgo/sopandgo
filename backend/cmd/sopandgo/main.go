@@ -12,6 +12,7 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
 	"github.com/sopandgo/sopandgo/backend/internal/pdfgen"
@@ -163,7 +164,7 @@ func main() {
 		s3Scheduler.SetOnFailure(func(c context.Context, failErr error) {
 			notifyService.Dispatch(c, notify.Event{
 				Type:    notify.EventBackupS3Failed,
-				Title:   "S3 backup failed",
+				Title:   i18n.T(i18n.ReadDefaultLocale(store.DB), "notify.backup_failed.title", nil),
 				Message: failErr.Error(),
 			})
 		})

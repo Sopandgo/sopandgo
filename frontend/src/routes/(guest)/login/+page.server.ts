@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
@@ -8,7 +9,7 @@ export const actions: Actions = {
         const password = data.get('password')?.toString();
 
         if (!email || !password) {
-            return fail(400, { message: 'Missing fields' });
+            return fail(400, { message: m.error_missing_fields() });
         }
 
         try {
@@ -18,14 +19,14 @@ export const actions: Actions = {
             const e = err as Error;
             
             if (e.message === 'INVALID_CREDENTIALS') {
-                return fail(401, { message: 'Invalid credentials.', email });
+                return fail(401, { message: m.error_invalid_credentials(), email });
             }
             if (e.message === 'ACCOUNT_INACTIVE') {
-                return fail(403, { message: 'Your account is disabled.', email });
+                return fail(403, { message: m.error_account_disabled(), email });
             }
             
             console.error('Login Error:', e);
-            return fail(500, { message: 'System error.', email });
+            return fail(500, { message: m.error_system(), email });
         }
 
         throw redirect(303, '/dashboard');

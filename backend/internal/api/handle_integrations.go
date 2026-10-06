@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
 )
 
@@ -126,7 +127,7 @@ func (s *Server) handleAdminPostIntegrationTest(w http.ResponseWriter, r *http.R
 		http.Error(w, "integrations unavailable", http.StatusInternalServerError)
 		return
 	}
-	err := s.notifyService.SendTest(r.Context(), channel)
+	err := s.notifyService.SendTest(r.Context(), channel, s.orgLocale())
 	if err != nil {
 		switch {
 		case errors.Is(err, notify.ErrKeyMissing):
@@ -187,23 +188,25 @@ func (s *Server) notifyLifecycle(eventType, versionID, actorID, rejectReason str
 	origin := strings.TrimRight(s.Config.Origin, "/")
 	link := fmt.Sprintf("%s/sops/%s/v/%s", origin, version.SOPID, version.ID)
 
+	locale := s.orgLocale()
+	versionLabel := fmt.Sprintf("%d", version.Version)
 	var title, message string
 	switch eventType {
 	case notify.EventSOPPublished:
-		title = fmt.Sprintf("SOP published: %s", sopRow.Title)
-		message = fmt.Sprintf("Version %d is now published.", version.Version)
+		title = i18n.T(locale, "notify.sop_published.title", map[string]string{"title": sopRow.Title})
+		message = i18n.T(locale, "notify.sop_published.message", map[string]string{"version": versionLabel})
 		if version.ChangeSummary != "" {
 			message += " " + version.ChangeSummary
 		}
 		link = fmt.Sprintf("%s/sops/%s/v/latest", origin, version.SOPID)
 	case notify.EventSOPRC:
-		title = fmt.Sprintf("Release candidate: %s", sopRow.Title)
-		message = fmt.Sprintf("Version %d is ready for review.", version.Version)
+		title = i18n.T(locale, "notify.sop_rc.title", map[string]string{"title": sopRow.Title})
+		message = i18n.T(locale, "notify.sop_rc.message", map[string]string{"version": versionLabel})
 	case notify.EventSOPRejected:
-		title = fmt.Sprintf("SOP rejected: %s", sopRow.Title)
-		message = fmt.Sprintf("Version %d was rejected.", version.Version)
+		title = i18n.T(locale, "notify.sop_rejected.title", map[string]string{"title": sopRow.Title})
+		message = i18n.T(locale, "notify.sop_rejected.message", map[string]string{"version": versionLabel})
 		if rejectReason != "" {
-			message += " Reason: " + rejectReason
+			message += " " + i18n.T(locale, "notify.reason", map[string]string{"reason": rejectReason})
 		}
 	default:
 		return

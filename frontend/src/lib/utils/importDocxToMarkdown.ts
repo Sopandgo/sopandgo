@@ -1,13 +1,15 @@
 import mammoth from 'mammoth';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
+import * as m from '$lib/paraglide/messages.js';
 
 /** Shown in the editor where Word had an embedded image (no upload). */
-const IMAGE_PLACEHOLDER_HTML =
-	'<p><strong>Image from Word:</strong> add via sidebar upload, then use <code>![description](assets/filename)</code>.</p>';
+function imagePlaceholderHtml(): string {
+	return `<p><strong>${m.editor_word_image()}</strong> ${m.editor_word_image_help()} <code>![description](assets/filename)</code>.</p>`;
+}
 
 function replaceImagesWithPlaceholders(html: string): string {
-	let out = html.replace(/<img\b[^>]*>/gi, IMAGE_PLACEHOLDER_HTML);
+	let out = html.replace(/<img\b[^>]*>/gi, imagePlaceholderHtml());
 	out = out.replace(/<figure>\s*<\/figure>/gi, '');
 	out = out.replace(/<p>\s*<\/p>/gi, '');
 	return out;
@@ -210,7 +212,7 @@ export interface ImportDocxResult {
 export async function importDocxToMarkdown(file: File): Promise<ImportDocxResult> {
 	const lower = file.name.toLowerCase();
 	if (!lower.endsWith('.docx')) {
-		throw new Error('Only .docx files are supported.');
+		throw new Error(m.error_import_docx_type());
 	}
 
 	const arrayBuffer = await file.arrayBuffer();
@@ -218,11 +220,11 @@ export async function importDocxToMarkdown(file: File): Promise<ImportDocxResult
 	const markdown = mammothHtmlToSopMarkdown(html);
 
 	if (!markdown) {
-		throw new Error('No readable text was found in this document.');
+		throw new Error(m.error_import_docx_empty());
 	}
 
 	return {
 		markdown,
-		messages: messages.map((m) => m.message)
+		messages: messages.map((note) => note.message)
 	};
 }

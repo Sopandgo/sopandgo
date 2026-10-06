@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
 import type { SOPAsset } from '$lib/sdk/types';
 import {
@@ -33,11 +34,11 @@ export const actions: Actions = {
         const sopId = params.sop_id;
 
         if (!content || content.trim().length === 0) {
-            return fail(400, { message: 'Content is required', content, change_summary: changeSummary });
+            return fail(400, { message: m.error_content_required(), content, change_summary: changeSummary });
         }
         if (!changeSummary.trim()) {
             return fail(400, {
-                message: 'Describe what changed and why.',
+                message: m.error_describe_change(),
                 content,
                 change_summary: changeSummary
             });
@@ -69,7 +70,7 @@ export const actions: Actions = {
         const sopId = params.sop_id;
 
         if (!file || file.size === 0) {
-            return fail(400, { uploadError: 'Please select a file to upload.' });
+            return fail(400, { uploadError: m.error_select_file() });
         }
 
         try {

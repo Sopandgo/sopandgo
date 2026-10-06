@@ -10,6 +10,9 @@ Delivery mode and transport are chosen in the admin UI (stored in SQLite), not v
 | --- | --- | --- |
 | `mail_mode` | `smtp`, `manual_links` | Whether the app sends invite/reset mail, or returns one-time links to admins. |
 | `mail_transport` | `smtp`, `resend` | Which provider sends when `mail_mode` is `smtp`. |
+| `default_locale` | supported BCP 47 tag | Organization language for the test email. Invite, reset, and publish notices use the recipient's `users.locale` instead. |
+
+Subjects and boilerplate come from `backend/internal/i18n`. SOP titles and change summaries are inserted unchanged. An unknown locale or a missing key falls back to English.
 
 Publish notices (`SendSOPPublishedEmail`) run only when mail mode is not `manual_links`. A failed send does not unpublish the version.
 
@@ -36,8 +39,8 @@ Publish notices (`SendSOPPublishedEmail`) run only when mail mode is not `manual
 
 ```go
 mailService, err := mail.NewService(sender, auditLogger)
-err = mailService.SendUserWelcomeEmail(email, userID, displayName, inviteURL)
-err = mailService.SendPasswordResetEmail(email, userID, displayName, resetURL)
+err = mailService.SendUserWelcomeEmail(email, userID, displayName, inviteURL, locale)
+err = mailService.SendPasswordResetEmail(email, userID, displayName, resetURL, locale)
 err = mailService.SendSOPPublishedEmail(email, name, sopTitle, version, summary, link)
 ```
 

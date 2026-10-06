@@ -7,6 +7,7 @@
   import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
+  import * as m from '$lib/paraglide/messages.js';
 
     let { data, form } = $props<{ data: PageData, form: ActionData }>();
 
@@ -14,12 +15,16 @@
     let documentContent = $state('');
 </script>
 
+<svelte:head>
+    <title>{m.page_new_version()}</title>
+</svelte:head>
+
 <div class="flex flex-col gap-6">
     <Breadcrumbs items={[
-        { label: 'Dashboard', href: '/dashboard', icon: HouseIcon},
-        { label: 'SOPs', href: '/sops', icon: NotebookIcon},
+        { label: m.page_dashboard(), href: '/dashboard', icon: HouseIcon},
+        { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
         { label: data.sop.title, href: `/sops/${data.sop.id}`, icon: NotebookIcon},
-        { label: 'New Version', icon: PlusIcon},
+        { label: m.common_new_version(), icon: PlusIcon},
     ]}/>
 
     <Card>
@@ -30,7 +35,7 @@
             </CardPageHeading>
 
             <div class="flex items-center gap-2 text-base-content/70">
-                <span class="text-sm font-medium">New Draft for SOP ID:</span> 
+                <span class="text-sm font-medium">{m.sops_new_draft()}</span> 
                 <IdBadge id={data.sop.id} />
             </div>
         </div>

@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { tick } from 'svelte';
   import Alert from '$lib/components/Alert.svelte';
+  import * as m from '$lib/paraglide/messages.js';
   import Card from './Card.svelte';
 
   interface FormResult {
@@ -25,12 +26,11 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h3 class="card-title text-error">Emergency: Revoke All Sessions</h3>
+        <h3 class="card-title text-error">{m.sessions_panic_title()}</h3>
       </div>
       
       <p class="text-sm opacity-70 mt-2">
-        This is a global "Panic Button". It invalidates every active session in the database immediately. 
-        Users will be required to log back in.
+        {m.sessions_panic_body()}
       </p>
 
       {#if result?.error}
@@ -41,7 +41,7 @@
 
       {#if result?.ok}
         <div class="mt-4">
-          <Alert variant="success" message="Global session revocation successful." class="shadow-md" />
+          <Alert variant="success" message={m.sessions_panic_ok()} class="shadow-md" />
         </div>
       {/if}
 
@@ -65,14 +65,14 @@
       >
         <div class="form-control w-full">
           <label class="label" for="reason">
-            <span class="label-text font-semibold">Revocation Reason (Required)</span>
+            <span class="label-text font-semibold">{m.sessions_reason()}</span>
           </label>
           <input
             id="reason"
             name="reason"
             type="text"
             class="input input-bordered input-error w-full focus:outline-error"
-            placeholder="e.g., Suspected database compromise"
+            placeholder={m.sessions_reason_placeholder()}
             required
             disabled={loading}
           />
@@ -86,9 +86,9 @@
           >
             {#if loading}
               <span class="loading loading-spinner loading-sm"></span>
-              Executing...
+              {m.sessions_executing()}
             {:else}
-              Revoke All Sessions Now
+              {m.sessions_revoke_now()}
             {/if}
           </button>
         </div>

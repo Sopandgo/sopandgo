@@ -92,6 +92,15 @@ export const auth = (client: Client, event: RequestEvent) => {
          * Match: POST /api/auth/update-password
          * Note: Admins can use this to reset other users' passwords by passing a different userId. REMOVE THIS ADMIN ENDPOINT FROM PRODUCTION!!!
          */
+        updateLocale: async (locale: string): Promise<void> => {
+            const res = await client.fetch('/auth/me/locale', {
+                method: 'PATCH',
+                body: { locale }
+            });
+            if (res.status === 400) throw new Error('UNSUPPORTED_LOCALE');
+            if (!res.ok) throw new Error('UPDATE_LOCALE_FAILED');
+        },
+
         updatePassword: async (newPassword: string): Promise<void> => {
             const res = await client.fetch('/auth/me/update-password', {
                 method: 'PATCH',

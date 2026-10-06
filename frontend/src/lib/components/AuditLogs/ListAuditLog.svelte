@@ -4,12 +4,14 @@
     import Card from "$lib/components/Card.svelte";
     import {
         actorLabel,
+        entityTitle,
         eventSummary,
         eventTitle,
         formatEventTime,
         formatPayload,
         versionSopId,
     } from "$lib/audit/present";
+    import * as m from "$lib/paraglide/messages.js";
     import {
         BoxIcon,
         ChevronDownIcon,
@@ -45,7 +47,7 @@
         if (count === 0) return "0";
         const start = page * logsPerPage + 1;
         const end = Math.min(count, (page + 1) * logsPerPage);
-        return `${start}–${end} of ${count}`;
+        return m.audit_range({ start: String(start), end: String(end), count: String(count) });
     });
 
     function toggle(id: string) {
@@ -105,7 +107,7 @@
 <Card>
     <ul class="list">
         <li class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold">
-            Audit Log ({rangeLabel})
+            {m.audit_log_count({ range: rangeLabel })}
         </li>
 
         {#each auditEvents as auditEvent (auditEvent.id)}
@@ -149,12 +151,12 @@
                         {#if auditEvent.hash_valid}
                             <div class="badge badge-success badge-outline gap-1 h-7">
                                 <ShieldCheckIcon class="size-4" />
-                                Hash OK
+                                {m.audit_hash_ok()}
                             </div>
                         {:else}
                             <div class="badge badge-error badge-outline gap-1 h-7">
                                 <ShieldXIcon class="size-4" />
-                                Hash mismatch
+                                {m.audit_hash_bad()}
                             </div>
                         {/if}
 
@@ -167,17 +169,17 @@
                 {#if open}
                     <div class="px-4 pb-4 grid gap-3 text-xs">
                         <div>
-                            <div class="opacity-50 uppercase tracking-widest font-bold">Actor ID</div>
-                            <div class="font-mono break-all">{auditEvent.actor_user_id || "None"}</div>
+                            <div class="opacity-50 uppercase tracking-widest font-bold">{m.audit_actor_id()}</div>
+                            <div class="font-mono break-all">{auditEvent.actor_user_id || m.common_none()}</div>
                         </div>
                         <div>
-                            <div class="opacity-50 uppercase tracking-widest font-bold">Entity</div>
+                            <div class="opacity-50 uppercase tracking-widest font-bold">{m.audit_entity()}</div>
                             {#if entityType === "sop" && auditEvent.entity_id}
                                 <a
                                     class="link font-mono break-all"
                                     href={resolve(`/sops/${auditEvent.entity_id}`)}
                                 >
-                                    {auditEvent.entity_type} · {auditEvent.entity_id}
+                                    {entityTitle(auditEvent.entity_type)} · {auditEvent.entity_id}
                                 </a>
                             {:else if entityType === "sop_version" && linkedSopId && auditEvent.entity_id}
                                 <a
@@ -186,26 +188,26 @@
                                         `/sops/${linkedSopId}/v/${auditEvent.entity_id}`,
                                     )}
                                 >
-                                    {auditEvent.entity_type} · {auditEvent.entity_id}
+                                    {entityTitle(auditEvent.entity_type)} · {auditEvent.entity_id}
                                 </a>
                             {:else}
                                 <div class="font-mono break-all">
-                                    {auditEvent.entity_type} · {auditEvent.entity_id}
+                                    {entityTitle(auditEvent.entity_type)} · {auditEvent.entity_id}
                                 </div>
                             {/if}
                         </div>
                         <div>
-                            <div class="opacity-50 uppercase tracking-widest font-bold">Payload</div>
+                            <div class="opacity-50 uppercase tracking-widest font-bold">{m.audit_payload()}</div>
                             <pre class="mt-1 whitespace-pre-wrap break-all font-mono">{formatPayload(
                                     auditEvent.payload,
                                 )}</pre>
                         </div>
                         <div>
-                            <div class="opacity-50 uppercase tracking-widest font-bold">Hash</div>
+                            <div class="opacity-50 uppercase tracking-widest font-bold">{m.audit_hash()}</div>
                             <div class="font-mono break-all">{auditEvent.hash}</div>
                         </div>
                         <div>
-                            <div class="opacity-50 uppercase tracking-widest font-bold">Previous hash</div>
+                            <div class="opacity-50 uppercase tracking-widest font-bold">{m.audit_prev_hash()}</div>
                             <div class="font-mono break-all">{auditEvent.prev_hash}</div>
                         </div>
                     </div>
@@ -215,9 +217,9 @@
             <li class="p-12 text-center">
                 <div class="text-sm opacity-40">
                     {#if filtered}
-                        No events match these filters.
+                        {m.audit_no_match()}
                     {:else}
-                        No audit events yet.
+                        {m.audit_empty()}
                     {/if}
                 </div>
             </li>

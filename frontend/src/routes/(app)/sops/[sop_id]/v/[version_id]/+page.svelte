@@ -13,6 +13,8 @@
     import { enhance } from '$app/forms';
     import Alert from '$lib/components/Alert.svelte';
     import VersionDiff from '$lib/components/VersionDiff.svelte';
+    import * as m from '$lib/paraglide/messages.js';
+    import { getLocale } from '$lib/paraglide/runtime';
     let pdfError = $state<string | null>(null);
 
     // Receive data and form (ActionData) from the server
@@ -20,7 +22,7 @@
 
     const downloadGeneratedPdf = async () => {
         if (!data.pdf.enabled) {
-            pdfError = 'PDF export is disabled by the operator.';
+            pdfError = m.pdf_disabled();
             return;
         }
         pdfError = null;
@@ -28,8 +30,8 @@
             const res = await fetch(data.pdf.downloadUrl, { method: 'GET' });
             if (!res.ok) {
                 pdfError = res.status === 404
-                    ? 'PDF artifact for this stage is not available yet.'
-                    : 'Failed to download PDF artifact. Please try again.';
+                    ? m.pdf_not_ready()
+                    : m.pdf_download_failed();
                 return;
             }
 
@@ -46,18 +48,22 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(objectUrl);
         } catch {
-            pdfError = 'Failed to download PDF artifact. Please try again.';
+            pdfError = m.pdf_download_failed();
         }
     };
 </script>
 
+<svelte:head>
+    <title>{m.page_sop_version()}</title>
+</svelte:head>
+
 
 <div class="flex flex-col gap-6">
     <Breadcrumbs items={[
-        { label: 'Dashboard', href: '/dashboard', icon: HouseIcon},
-        { label: 'SOPs', href: '/sops', icon: NotebookIcon},
+        { label: m.page_dashboard(), href: '/dashboard', icon: HouseIcon},
+        { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
         { label: data.sop.title, href: `/sops/${data.sop.id}`, icon: NotebookIcon},
-        { label: 'Version ' + data.versionSummary.version + ` - ${new Date(data.versionSummary.created_at).toLocaleDateString()}`, icon: NotebookTextIcon},
+        { label: m.version_breadcrumb({ version: String(data.versionSummary.version), date: new Date(data.versionSummary.created_at).toLocaleDateString(getLocale()) }), icon: NotebookTextIcon},
     ]}/>
 
 <Card>
@@ -71,7 +77,7 @@
             {#if data.versionSummary.status != 'published'}
                 <SopVersionStatusBadge status={data.versionSummary.status} />
             {:else}
-                <p>This version is currently active.</p>
+                <p>{m.version_active()}</p>
             {/if}
             {#if data.versionSummary.change_summary}
                 <p class="text-base-content">{data.versionSummary.change_summary}</p>
@@ -91,10 +97,10 @@
                     <button
                         type="submit"
                         class="btn btn-outline btn-warning btn-sm gap-1"
-                        aria-label="Remove this SOP from favorites"
+                        aria-label={m.version_remove_favorite()}
                     >
                         <StarIcon class="w-4 h-4 fill-current" />
-                        Favorited
+                        {m.sops_favorited()}
                     </button>
                 </form>
             {:else}
@@ -109,10 +115,10 @@
                     <button
                         type="submit"
                         class="btn btn-ghost btn-sm gap-1"
-                        aria-label="Add this SOP to favorites"
+                        aria-label={m.version_add_favorite()}
                     >
                         <StarIcon class="w-4 h-4" />
-                        Add to favorites
+                        {m.sops_add_to_favorites()}
                     </button>
                 </form>
             {/if}
@@ -122,11 +128,11 @@
             {#if data.pdf.enabled}
                 <button type="button" class="btn btn-secondary " onclick={downloadGeneratedPdf}>
                     <DownloadIcon class="w-5 h-5" />
-                    Download Generated PDF
+                    {m.version_download_pdf()}
                 </button>
             {:else}
                 <button type="button" class="btn btn-outline btn-disabled" disabled>
-                    PDF Export Disabled
+                    {m.version_pdf_disabled()}
                 </button>
             {/if}
             
@@ -134,7 +140,7 @@
                 <form method="POST" action="?/promote" use:enhance>
                     <button class="btn btn-primary">
                         <ArrowUpRightIcon class="w-5 h-5" />
-                        Promote to Release Candidate
+                        {m.version_promote()}
                     </button>
                 </form>
             {/if}
@@ -142,7 +148,7 @@
             {#if (data.user.role === 'admin' || data.user.role === 'editor')}
                 <a href={`/sops/${data.sop.id}/new`} class="btn btn-secondary">
                     <PlusIcon class="w-5 h-5" />
-                    New Version
+                    {m.common_new_version()}
                 </a>
             {/if}
 
@@ -167,12 +173,12 @@
     />
 
     {#if data.versionSummary.status != 'published'}
-        <Alert variant='warning' message='WARNING: This version is not active!'/>
+        <Alert variant='warning' message={m.version_inactive_warning()}/>
     {/if}
     
     <Card>
         <div class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold">
-            Document Content
+            {m.version_document()}
         </div>
         <div class="card-body">
             <MarkdownRenderer 
@@ -183,7 +189,7 @@
     </Card>
 
     {#if data.versionSummary.status != 'published'}
-        <Alert variant='warning' message='This version is not active!'/>
+        <Alert variant='warning' message={m.version_inactive()}/>
     {/if}
 
     <ListAssociatedAssets items={data.versionSummary.assets ?? []} />

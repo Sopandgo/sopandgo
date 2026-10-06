@@ -6,6 +6,8 @@
     import type { User } from '$lib/sdk/types';
     import Card from './Card.svelte';
     import { MailIcon, CheckIcon } from 'lucide-svelte';
+    import * as m from '$lib/paraglide/messages.js';
+    import { getLocale } from '$lib/paraglide/runtime';
 
     interface Props {
         items?: User[] | null;
@@ -42,17 +44,17 @@
                 <li class="px-4 pt-4 space-y-2">
                     <div class="alert alert-success text-sm">
                         {form.triggerPasswordReset.message ??
-                            (mailMode === 'manual_links' ? 'Reset link generated.' : 'Reset email sent.')}
+                            (mailMode === 'manual_links' ? m.users_reset_generated() : m.users_reset_sent())}
                     </div>
                     {#if form?.triggerPasswordReset?.link}
                         <div class="alert alert-info text-xs break-all">
-                            <span>Reset link: <code>{form.triggerPasswordReset.link}</code></span>
+                            <span>{m.users_reset_link()} <code>{form.triggerPasswordReset.link}</code></span>
                         </div>
                     {/if}
                 </li>
             {/if}
             <li class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold">
-                Users ({users.length})
+                {m.users_count({ count: String(users.length) })}
             </li>
 
             {#each users as user (user.id)}
@@ -72,7 +74,7 @@
                                 {user.email}
                             </div>
                             <div class="text-xs opacity-50 font-mono uppercase tracking-tighter">
-                                Created: {new Date(user.created_at).toLocaleString()}
+                                {m.common_created({ when: new Date(user.created_at).toLocaleString(getLocale()) })}
                             </div>
                         </div>
                     </div>
@@ -111,14 +113,14 @@
                                 type="submit"
                                 class="btn btn-sm btn-ghost h-auto min-h-9 w-full flex-nowrap gap-2 py-2 md:w-auto"
                                 disabled={justSentId === user.id}
-                                title="Send Password Reset Email"
+                                title={m.users_send_reset_title()}
                             >
                                 {#if justSentId === user.id}
                                     <CheckIcon class="h-4 w-4 shrink-0 text-success" />
-                                    <span class="text-success">Sent</span>
+                                    <span class="text-success">{m.users_sent()}</span>
                                 {:else}
                                     <MailIcon class="h-4 w-4 shrink-0" />
-                                    <span>{mailMode === 'manual_links' ? 'Generate reset link' : 'Send reset link'}</span>
+                                    <span>{mailMode === 'manual_links' ? m.users_generate_reset() : m.users_send_reset()}</span>
                                 {/if}
                             </button>
                         </form>
@@ -129,7 +131,7 @@
                                 class="btn btn-xs btn-outline w-full md:w-auto"
                                 onclick={() => navigator.clipboard.writeText(form.triggerPasswordReset.link)}
                             >
-                                Copy reset link
+                                {m.users_copy_reset()}
                             </button>
                         {/if}
 
@@ -142,7 +144,7 @@
                 </li>
             {:else}
                 <li class="p-12 text-center">
-                    <div class="text-sm opacity-40">No users found.</div>
+                    <div class="text-sm opacity-40">{m.users_empty()}</div>
                 </li>
             {/each}
         </ul>

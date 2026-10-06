@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { VersionDiff } from '$lib/sdk/types';
+	import * as m from '$lib/paraglide/messages.js';
 
 	let { diff } = $props<{ diff: VersionDiff | null }>();
 
@@ -10,17 +11,17 @@
 	<section aria-labelledby="version-diff-heading">
 		<div class="card bg-base-100 border border-base-200 shadow-sm">
 			<div class="border-b border-base-200 p-4 sm:p-5">
-				<h2 id="version-diff-heading" class="text-lg font-semibold">What changed</h2>
+				<h2 id="version-diff-heading" class="text-lg font-semibold">{m.editor_what_changed()}</h2>
 				<p class="mt-1 text-sm text-base-content/70">
-					Compared with version {diff.from_version}.
+					{m.diff_compared({ version: String(diff.from_version) })}
 				</p>
 			</div>
 			{#if lines.length === 0}
-				<p class="p-4 text-sm text-base-content/60">The Markdown is identical.</p>
+				<p class="p-4 text-sm text-base-content/60">{m.diff_identical()}</p>
 			{:else}
 				<div
 					class="max-h-[28rem] overflow-auto p-4 font-mono text-xs leading-relaxed sm:text-sm"
-					aria-label="Markdown diff"
+					aria-label={m.diff_aria()}
 				>
 					{#each lines as line, index (`${index}-${line.kind}`)}
 						<div

@@ -20,7 +20,7 @@ func createUserRecord(db audit.DBTX, id, displayName, email, passwordHash, role,
 
 func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {
 	const query = `
-		SELECT id, display_name, email, role_id, is_active, must_change_password, created_at 
+		SELECT id, display_name, email, role_id, is_active, must_change_password, locale, created_at 
 		FROM users WHERE id = ?`
 
 	var u User
@@ -29,7 +29,7 @@ func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {
 	var mustChange int
 
 	err := db.QueryRow(query, id).Scan(
-		&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &createdAt,
+		&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &createdAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("user not found: %s", id)
@@ -45,14 +45,14 @@ func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {
 }
 
 func getUserByEmailRecord(db audit.DBTX, email string) (*User, string, error) {
-	const query = `SELECT id, display_name, email, role_id, is_active, must_change_password, password_hash FROM users WHERE email = ?`
+	const query = `SELECT id, display_name, email, role_id, is_active, must_change_password, locale, password_hash FROM users WHERE email = ?`
 
 	var u User
 	var hash string
 	var isActive int
 	var mustChange int
 
-	err := db.QueryRow(query, email).Scan(&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &hash)
+	err := db.QueryRow(query, email).Scan(&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &hash)
 	if err != nil {
 		return nil, "", err
 	}
@@ -103,9 +103,14 @@ func setMustChangePasswordRecord(db audit.DBTX, userID string, mustChange bool) 
 	return err
 }
 
+func updateUserLocaleRecord(db audit.DBTX, userID, locale string) error {
+	_, err := db.Exec(`UPDATE users SET locale = ? WHERE id = ?`, locale, userID)
+	return err
+}
+
 func listUsersRecord(db audit.DBTX) ([]User, error) {
 	const query = `
-		SELECT id, display_name, email, role_id, is_active, must_change_password, created_at 
+		SELECT id, display_name, email, role_id, is_active, must_change_password, locale, created_at 
 		FROM users ORDER BY created_at DESC, rowid DESC`
 
 	rows, err := db.Query(query)
@@ -120,7 +125,7 @@ func listUsersRecord(db audit.DBTX) ([]User, error) {
 		var createdAt string
 		var isActive int
 		var mustChange int
-		if err := rows.Scan(&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &createdAt); err != nil {
+		if err := rows.Scan(&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &createdAt); err != nil {
 			return nil, err
 		}
 		u.IsActive = isActive == 1

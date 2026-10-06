@@ -9,9 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/google/uuid"
+	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 )
+
+var ErrInvalidLocale = errors.New("unsupported locale")
 
 // RegisterUser handles hashing, creation, and logging in a SINGLE transaction.
 func (s *Service) RegisterUser(
@@ -348,4 +351,18 @@ func (s *Service) ResetPassword(rawToken, newPlainPassword string) error {
 	deleteResetTokenRecord(s.db, userID)
 
 	return nil
+}
+
+// SetUserLocale stores a supported BCP 47 tag on the account.
+func (s *Service) SetUserLocale(userID, locale string) error {
+	tag, ok := i18n.Normalize(locale)
+	if !ok {
+		return ErrInvalidLocale
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, err := getUserByIDRecord(s.db, userID); err != nil {
+		return err
+	}
+	return updateUserLocaleRecord(s.db, userID, tag)
 }

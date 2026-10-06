@@ -5,29 +5,34 @@
     import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
+  import * as m from '$lib/paraglide/messages.js';
 
     let { form } = $props<{ form: ActionData }>();
     
     let loading = $state(false);
 </script>
 
+<svelte:head>
+    <title>{m.page_new_sop()}</title>
+</svelte:head>
+
 <div class="flex flex-col gap-6">
     <Breadcrumbs items={[
-        { label: 'Dashboard', href: '/sops', icon: HouseIcon},
-        { label: 'SOPs', href: '/sops', icon: NotebookIcon},
-        { label: 'New SOP', icon: PlusIcon},
+        { label: m.page_dashboard(), href: '/sops', icon: HouseIcon},
+        { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
+        { label: m.common_new_sop(), icon: PlusIcon},
     ]}/>
 
     <Card>
         <div class="card-body">
             <CardPageHeading color="accent">
                 <NotebookPenIcon class="w-8 h-8" />
-                Standard Operating Procedures
+                {m.sops_heading()}
             </CardPageHeading>
 
             <div class="flex items-center gap-2 text-base-content/70 mb-4">
                 <span class="text-sm font-medium">
-                    Register a new Standard Operating Procedure container.
+                    {m.sops_register_help()}
                 </span> 
             </div>
 
@@ -57,13 +62,13 @@
             >
                 <div class="form-control w-full">
                     <label class="label" for="title">
-                        <span class="label-text font-medium">SOP Title</span>
+                        <span class="label-text font-medium">{m.sops_title_label()}</span>
                     </label>
                     <input 
                         id="title"
                         name="title" 
                         type="text" 
-                        placeholder="e.g., Server Maintenance Protocol" 
+                        placeholder={m.sops_title_placeholder()} 
                         class="input input-bordered w-full {form?.message ? 'input-error' : ''}" 
                         value={form?.title ?? ''}
                         required 
@@ -71,12 +76,12 @@
                 </div>
 
                 <div class="card-actions justify-end mt-4 flex items-center gap-4">
-                    <a href="/sops" class="btn btn-ghost">Cancel</a>
+                    <a href="/sops" class="btn btn-ghost">{m.common_cancel()}</a>
                     <button type="submit" class="btn btn-accent min-w-[120px]" disabled={loading}>
                         {#if loading}
                             <span class="loading loading-spinner"></span>
                         {/if}
-                        Register SOP
+                        {m.sops_register()}
                         <RocketIcon class="w-5 h-5"/>
                     </button>
                 </div>

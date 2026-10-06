@@ -9,6 +9,8 @@ export interface User {
     is_active: boolean;
     /** When true, the user must change their password before using the app */
     must_change_password: boolean;
+    /** BCP 47 tag from the supported locale list */
+    locale: string;
     /** ISO 8601 Timestamp */
     created_at: string;
 }
@@ -161,6 +163,7 @@ export interface PublicSmtpSettings {
     from_address: string;
     mail_mode: 'smtp' | 'manual_links';
     mail_transport: 'smtp' | 'resend';
+    default_locale: string;
     password_configured: boolean;
     configured: boolean;
     encryption_key_set: boolean;

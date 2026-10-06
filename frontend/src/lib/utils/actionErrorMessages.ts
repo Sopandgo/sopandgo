@@ -1,3 +1,4 @@
+import * as m from '$lib/paraglide/messages.js';
 import { SdkHttpError } from '$lib/sdk/httpError';
 
 /** User-facing message when publishing a new SOP version fails. */
@@ -8,21 +9,17 @@ export function messageForPublishFailure(err: unknown): string {
 
 		switch (policyCode) {
 			case 'raw_html':
-				return d
-					? `This document cannot include raw HTML (${d}). Use Markdown only—not HTML tags.`
-					: 'This document cannot include raw HTML. Use Markdown only—not HTML tags.';
+				return d ? m.error_raw_html_detail({ detail: d }) : m.error_raw_html();
 			case 'disallowed_scheme':
-				return d
-					? `A link or image uses a URL that is not allowed (${d}). Use https://, http://, mailto:, or assets/your-file.png for attachments.`
-					: 'A link or image uses a URL that is not allowed. Use https://, mailto:, or assets/… for files.';
+				return d ? m.error_disallowed_scheme_detail({ detail: d }) : m.error_disallowed_scheme();
 			case 'disallowed_url':
-				return d ? `A link URL is not allowed: ${d}` : 'A link in the document uses a URL that is not allowed.';
+				return d ? m.error_disallowed_url_detail({ detail: d }) : m.error_disallowed_url();
 			case 'invalid_url':
-				return d ? `A link could not be read: ${d}` : 'A link in the document is invalid.';
+				return d ? m.error_invalid_url_detail({ detail: d }) : m.error_invalid_url();
 			case 'url_too_long':
-				return 'A mailto link in the document is too long. Shorten or remove it.';
+				return m.error_url_too_long();
 			case 'content_too_large':
-				return d ?? 'This document is too large to save.';
+				return d ?? m.error_content_too_large();
 			default:
 				break;
 		}
@@ -31,35 +28,31 @@ export function messageForPublishFailure(err: unknown): string {
 			apiError === 'invalid_asset_reference' ||
 			(d && (d.includes('referenced asset not found') || d.includes('invalid asset URL encoding')))
 		) {
-			return d
-				? `Attachment reference: ${d}. Upload the file under Assets in the sidebar and use exactly ![description](assets/filename).`
-				: 'The document references a file that is not uploaded for this SOP. Add it under Assets or fix the path.';
+			return d ? m.error_asset_reference_detail({ detail: d }) : m.error_asset_reference();
 		}
 
 		if (apiError === 'invalid_change_summary') {
-			return d ?? 'Add a short note describing what changed and why.';
+			return d ?? m.error_change_summary();
 		}
 
 		if (apiError === 'conflict' || status === 409) {
-			return d ?? 'A version is already waiting for approval. Resolve that before creating another draft.';
+			return d ?? m.error_conflict();
 		}
 
-		if (status === 401) return 'Your session expired. Sign in again and retry.';
-		if (status === 403) return 'You do not have permission to publish this SOP.';
+		if (status === 401) return m.error_session_expired();
+		if (status === 403) return m.error_publish_forbidden();
 
 		if (d) return d;
-		if (status === 400) {
-			return 'The server rejected this document. Check Markdown, links, and attachment references.';
-		}
-		if (status >= 500) return 'The server could not save this version. Try again in a moment.';
-		return err.message || 'Could not save this version.';
+		if (status === 400) return m.error_document_rejected();
+		if (status >= 500) return m.error_save_version();
+		return err.message || m.error_save_version_generic();
 	}
 
 	if (err instanceof Error && err.message === 'SERVICE_UNAVAILABLE') {
-		return 'Could not reach the server. Check your connection and try again.';
+		return m.error_service_unavailable();
 	}
 
-	return 'Something went wrong while saving. Please try again.';
+	return m.error_save_generic();
 }
 
 /** User-facing message when an asset upload fails. */
@@ -72,26 +65,26 @@ export function messageForAssetUploadFailure(err: unknown): string {
 			return d;
 		}
 		if (apiError === 'asset_exists' || status === 409) {
-			return d ?? 'That file name already exists for this SOP. Use a different name or remove the old asset first.';
+			return d ?? m.error_asset_exists();
 		}
 		if (apiError === 'multipart_invalid') {
-			return d ?? 'The upload was too large or was interrupted. Try a smaller file or retry.';
+			return d ?? m.error_upload_interrupted();
 		}
 		if (apiError === 'missing_file') {
-			return d ?? 'No file was selected.';
+			return d ?? m.error_no_file();
 		}
 		if (apiError === 'invalid_asset_filename') {
-			return d ?? 'That file name is not allowed. Use a simple name (e.g. diagram.png) with no folders.';
+			return d ?? m.error_bad_filename();
 		}
 		if (d) return d;
-		if (status === 403) return 'You do not have permission to upload files for this SOP.';
-		if (status >= 500) return 'The server could not save the file. Try again in a moment.';
-		return err.message || 'Upload failed.';
+		if (status === 403) return m.error_upload_forbidden();
+		if (status >= 500) return m.error_upload_server();
+		return err.message || m.error_upload_failed();
 	}
 
 	if (err instanceof Error && err.message === 'SERVICE_UNAVAILABLE') {
-		return 'Could not reach the server. Check your connection and try again.';
+		return m.error_service_unavailable();
 	}
 
-	return 'Upload failed. Please try again.';
+	return m.error_upload_retry();
 }

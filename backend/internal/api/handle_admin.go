@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
@@ -65,10 +67,15 @@ func (s *Server) handleAdminIntegrity(w http.ResponseWriter, r *http.Request) {
 	s.auditLogger.Log(nil, audit.EventIntegrityCheck, audit.EntitySystem, audit.EntitySystem, &actorID, extendedReport)
 
 	if !systemOK && s.notifyService != nil {
+		locale := s.orgLocale()
 		s.notifyService.Dispatch(r.Context(), notify.Event{
-			Type:    notify.EventIntegrityCheckFailed,
-			Title:   "Integrity check failed",
-			Message: fmt.Sprintf("System integrity check reported failures (versions invalid=%d, assets invalid=%d, audit invalid=%d).", sopReport.Versions.Invalid, sopReport.Assets.Invalid, auditReport.Invalid),
+			Type:  notify.EventIntegrityCheckFailed,
+			Title: i18n.T(locale, "notify.integrity.title", nil),
+			Message: i18n.T(locale, "notify.integrity.message", map[string]string{
+				"versions": fmt.Sprintf("%d", sopReport.Versions.Invalid),
+				"assets":   fmt.Sprintf("%d", sopReport.Assets.Invalid),
+				"audit":    fmt.Sprintf("%d", auditReport.Invalid),
+			}),
 			ActorID: actorID,
 			Extra: map[string]any{
 				"versions_invalid": sopReport.Versions.Invalid,
@@ -89,6 +96,7 @@ func (s *Server) handleAdminRegisterUser(w http.ResponseWriter, r *http.Request)
 		DisplayName string `json:"display_name"`
 		Email       string `json:"email"`
 		Role        string `json:"role"`
+		Locale      string `json:"locale"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -98,11 +106,23 @@ func (s *Server) handleAdminRegisterUser(w http.ResponseWriter, r *http.Request)
 
 	actorID := GetUserID(r.Context())
 
+	locale := strings.TrimSpace(req.Locale)
+	if locale == "" {
+		locale = s.orgLocale()
+	} else if _, ok := i18n.Normalize(locale); !ok {
+		http.Error(w, "unsupported locale", http.StatusBadRequest)
+		return
+	}
+
 	// 1. Register User
 	// (Password is auto-generated as garbage internally, so we don't pass it here)
 	userID, err := s.authService.RegisterUser(req.DisplayName, req.Email, req.Role, &actorID)
 	if err != nil {
 		http.Error(w, "failed to register user: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := s.authService.SetUserLocale(userID, locale); err != nil {
+		http.Error(w, "failed to set user locale", http.StatusInternalServerError)
 		return
 	}
 
@@ -137,17 +157,17 @@ func (s *Server) handleAdminRegisterUser(w http.ResponseWriter, r *http.Request)
 		})
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]string{
-			"id":           userID,
-			"message":      "User created. Manual link mode is enabled.",
-			"invite_link":  inviteURL,
-			"delivery":     "manual_link",
+			"id":            userID,
+			"message":       "User created. Manual link mode is enabled.",
+			"invite_link":   inviteURL,
+			"delivery":      "manual_link",
 			"delivery_hint": "Share this one-time link over a trusted channel.",
 		})
 		return
 	}
 
 	// 4. Send Welcome Email
-	err = s.mailService.SendUserWelcomeEmail(req.Email, userID, req.DisplayName, inviteURL)
+	err = s.mailService.SendUserWelcomeEmail(req.Email, userID, req.DisplayName, inviteURL, locale)
 	if err != nil {
 		log.Printf("ERROR: User %s registered but Welcome Email failed: %v", userID, err)
 		// We still return success because the user account exists.
@@ -271,7 +291,7 @@ func (s *Server) handleAdminTriggerPasswordReset(w http.ResponseWriter, r *http.
 
 	// 3. Send the Email
 	// Using SendPasswordResetEmail (distinct from Welcome Email)
-	err = s.mailService.SendPasswordResetEmail(user.Email, user.ID, user.DisplayName, resetURL)
+	err = s.mailService.SendPasswordResetEmail(user.Email, user.ID, user.DisplayName, resetURL, user.Locale)
 	if err != nil {
 		// Log the failure but return success to the admin UI (since the token is valid)
 		log.Printf("ERROR: Admin triggered reset for %s, but email failed: %v", user.ID, err)

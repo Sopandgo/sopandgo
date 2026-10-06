@@ -2,6 +2,8 @@
   import { enhance } from '$app/forms';
   import { tick } from 'svelte';
   import Alert from '$lib/components/Alert.svelte';
+  import LocaleSelect from '$lib/components/LocaleSelect.svelte';
+  import * as m from '$lib/paraglide/messages.js';
   import type { UserRole } from '$lib/sdk/types';
 
   // Define the shape of the action result locally
@@ -19,7 +21,7 @@
     };
   }
 
-  let { form = null, mailMode = 'smtp' }: { form: FormResult | null; mailMode?: 'smtp' | 'manual_links' } = $props();
+  let { form = null, mailMode = 'smtp', defaultLocale = 'en' }: { form: FormResult | null; mailMode?: 'smtp' | 'manual_links'; defaultLocale?: string } = $props();
 
   let loading = $state(false);
 
@@ -29,13 +31,13 @@
   const isOk = $derived(!!result?.ok);
   const values = $derived(form?.values ?? {});
 
-  const ROLES: { value: UserRole; label: string }[] = [
-    { value: 'admin', label: 'admin' },
-    { value: 'editor', label: 'editor' },
-    { value: 'approver', label: 'approver' },
-    { value: 'auditor', label: 'auditor' },
-    { value: 'viewer', label: 'viewer' }
-  ];
+  const ROLES = $derived<{ value: UserRole; label: string }[]>([
+    { value: 'admin', label: m.role_admin() },
+    { value: 'editor', label: m.role_editor() },
+    { value: 'approver', label: m.role_approver() },
+    { value: 'auditor', label: m.role_auditor() },
+    { value: 'viewer', label: m.role_viewer() }
+  ]);
 </script>
 
 <div class="flex flex-col gap-4">
@@ -44,7 +46,7 @@
   {/if}
 
   {#if isOk}
-    <Alert variant="success" message="User registered successfully." class="shadow-lg" />
+    <Alert variant="success" message={m.users_registered()} class="shadow-lg" />
   {/if}
 
   {#if result?.warning}
@@ -53,7 +55,7 @@
 
   {#if result?.link}
     <div class="alert alert-info text-xs break-all">
-      <span>Invite link: <code>{result.link}</code></span>
+      <span>{m.users_invite_link()} <code>{result.link}</code></span>
     </div>
   {/if}
 
@@ -77,21 +79,21 @@
   >
     <fieldset class="fieldset">
       <label class="label" for="display_name">
-        <span class="label-text">Display name</span>
+        <span class="label-text">{m.users_display_name()}</span>
       </label>
       <input
         id="display_name"
         name="display_name"
         type="text"
         class="input input-accent input-bordered w-full {hasError ? 'input-error' : ''}"
-        placeholder="Full Name"
+        placeholder={m.users_full_name_placeholder()}
         value={values.display_name ?? ''}
         required
         disabled={loading}
       />
 
       <label class="label mt-2" for="email">
-        <span class="label-text">Email</span>
+        <span class="label-text">{m.common_email()}</span>
       </label>
       <input
         id="email"
@@ -104,8 +106,14 @@
         disabled={loading}
       />
 
+      <label class="label mt-2" for="locale">
+        <span class="label-text">{m.locale_initial()}</span>
+      </label>
+      <LocaleSelect id="locale" value={defaultLocale} />
+      <p class="text-xs text-base-content/70 mt-1">{m.locale_initial_help()}</p>
+
       <label class="label mt-2" for="role">
-        <span class="label-text">Role</span>
+        <span class="label-text">{m.common_role()}</span>
       </label>
       <select
         id="role"
@@ -114,8 +122,8 @@
         required
         disabled={loading}
       >
-        <option value="" disabled selected={!values.role}>Select a role</option>
-        {#each ROLES as role}
+        <option value="" disabled selected={!values.role}>{m.users_select_role()}</option>
+        {#each ROLES as role (role.value)}
           <option value={role.value} selected={values.role === role.value}>
             {role.label}
           </option>
@@ -126,15 +134,15 @@
         {#if loading}
           <span class="loading loading-spinner"></span>
         {/if}
-        Create user
+        {m.users_create()}
       </button>
 
       <div class="mt-4">
         <Alert
           variant="warning"
           message={mailMode === 'manual_links'
-            ? 'Manual links mode: after create, copy the generated link and share it securely.'
-            : 'The user will be required to set their password.'}
+            ? m.users_manual_links_help()
+            : m.users_password_help()}
           class="text-xs"
         />
       </div>

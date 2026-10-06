@@ -42,6 +42,7 @@ const (
 	EventEmailFailed                  = "email_failed"
 	EventSmtpSettingsUpdated          = "smtp_settings_updated"
 	EventMailModeUpdated              = "mail_mode_updated"
+	EventDefaultLocaleUpdated         = "default_locale_updated"
 	EventMailTransportUpdated         = "mail_transport_updated"
 	EventResendSettingsUpdated        = "resend_settings_updated"
 	EventManualInviteLinkGenerated    = "manual_invite_link_generated"
@@ -86,6 +87,7 @@ var knownEventTypes = map[string]struct{}{
 	EventEmailFailed:                  {},
 	EventSmtpSettingsUpdated:          {},
 	EventMailModeUpdated:              {},
+	EventDefaultLocaleUpdated:         {},
 	EventMailTransportUpdated:         {},
 	EventResendSettingsUpdated:        {},
 	EventManualInviteLinkGenerated:    {},

@@ -3,6 +3,8 @@
     import type { SOPVersion } from '$lib/sdk/types'; 
   import Card from './Card.svelte';
     import SopVersionStatusBadge from './SopVersionStatusBadge.svelte';
+    import * as m from '$lib/paraglide/messages.js';
+    import { getLocale } from '$lib/paraglide/runtime';
 
     // Define the component props using TypeScript interface
     interface Props {
@@ -20,7 +22,7 @@
 <Card>
     <ul class="list">
         <li class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold border-b border-base-200/50">
-            Versions ({versions.length})
+            {m.versions_count({ count: String(versions.length) })}
         </li>
 
         {#each versions as version (version.id)}
@@ -42,19 +44,19 @@
                     </div>
 
                     <div class="flex-1">
-                        <div class="font-bold text-sm lg:text-base">Version {version.version}</div>
+                        <div class="font-bold text-sm lg:text-base">{m.common_version({ version: String(version.version) })}</div>
                         {#if version.change_summary}
                             <div class="text-sm text-base-content/80">{version.change_summary}</div>
                         {/if}
                         <div class="text-xs opacity-50 font-mono uppercase tracking-tighter">
-                            ID: {version.id} • Created: {new Date(version.created_at).toLocaleDateString()}
+                            {m.versions_meta({ id: version.id, date: new Date(version.created_at).toLocaleDateString(getLocale()) })}
                         </div>
                     </div>
 
                     <SopVersionStatusBadge status={version.status} />
 
                     <div class="flex gap-1 items-center">
-                        <div class="btn btn-square btn-ghost btn-sm lg:btn-md" aria-label="Open">
+                        <div class="btn btn-square btn-ghost btn-sm lg:btn-md" aria-label={m.common_open()}>
                             <ChevronRightIcon />
                         </div>
                     </div>
@@ -62,8 +64,8 @@
             </li>
         {:else}
             <li class="p-12 text-center">
-                <div class="text-sm opacity-40 mb-2">No versions found.</div>
-                <div class="text-xs opacity-30">Create a new version to get started.</div>
+                <div class="text-sm opacity-40 mb-2">{m.versions_empty()}</div>
+                <div class="text-xs opacity-30">{m.versions_empty_help()}</div>
             </li>
         {/each}
     </ul>

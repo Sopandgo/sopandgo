@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 	"github.com/sopandgo/sopandgo/backend/internal/secrets"
 )
 
@@ -41,13 +42,14 @@ type PublicSMTPSettings struct {
 	FromAddress        string `json:"from_address"`
 	MailMode           string `json:"mail_mode"`
 	MailTransport      string `json:"mail_transport"`
+	DefaultLocale      string `json:"default_locale"`
 	PasswordConfigured bool   `json:"password_configured"`
 	Configured         bool   `json:"configured"`
 	EncryptionKeySet   bool   `json:"encryption_key_set"`
 	// Resend (optional; used when mail_transport is "resend")
-	ResendFromAddress        string `json:"resend_from_address"`
-	ResendConfigured         bool   `json:"resend_configured"`
-	ResendAPIKeyConfigured   bool   `json:"resend_api_key_configured"`
+	ResendFromAddress      string `json:"resend_from_address"`
+	ResendConfigured       bool   `json:"resend_configured"`
+	ResendAPIKeyConfigured bool   `json:"resend_api_key_configured"`
 }
 
 // GetPublic returns current settings for the admin UI.
@@ -61,9 +63,15 @@ func (s *SMTPSettingsStore) GetPublic() (*PublicSMTPSettings, error) {
 		return nil, err
 	}
 
+	defaultLocale, err := s.GetDefaultLocale()
+	if err != nil {
+		return nil, err
+	}
+
 	pub := &PublicSMTPSettings{
-		MailMode:      mailMode,
-		MailTransport: transport,
+		MailMode:         mailMode,
+		MailTransport:    transport,
+		DefaultLocale:    defaultLocale,
 		EncryptionKeySet: s.KeyConfigured(),
 	}
 
@@ -135,6 +143,43 @@ func (s *SMTPSettingsStore) SetMailMode(mode string) error {
 			mail_mode = excluded.mail_mode,
 			updated_at = excluded.updated_at
 	`, mode, now)
+	return err
+}
+
+func (s *SMTPSettingsStore) GetDefaultLocale() (string, error) {
+	var tag string
+	err := s.db.QueryRow(`SELECT default_locale FROM app_settings WHERE id = 1`).Scan(&tag)
+	if errors.Is(err, sql.ErrNoRows) {
+		return i18n.Base, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return i18n.Fallback(tag), nil
+}
+
+func (s *SMTPSettingsStore) SetDefaultLocale(locale string) error {
+	tag, ok := i18n.Normalize(locale)
+	if !ok {
+		return i18n.ErrUnsupportedLocale
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	res, err := s.db.Exec(`
+		UPDATE app_settings SET default_locale = ?, updated_at = ? WHERE id = 1
+	`, tag, now)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		_, err = s.db.Exec(`
+			INSERT INTO app_settings (id, mail_mode, mail_transport, default_locale, updated_at)
+			VALUES (1, 'smtp', 'smtp', ?, ?)
+		`, tag, now)
+	}
 	return err
 }
 
@@ -299,9 +344,13 @@ func (s *SMTPSettingsStore) SendTestEmail(to string) error {
 	if err != nil {
 		return err
 	}
-	subject := "SOPandGO email test"
+	locale, err := s.GetDefaultLocale()
+	if err != nil {
+		return err
+	}
+	subject := i18n.T(locale, "mail.test.subject", nil)
 	if transport == MailTransportResend {
-		body := "This is a test message from your SOPandGO server. If you received this, Resend is configured correctly."
+		body := i18n.T(locale, "mail.test.body_resend", nil)
 		return s.sendResendEmail([]string{to}, subject, body)
 	}
 	host, port, user, pass, from, err := s.loadDecrypted()
@@ -309,7 +358,7 @@ func (s *SMTPSettingsStore) SendTestEmail(to string) error {
 		return err
 	}
 	sender := NewSmtpSender(host, port, user, pass, from)
-	body := "This is a test message from your SOPandGO server. If you received this, SMTP is configured correctly."
+	body := i18n.T(locale, "mail.test.body_smtp", nil)
 	return sender.Send([]string{to}, subject, body)
 }
 

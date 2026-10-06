@@ -9,6 +9,8 @@
     } from 'lucide-svelte';
   import Card from './Card.svelte';
     import SopVersionStatusBadge from './SopVersionStatusBadge.svelte';
+    import * as m from '$lib/paraglide/messages.js';
+    import { getLocale } from '$lib/paraglide/runtime';
 
     interface Props {
         sopId: string;
@@ -29,7 +31,7 @@
     }: Props = $props();
 
     let formattedDate = $derived(
-        createdAt ? new Date(createdAt).toLocaleString() : 'N/A'
+        createdAt ? new Date(createdAt).toLocaleString(getLocale()) : m.common_na()
     );
 </script>
 
@@ -38,7 +40,7 @@
 <Card>
     <ul class="list">
         <li class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold border-b border-base-200/50">
-            Technical Information
+            {m.details_technical()}
         </li>
 
         <a href={`/sops/${sopId}`} class="contents">
@@ -48,9 +50,9 @@
                 </div>
 
                 <div class="flex-1">
-                    <div class="text-sm font-medium">Version: {version}</div>
+                    <div class="text-sm font-medium">{m.details_version({ version: String(version) })}</div>
                     <div class="text-xs opacity-40 font-mono italic">
-                        Version Number
+                        {m.details_version_number()}
                     </div>
                 </div>
 
@@ -68,9 +70,9 @@
             </div>
 
             <div class="flex-1">
-                <div class="text-sm font-medium">Created: {formattedDate}</div>
+                <div class="text-sm font-medium">{m.common_created({ when: formattedDate })}</div>
                 <div class="text-xs opacity-40 font-mono italic">
-                    Timestamp (UTC)
+                    {m.profile_timestamp()}
                 </div>
             </div>
         </li>
@@ -81,9 +83,9 @@
             </div>
 
             <div class="flex-1">
-                <div class="text-sm font-medium">Status: <SopVersionStatusBadge status={status} /></div>
+                <div class="text-sm font-medium">{m.details_status()} <SopVersionStatusBadge status={status} /></div>
                 <div class="text-xs opacity-40 font-mono italic">
-                    Publication status of your SOP Version
+                    {m.details_status_help()}
                 </div>
             </div>
         </li>
@@ -97,7 +99,7 @@
             </div>
 
             <div class="flex-1 overflow-hidden">
-                <div class="text-sm font-medium">Checksum</div>
+                <div class="text-sm font-medium">{m.details_checksum()}</div>
                 <div class="text-[10px] opacity-60 font-mono truncate" title={contentHash}>
                     {contentHash}
                 </div>
@@ -105,7 +107,7 @@
                 <div class="mt-1 flex items-center gap-1">
                     <span class="inline-block w-2 h-2 rounded-full {hashValid ? 'bg-success' : 'bg-error'}"></span>
                     <span class="text-[10px] font-bold uppercase tracking-wider {hashValid ? 'text-success' : 'text-error'}">
-                        {hashValid ? 'Integrity Verified' : 'Integrity Violated'}
+                        {hashValid ? m.details_verified() : m.details_violated()}
                     </span>
                 </div>
             </div>

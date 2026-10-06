@@ -2,11 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 )
 
 type LoginRequest struct {
@@ -23,6 +25,28 @@ func (s *Server) handleGetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(user)
+}
+
+func (s *Server) handleUpdateMyLocale(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Locale string `json:"locale"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	userID := GetUserID(r.Context())
+	if err := s.authService.SetUserLocale(userID, req.Locale); err != nil {
+		if errors.Is(err, auth.ErrInvalidLocale) {
+			http.Error(w, "unsupported locale", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "failed to update locale", http.StatusInternalServerError)
+		return
+	}
+	tag, _ := i18n.Normalize(req.Locale)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"locale": tag})
 }
 
 func (s *Server) handleGetMySignatureStatus(w http.ResponseWriter, r *http.Request) {

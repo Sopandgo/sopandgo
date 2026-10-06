@@ -13,19 +13,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sopandgo/sopandgo/backend/internal/markdown"
 	"github.com/microcosm-cc/bluemonday"
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
+	"github.com/sopandgo/sopandgo/backend/internal/markdown"
 )
 
 type Metadata struct {
-	SOPTitle          string
-	SOPID             string
-	SOPVersionID      string
-	SOPVersionNumber  int
-	Stage             string
-	ContentHash       string
-	GeneratorVersion  string
-	GeneratedAt       time.Time
+	SOPTitle         string
+	SOPID            string
+	SOPVersionID     string
+	SOPVersionNumber int
+	Stage            string
+	ContentHash      string
+	GeneratorVersion string
+	GeneratedAt      time.Time
+	Locale           string
 }
 
 type Input struct {
@@ -62,36 +64,7 @@ func (g *GotenbergRenderer) Render(input Input) ([]byte, error) {
 	p := bluemonday.UGCPolicy()
 	p.AllowDataURIImages()
 	safeHTML := p.SanitizeBytes(mdHTML.Bytes())
-
-	view := struct {
-		Title                string
-		VersionNumber        int
-		Stage                string
-		SOPID                string
-		VersionID            string
-		ContentHash          string
-		Generator            string
-		GeneratedAt          string
-		GeneratedAtDisplay   string
-		FaviconDataURL       string
-		FaviconInlineSVG     template.HTML
-		ConfidentialityLabel string
-		ContentHTML          template.HTML
-	}{
-		Title:                input.Meta.SOPTitle,
-		VersionNumber:        input.Meta.SOPVersionNumber,
-		Stage:                input.Meta.Stage,
-		SOPID:                input.Meta.SOPID,
-		VersionID:            input.Meta.SOPVersionID,
-		ContentHash:          input.Meta.ContentHash,
-		Generator:            input.Meta.GeneratorVersion,
-		GeneratedAt:          input.Meta.GeneratedAt.UTC().Format(time.RFC3339),
-		GeneratedAtDisplay:   input.Meta.GeneratedAt.UTC().Format("2006-01-02 15:04 UTC"),
-		FaviconDataURL:       "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString(faviconSVG),
-		FaviconInlineSVG:     template.HTML(string(faviconSVG)),
-		ConfidentialityLabel: "Confidential - Internal Use Only",
-		ContentHTML:          template.HTML(string(safeHTML)),
-	}
+	view := documentView(input, template.HTML(string(safeHTML)))
 
 	tmpl, err := template.New("pdf").Parse(pdfTemplate)
 	if err != nil {
@@ -199,8 +172,101 @@ func buildChromeTemplate(tmplText string, data any) (string, error) {
 	return out.String(), nil
 }
 
+func stageLabel(locale, stage string) string {
+	key := "pdf.stage." + stage
+	label := i18n.T(locale, key, nil)
+	if label == key {
+		return stage
+	}
+	return label
+}
+
+func documentView(input Input, content template.HTML) pdfView {
+	locale := i18n.Fallback(input.Meta.Locale)
+	stage := stageLabel(locale, input.Meta.Stage)
+	version := fmt.Sprintf("%d", input.Meta.SOPVersionNumber)
+	return pdfView{
+		Lang:                 locale,
+		Title:                input.Meta.SOPTitle,
+		VersionNumber:        input.Meta.SOPVersionNumber,
+		Stage:                stage,
+		SOPID:                input.Meta.SOPID,
+		VersionID:            input.Meta.SOPVersionID,
+		ContentHash:          input.Meta.ContentHash,
+		Generator:            input.Meta.GeneratorVersion,
+		GeneratedAt:          input.Meta.GeneratedAt.UTC().Format(time.RFC3339),
+		GeneratedAtDisplay:   input.Meta.GeneratedAt.UTC().Format("2006-01-02 15:04 UTC"),
+		FaviconDataURL:       "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString(faviconSVG),
+		FaviconInlineSVG:     template.HTML(string(faviconSVG)),
+		ConfidentialityLabel: i18n.T(locale, "pdf.confidential", nil),
+		TechnicalInformation: i18n.T(locale, "pdf.technical_information", nil),
+		LifecycleStatus:      i18n.T(locale, "pdf.lifecycle_status", nil),
+		VersionLine:          i18n.T(locale, "pdf.version_line", map[string]string{"version": version, "stage": stage}),
+		SOPIDLabel:           i18n.T(locale, "pdf.sop_id", nil),
+		SOPVersionLabel:      i18n.T(locale, "pdf.sop_version", nil),
+		VersionIDLabel:       i18n.T(locale, "pdf.version_id", nil),
+		ContentHashLabel:     i18n.T(locale, "pdf.content_hash", nil),
+		GeneratedAtLabel:     i18n.T(locale, "pdf.generated_at", nil),
+		PageLabel:            i18n.T(locale, "pdf.page", nil),
+		ContentHTML:          content,
+	}
+}
+
+// FooterHTML renders the PDF footer chrome, including the confidentiality label.
+func FooterHTML(input Input) (string, error) {
+	view := documentView(input, "")
+	return buildChromeTemplate(chromeFooterTemplate, view)
+}
+
+// HTMLDocument renders the SOP HTML shell, including translated chrome.
+func HTMLDocument(input Input) (string, error) {
+	var mdHTML bytes.Buffer
+	md := markdown.AuthoringMarkdown()
+	if err := md.Convert([]byte(input.Markdown), &mdHTML); err != nil {
+		return "", fmt.Errorf("failed to convert markdown to html: %w", err)
+	}
+	p := bluemonday.UGCPolicy()
+	p.AllowDataURIImages()
+	view := documentView(input, template.HTML(string(p.SanitizeBytes(mdHTML.Bytes()))))
+	tmpl, err := template.New("pdf").Parse(pdfTemplate)
+	if err != nil {
+		return "", err
+	}
+	var htmlDoc bytes.Buffer
+	if err := tmpl.Execute(&htmlDoc, view); err != nil {
+		return "", err
+	}
+	return htmlDoc.String(), nil
+}
+
+type pdfView struct {
+	Lang                 string
+	Title                string
+	VersionNumber        int
+	Stage                string
+	SOPID                string
+	VersionID            string
+	ContentHash          string
+	Generator            string
+	GeneratedAt          string
+	GeneratedAtDisplay   string
+	FaviconDataURL       string
+	FaviconInlineSVG     template.HTML
+	ConfidentialityLabel string
+	TechnicalInformation string
+	LifecycleStatus      string
+	VersionLine          string
+	SOPIDLabel           string
+	SOPVersionLabel      string
+	VersionIDLabel       string
+	ContentHashLabel     string
+	GeneratedAtLabel     string
+	PageLabel            string
+	ContentHTML          template.HTML
+}
+
 const pdfTemplate = `<!doctype html>
-<html>
+<html lang="{{.Lang}}">
 <head>
   <meta charset="utf-8" />
   <title>{{.Title}}</title>
@@ -227,16 +293,16 @@ const pdfTemplate = `<!doctype html>
   <div class="title-row">
     <h1>{{.Title}}</h1>
   </div>
-  <div class="sub">Version {{.VersionNumber}} ({{.Stage}})</div>
-  <h2 class="meta-heading">Technical Information</h2>
+  <div class="sub">{{.VersionLine}}</div>
+  <h2 class="meta-heading">{{.TechnicalInformation}}</h2>
   <table class="meta-table">
     <tbody>
-      <tr><th>SOP ID</th><td>{{.SOPID}}</td></tr>
-      <tr><th>SOP Version</th><td>{{.VersionNumber}}</td></tr>
-      <tr><th>Lifecycle Status</th><td>{{.Stage}}</td></tr>
-      <tr><th>Version ID</th><td>{{.VersionID}}</td></tr>
-      <tr><th>Content Hash</th><td>{{.ContentHash}}</td></tr>
-      <tr><th>Generated At (UTC)</th><td>{{.GeneratedAt}}</td></tr>
+      <tr><th>{{.SOPIDLabel}}</th><td>{{.SOPID}}</td></tr>
+      <tr><th>{{.SOPVersionLabel}}</th><td>{{.VersionNumber}}</td></tr>
+      <tr><th>{{.LifecycleStatus}}</th><td>{{.Stage}}</td></tr>
+      <tr><th>{{.VersionIDLabel}}</th><td>{{.VersionID}}</td></tr>
+      <tr><th>{{.ContentHashLabel}}</th><td>{{.ContentHash}}</td></tr>
+      <tr><th>{{.GeneratedAtLabel}}</th><td>{{.GeneratedAt}}</td></tr>
     </tbody>
   </table>
   <article>{{.ContentHTML}}</article>
@@ -259,6 +325,6 @@ const chromeHeaderTemplate = `<div style="width:100%; font-size:9px; color:#4b55
 const chromeFooterTemplate = `<div style="width:100%; font-size:9px; color:#6b7280; padding:0 24px 0 24px; box-sizing:border-box; border-top:1px solid #e5e7eb;">
   <div style="display:flex; align-items:center; justify-content:space-between; width:100%; min-height:24px;">
     <div>{{.ConfidentialityLabel}}</div>
-    <div>Page <span class="pageNumber"></span> / <span class="totalPages"></span></div>
+    <div>{{.PageLabel}} <span class="pageNumber"></span> / <span class="totalPages"></span></div>
   </div>
 </div>`

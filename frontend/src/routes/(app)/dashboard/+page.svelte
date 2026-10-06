@@ -20,6 +20,8 @@
 		StarIcon,
 		UsersIcon
 	} from 'lucide-svelte';
+	import * as m from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
 
 	let { data } = $props();
 
@@ -34,12 +36,12 @@
 	const pending = $derived(pendingSignatureCount(signatureStatus));
 
 	const greetingPeriod = $derived(greetingPeriodForDate(new Date()));
-	const greetingWord = $derived(
+	const greeting = $derived(
 		greetingPeriod === 'morning'
-			? 'morning'
+			? m.dashboard_greeting_morning({ name: user?.display_name ?? '' })
 			: greetingPeriod === 'afternoon'
-				? 'afternoon'
-				: 'evening'
+				? m.dashboard_greeting_afternoon({ name: user?.display_name ?? '' })
+				: m.dashboard_greeting_evening({ name: user?.display_name ?? '' })
 	);
 
 	function sopLatestHref(sopId: string) {
@@ -50,41 +52,48 @@
 		return {
 			href: sopLatestHref(s.sop_id),
 			title: s.title,
-			versionLabel: `Version ${s.latest_version}`
+			versionLabel: m.common_version({ version: String(s.latest_version) }),
+			versionPublished: m.common_version_published({ version: String(s.latest_version) })
 		};
 	}
 </script>
 
+<svelte:head>
+	<title>{m.page_dashboard()}</title>
+</svelte:head>
+
 <div class="flex flex-col gap-6">
-	<Breadcrumbs items={[{ label: 'Dashboard', icon: HouseIcon }]} />
+	<Breadcrumbs items={[{ label: m.page_dashboard(), icon: HouseIcon }]} />
 
 	{#if user}
 		<section class="rounded-box border border-base-200 bg-base-100 px-5 py-6 shadow-sm sm:px-8">
 			<h1 class="text-xl font-semibold sm:text-2xl">
-				Good {greetingWord}, {user.display_name}!
+				{greeting}
 			</h1>
 			{#if pending === 0}
 				<p class="mt-2 text-base-content/80">
 					<span class="inline-flex items-center gap-2">
 						<PartyPopperIcon class="h-5 w-5 shrink-0 text-success" aria-hidden="true" />
-						You are all caught up. Every published SOP you need is signed on the latest version.
+						{m.dashboard_caught_up()}
 					</span>
 				</p>
 			{:else}
 				<p class="mt-2 text-base-content/80">
-					You have <strong>{pending}</strong>
-					{pending === 1 ? ' SOP' : ' SOPs'} that need your review before you are up to date.
+					{pending === 1 ? m.dashboard_pending_one() : m.dashboard_pending_other({ count: String(pending) })}
 				</p>
 				{#if notStarted.length > 0 && actionRequired.length > 0}
 					<p class="mt-1 text-sm text-base-content/60">
-						{notStarted.length} never signed · {actionRequired.length} updated since you last signed
+						{m.dashboard_split({
+							never: String(notStarted.length),
+							updated: String(actionRequired.length)
+						})}
 					</p>
 				{/if}
 			{/if}
 			<div class="mt-5 flex flex-wrap gap-2">
 				<a href="/sops" class="btn btn-primary gap-2">
 					<NotebookIcon class="h-4 w-4 shrink-0" aria-hidden="true" />
-					All SOPs
+					{m.common_all_sops()}
 				</a>
 			</div>
 		</section>
@@ -93,18 +102,16 @@
 			<Card>
 				<div class="border-b border-base-200 p-4 sm:p-5">
 					<h2 id="action-required-heading" class="text-lg font-semibold">
-						Action required
+						{m.dashboard_action_required()}
 					</h2>
 					<p class="mt-1 text-sm text-base-content/70">
-						Sign the latest published version of each SOP below.
+						{m.dashboard_action_help()}
 					</p>
 				</div>
 
 				{#if actionRequired.length === 0 && notStarted.length === 0}
 					<div class="p-8 text-center text-sm text-base-content/60">
-						Nothing pending. Browse the
-						<a href="/sops" class="link link-primary">SOP library</a>
-						if you need a document.
+						{m.dashboard_nothing_before()}<a href="/sops" class="link link-primary">{m.dashboard_sop_library()}</a>{m.dashboard_nothing_after()}
 					</div>
 				{:else}
 					<ul class="list">
@@ -112,7 +119,7 @@
 							<li
 								class="border-b border-base-200 bg-base-200/20 px-4 py-3 text-xs font-bold uppercase tracking-widest opacity-60"
 							>
-								New — not signed yet
+								{m.dashboard_new_unsigned()}
 							</li>
 							{#each notStarted as sop (sop.sop_id)}
 								{@const row = rowForSignature(sop)}
@@ -140,7 +147,7 @@
 												{row.versionLabel}
 											</div>
 										</div>
-										<span class="badge badge-ghost badge-sm hidden sm:inline-flex">Review</span>
+										<span class="badge badge-ghost badge-sm hidden sm:inline-flex">{m.dashboard_review()}</span>
 										<ChevronRightIcon class="h-5 w-5 shrink-0 opacity-40" aria-hidden="true" />
 									</a>
 								</li>
@@ -151,7 +158,7 @@
 							<li
 								class="border-b border-base-200 bg-warning/10 px-4 py-3 text-xs font-bold uppercase tracking-widest text-warning"
 							>
-								Out of date — new version published
+								{m.dashboard_outdated()}
 							</li>
 							{#each actionRequired as sop (sop.sop_id)}
 								{@const row = rowForSignature(sop)}
@@ -176,10 +183,10 @@
 											<div
 												class="mt-0.5 font-mono text-[10px] uppercase tracking-tighter opacity-60"
 											>
-												{row.versionLabel} published
+												{row.versionPublished}
 											</div>
 										</div>
-										<span class="badge badge-warning badge-sm hidden sm:inline-flex">Update</span>
+										<span class="badge badge-warning badge-sm hidden sm:inline-flex">{m.dashboard_update()}</span>
 										<ChevronRightIcon class="h-5 w-5 shrink-0 opacity-40" aria-hidden="true" />
 									</a>
 								</li>
@@ -195,15 +202,15 @@
 				<div class="border-b border-base-200 p-4 sm:p-5">
 					<h2 id="whats-new-heading" class="flex items-center gap-2 text-lg font-semibold">
 						<MegaphoneIcon class="h-5 w-5 shrink-0" aria-hidden="true" />
-						What's new in the lab
+						{m.dashboard_whats_new()}
 					</h2>
 					<p class="mt-1 text-sm text-base-content/70">
-						Recently published SOP versions.
+						{m.dashboard_recent()}
 					</p>
 				</div>
 				{#if recentPublishes.length === 0}
 					<div class="p-8 text-center text-sm text-base-content/60">
-						Nothing has been published yet.
+						{m.dashboard_nothing_published()}
 					</div>
 				{:else}
 					<ul class="list">
@@ -221,11 +228,11 @@
 											<div class="mt-0.5 text-sm text-base-content/80">{item.change_summary}</div>
 										{/if}
 										<div class="mt-0.5 font-mono text-[10px] uppercase tracking-tighter opacity-50">
-											Version {item.version}
+											{m.common_version({ version: String(item.version) })}
 											{#if item.published_by}
 												· {item.published_by}
 											{/if}
-											· {new Date(item.published_at).toLocaleDateString()}
+											· {new Date(item.published_at).toLocaleDateString(getLocale())}
 										</div>
 									</div>
 									<ChevronRightIcon class="h-5 w-5 shrink-0 opacity-40" aria-hidden="true" />
@@ -243,11 +250,10 @@
 					<div class="border-b border-base-200 p-4 sm:p-5">
 						<h2 id="training-heading" class="flex items-center gap-2 text-lg font-semibold">
 							<UsersIcon class="h-5 w-5 shrink-0" aria-hidden="true" />
-							Who still needs to sign
+							{m.dashboard_training_title()}
 						</h2>
 						<p class="mt-1 text-sm text-base-content/70">
-							Active people who can sign, compared with reader signatures on the latest published
-							version.
+							{m.dashboard_training_help()}
 						</p>
 					</div>
 					<SopTrainingCoverage items={trainingCoverage} />
@@ -261,20 +267,18 @@
 					class="flex flex-col gap-2 border-b border-base-200 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5"
 				>
 					<div>
-						<h2 id="favorites-heading" class="text-lg font-semibold">Favorite SOPs</h2>
-						<p class="mt-1 text-sm text-base-content/70">Quick access to documents you use often.</p>
+						<h2 id="favorites-heading" class="text-lg font-semibold">{m.dashboard_favorites()}</h2>
+						<p class="mt-1 text-sm text-base-content/70">{m.dashboard_favorites_help()}</p>
 					</div>
 					<div class="flex flex-wrap gap-2 self-start sm:self-auto">
-						<a href="/sops" class="btn btn-outline btn-sm">All SOPs</a>
-						<a href="/sops?favorites_only=true" class="btn btn-ghost btn-sm"> View all favorites </a>
+						<a href="/sops" class="btn btn-outline btn-sm">{m.common_all_sops()}</a>
+						<a href="/sops?favorites_only=true" class="btn btn-ghost btn-sm"> {m.dashboard_view_favorites()} </a>
 					</div>
 				</div>
 
 				{#if favoriteSops.length === 0}
 					<div class="p-8 text-center text-sm text-base-content/60">
-						You have not starred any SOPs yet. Open a document and choose
-						<strong class="font-medium text-base-content/80">Add to favorites</strong>
-						to pin it here.
+						{m.dashboard_no_favorites_before()}<strong class="font-medium text-base-content/80">{m.sops_add_to_favorites()}</strong>{m.dashboard_no_favorites_after()}
 					</div>
 				{:else}
 					<ul
@@ -310,7 +314,7 @@
 										<button
 											type="submit"
 											class="btn btn-square btn-ghost btn-sm text-warning"
-											aria-label={`Remove ${sop.title} from favorites`}
+											aria-label={m.aria_remove_favorite({ title: sop.title })}
 										>
 											<StarIcon class="h-4 w-4 fill-current" />
 										</button>

@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
 
 // 1. Load the token from URL so the page can put it in the form
@@ -18,7 +19,7 @@ export const actions: Actions = {
         const password = data.get('password')?.toString();
 
         if (!token || !password) {
-            return fail(400, { message: 'Missing fields' });
+            return fail(400, { message: m.error_missing_fields() });
         }
 
         try {
@@ -27,7 +28,7 @@ export const actions: Actions = {
             const e = err as Error;
             
             if (e.message === 'TOKEN_INVALID_OR_EXPIRED') {
-                return fail(401, { message: 'This invite link has expired. Please ask your admin for a new one.' });
+                return fail(401, { message: m.error_invite_expired() });
             }
             
             return fail(400, { message: e.message });

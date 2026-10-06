@@ -3,6 +3,8 @@
     import IntegrityButtonAssets from './IntegrityButtonAssets.svelte';
     import type { SOPAsset } from '$lib/sdk/types';
   import Card from './Card.svelte';
+  import * as m from '$lib/paraglide/messages.js';
+  import { getLocale } from '$lib/paraglide/runtime';
 
     // Define props with Svelte 5 runes
     let { items = [] } = $props<{ items?: SOPAsset[] | null }>();
@@ -14,7 +16,7 @@
 <Card>
     <ul class="list">
         <li class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold border-b border-base-200/50">
-            Associated Assets ({assets.length})
+            {m.assets_count({ count: String(assets.length) })}
         </li>
 
         {#each assets as asset (asset.id)}
@@ -26,7 +28,7 @@
                 <div class="flex-1">
                     <div class="font-bold text-sm lg:text-base">{asset.file_name}</div>
                     <div class="text-[10px] opacity-40 font-mono uppercase tracking-tighter">
-                        Uploaded: {new Date(asset.created_at).toLocaleString()}
+                        {m.assets_uploaded({ when: new Date(asset.created_at).toLocaleString(getLocale()) })}
                     </div>
                 </div>
 
@@ -40,8 +42,8 @@
                         target="_blank"
                         rel="noopener noreferrer"
                         class="btn btn-square btn-ghost btn-sm"
-                        title="Open/Download Asset"
-                        aria-label="Open asset"
+                        title={m.assets_open_title()}
+                        aria-label={m.assets_open_aria()}
                     >
                         <ExternalLinkIcon size={18} class="opacity-70"/>
                     </a>
@@ -49,7 +51,7 @@
             </li>
         {:else}
             <li class="p-12 text-center">
-                <div class="text-sm opacity-40">No associated assets found.</div>
+                <div class="text-sm opacity-40">{m.assets_empty()}</div>
             </li>
         {/each}
     </ul>

@@ -4,20 +4,25 @@
     import ListUsers from '$lib/components/ListUsers.svelte';
     import RegisterUser from '$lib/components/RegisterUser.svelte';
     import { UsersIcon } from 'lucide-svelte';
+    import * as m from '$lib/paraglide/messages.js';
     
     let { data, form } = $props();
 </script>
+
+<svelte:head>
+    <title>{m.page_users()}</title>
+</svelte:head>
 
 
     <Card>
         <div class="card-body">
             <CardPageHeading>
                 <UsersIcon class="w-8 h-8" />
-                User Management
+                {m.users_heading()}
             </CardPageHeading>
 
             <div class="flex items-center gap-2 text-base-content/70">
-            <span class="text-sm font-medium">Administrate registered users, assign roles, and manage system access.</span> 
+            <span class="text-sm font-medium">{m.users_intro()}</span> 
             </div>
         </div>
     </Card>
@@ -33,8 +38,8 @@
 
     <Card>
         <div class="card-body">
-            <h2 class="card-title text-xs opacity-60 tracking-widest uppercase font-bold mb-4">Register New User</h2>
-            <RegisterUser mailMode={data.smtp?.mail_mode ?? 'smtp'} {form} />
+            <h2 class="card-title text-xs opacity-60 tracking-widest uppercase font-bold mb-4">{m.users_register()}</h2>
+            <RegisterUser mailMode={data.smtp?.mail_mode ?? 'smtp'} defaultLocale={data.smtp?.default_locale ?? 'en'} {form} />
         </div>
     </Card>
 </div>

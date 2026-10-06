@@ -1,6 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import Alert from '$lib/components/Alert.svelte';
+  import * as m from '$lib/paraglide/messages.js';
+  import { getLocale } from '$lib/paraglide/runtime';
   import Card from './Card.svelte';
 
   /** Flexible session row from the admin sessions API */
@@ -34,7 +36,7 @@
     try {
       if (v == null || v === '') return '—';
       const d = new Date(v as string | number | Date);
-      return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString();
+      return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString(getLocale());
     } catch {
       return String(v ?? '—');
     }
@@ -48,7 +50,7 @@
       s.email ||
       s.user_email ||
       s.user_id ||
-      'Unknown user'
+      m.sessions_unknown()
     );
   }
 
@@ -70,13 +72,13 @@
 {/if}
 
 {#if revokeOkFor}
-  <Alert variant="success" message="User sessions revoked." class="shadow-lg" />
+  <Alert variant="success" message={m.sessions_revoked()} class="shadow-lg" />
 {/if}
 
 <Card>
   <ul class="list">
     <li class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold">
-      Active Sessions ({sessions.length})
+      {m.sessions_count({ count: String(sessions.length) })}
     </li>
 
     {#each sessions as s, i (s.session_id ?? s.id ?? `${sessionUserId(s)}-${i}`)}
@@ -94,12 +96,12 @@
 
           {#if sessionUserId(s)}
             <div class="text-xs opacity-50 font-mono uppercase tracking-tighter">
-              User ID: {sessionUserId(s)}
+              {m.sessions_user_id({ id: sessionUserId(s) })}
             </div>
           {/if}
 
           <div class="text-xs opacity-50 font-mono uppercase tracking-tighter">
-            Expires: {fmtDate(sessionExpires(s))}
+            {m.sessions_expires({ when: fmtDate(sessionExpires(s)) })}
           </div>
         </div>
 
@@ -123,19 +125,19 @@
               type="submit"
               class="btn btn-error"
               disabled={!sessionUserId(s) || revokingUserId === sessionUserId(s)}
-              title="Invalidate every active session for this user"
+              title={m.sessions_revoke_title()}
             >
               {#if revokingUserId === sessionUserId(s)}
                 <span class="loading loading-spinner"></span>
               {/if}
-              Revoke user sessions
+              {m.sessions_revoke()}
             </button>
           </form>
         </div>
       </li>
     {:else}
       <li class="p-12 text-center">
-        <div class="text-sm opacity-40">No active sessions found.</div>
+        <div class="text-sm opacity-40">{m.sessions_empty()}</div>
       </li>
     {/each}
   </ul>

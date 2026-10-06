@@ -14,11 +14,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 	"github.com/sopandgo/sopandgo/backend/internal/integrity"
 	"github.com/sopandgo/sopandgo/backend/internal/pdfgen"
 	"github.com/sopandgo/sopandgo/backend/internal/storage"
-	"github.com/google/uuid"
 )
 
 var ErrPDFExportDisabled = fmt.Errorf("pdf export disabled")
@@ -79,6 +80,7 @@ func (s *Service) ensureVersionPDFArtifact(versionID, stage, actorUserID string)
 			ContentHash:      version.ContentHash,
 			GeneratorVersion: s.pdfGeneratorVersion,
 			GeneratedAt:      time.Now().UTC(),
+			Locale:           i18n.ReadDefaultLocale(s.db),
 		},
 	})
 	if err != nil {

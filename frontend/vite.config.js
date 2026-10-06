@@ -1,3 +1,4 @@
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { sveltekit } from '@sveltejs/kit/vite';
@@ -25,8 +26,15 @@ const fromEnv = process.env.APP_VERSION?.trim().replace(/^v/, '') ?? '';
 const appVersion = fromEnv || gitDescribe() || 'dev';
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
-	define: {
-		__APP_VERSION__: JSON.stringify(appVersion)
-	}
+	plugins: [
+		paraglideVitePlugin({
+			project: './project.inlang',
+			outdir: './src/lib/paraglide',
+			strategy: ['cookie', 'preferredLanguage', 'baseLocale'],
+			emitTsDeclarations: true
+		}),
+		tailwindcss(),
+		sveltekit()
+	],
+	define: { __APP_VERSION__: JSON.stringify(appVersion) }
 });

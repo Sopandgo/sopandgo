@@ -6,6 +6,7 @@
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
   import ListSops from '$lib/components/ListSops.svelte';
   import { HouseIcon, NotebookIcon, PlusIcon, SearchIcon, XIcon } from 'lucide-svelte';
+  import * as m from '$lib/paraglide/messages.js';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -68,11 +69,15 @@
   let activeTagId = $derived(data.filters.tag_id);
 </script>
 
+<svelte:head>
+  <title>{m.page_sops()}</title>
+</svelte:head>
+
 <div class="flex flex-col gap-6">
   <Breadcrumbs
     items={[
-      { label: 'Dashboard', href: '/dashboard', icon: HouseIcon },
-      { label: 'SOPs', icon: NotebookIcon }
+      { label: m.page_dashboard(), href: '/dashboard', icon: HouseIcon },
+      { label: m.page_sops(), icon: NotebookIcon }
     ]}
   />
 
@@ -81,10 +86,10 @@
       <div class="flex flex-col gap-1">
         <CardPageHeading>
           <NotebookIcon class="w-8 h-8" />
-          Standard Operating Procedures
+          {m.sops_heading()}
         </CardPageHeading>
         <span class="text-sm font-medium text-base-content/70">
-          Manage and filter your organization's SOPs.
+          {m.sops_intro()}
         </span>
       </div>
 
@@ -92,7 +97,7 @@
         {#if ['admin', 'approver', 'editor'].includes(data.user!.role)}
           <a href="/sops/new" class="btn btn-primary ml-2">
             <PlusIcon class="w-5 h-5" />
-            <span class="hidden sm:inline">New SOP</span>
+            <span class="hidden sm:inline">{m.common_new_sop()}</span>
           </a>
         {/if}
       </div>
@@ -102,7 +107,7 @@
   <Card>
     <div class="card-body">
       <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
-        Search & Filters
+        {m.sops_search_filters()}
       </span>
 
       <div class="flex flex-col gap-3 pt-4 border-t border-base-200">
@@ -110,7 +115,7 @@
           <div class="join w-full md:w-auto">
             <input
               type="text"
-              placeholder="Search titles..."
+              placeholder={m.sops_search_placeholder()}
               class="input input-bordered join-item flex-1 md:w-80"
               bind:value={searchTerm}
               onkeydown={(e) => e.key === 'Enter' && handleSearch()}
@@ -118,7 +123,7 @@
             <button
               class="btn btn-primary join-item"
               onclick={handleSearch}
-              aria-label="Submit search"
+              aria-label={m.sops_submit_search()}
             >
               <SearchIcon class="w-5 h-5" />
             </button>
@@ -128,17 +133,17 @@
             <button
               class="btn btn-error text-error-content md:self-auto"
               onclick={clearFilters}
-              aria-label="Clear all filters"
+              aria-label={m.sops_clear_filters_aria()}
             >
               <XIcon class="w-4 h-4" />
-              Clear Filters
+              {m.sops_clear_filters()}
             </button>
           {/if}
         </div>
 
           <div class="flex flex-col gap-2 pt-2 border-t border-base-200/80">
             <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
-              Favorites
+              {m.common_favorites()}
             </span>
             <div class="flex flex-wrap gap-3">
               <label class="label cursor-pointer gap-2 justify-start py-1">
@@ -147,9 +152,9 @@
                   class="checkbox checkbox-sm checkbox-primary"
                   checked={data.filters.favorites_only}
                   onchange={toggleFavoritesOnly}
-                  aria-label="Show only favorite SOPs"
+                  aria-label={m.sops_favorites_only_aria()}
                 />
-                <span class="label-text text-sm">Favorites only</span>
+                <span class="label-text text-sm">{m.sops_favorites_only()}</span>
               </label>
               <label class="label cursor-pointer gap-2 justify-start py-1">
                 <input
@@ -157,9 +162,9 @@
                   class="checkbox checkbox-sm checkbox-primary"
                   checked={data.filters.favorites_first}
                   onchange={toggleFavoritesFirst}
-                  aria-label="Sort favorites to the top"
+                  aria-label={m.sops_favorites_first_aria()}
                 />
-                <span class="label-text text-sm">Favorites first</span>
+                <span class="label-text text-sm">{m.sops_favorites_first()}</span>
               </label>
             </div>
           </div>
@@ -167,7 +172,7 @@
           <div class="flex flex-col gap-2">
           <div class="flex items-center justify-between">
             <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
-              Tags
+              {m.common_tags()}
             </span>
 
             {#if activeTagId}
@@ -175,9 +180,9 @@
                 type="button"
                 class="btn btn-xs btn-ghost"
                 onclick={() => toggleTag(activeTagId)}
-                aria-label="Clear tag filter"
+                aria-label={m.sops_clear_tag_aria()}
               >
-                Clear tag
+                {m.sops_clear_tag()}
               </button>
             {/if}
           </div>
@@ -191,13 +196,13 @@
                   ? 'badge-primary'
                   : 'badge-ghost opacity-70'}"
                 aria-pressed={activeTagId === t.id}
-                aria-label={`Filter by tag: ${t.title}`}
-                title={activeTagId === t.id ? 'Click to remove filter' : 'Click to filter'}
+                aria-label={m.sops_filter_tag({ title: t.title })}
+                title={activeTagId === t.id ? m.sops_click_remove() : m.sops_click_filter()}
               >
                 {t.title}
               </button>
             {:else}
-              <span class="text-sm opacity-60">No tags available.</span>
+              <span class="text-sm opacity-60">{m.sops_no_tags()}</span>
             {/each}
           </div>
         </div>

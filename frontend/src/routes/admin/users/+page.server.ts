@@ -1,4 +1,5 @@
 import { fail } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
 import type { UserRole } from '$lib/sdk/types';
 
@@ -34,31 +35,33 @@ export const actions: Actions = {
         // 1. Validation Logic
         if (!display_name || !email || !role) {
             return fail(400, {
-                registerUser: { error: 'Missing required fields.' },
+                registerUser: { error: m.error_register_fields() },
                 values: { display_name, email, role }
             });
         }
 
         if (!looksLikeEmail(email)) {
             return fail(400, {
-                registerUser: { error: 'Invalid email address.' },
+                registerUser: { error: m.error_invalid_email() },
                 values: { display_name, email, role }
             });
         }
 
         if (!ROLES.has(role)) {
             return fail(400, {
-                registerUser: { error: 'Invalid role.' },
+                registerUser: { error: m.error_invalid_role() },
                 values: { display_name, email, role }
             });
         }
 
         try {
             // 2. Use SDK to create user
+            const locale = String(fd.get('locale') ?? '').trim();
             const res = await locals.api.admin.createUser({
                 display_name,
                 email,
                 role,
+                locale: locale || undefined
             });
 
             return {
@@ -71,7 +74,7 @@ export const actions: Actions = {
         } catch (err: any) {
             console.error('User registration failed:', err);
             return fail(500, {
-                registerUser: { error: 'Failed to register user. Email may already be in use.' },
+                registerUser: { error: m.error_register_failed() },
                 values: { display_name, email, role }
             });
         }
@@ -83,7 +86,7 @@ export const actions: Actions = {
 
         if (!user_id) {
             return fail(400, { 
-                triggerPasswordReset: { error: 'Missing user ID.' } 
+                triggerPasswordReset: { error: m.error_missing_user() } 
             });
         }
 
@@ -101,7 +104,7 @@ export const actions: Actions = {
         } catch (err: any) {
             console.error('Trigger reset failed:', err);
             return fail(500, { 
-                triggerPasswordReset: { error: 'Failed to send reset email.' } 
+                triggerPasswordReset: { error: m.error_reset_email_failed() } 
             });
         }
     },
@@ -112,7 +115,7 @@ export const actions: Actions = {
         const new_role = String(fd.get('role') ?? '') as UserRole;
 
         if (!user_id || !new_role) {
-            return fail(400, { updateRole: { error: 'Invalid user or role data.' } });
+            return fail(400, { updateRole: { error: m.error_role_data() } });
         }
 
         try {
@@ -121,7 +124,7 @@ export const actions: Actions = {
             return { updateRole: { ok: true } };
         } catch (err) {
             console.error('Role update failed:', err);
-            return fail(500, { updateRole: { error: 'Failed to update user role.' } });
+            return fail(500, { updateRole: { error: m.error_role_update() } });
         }
     },
 
@@ -131,7 +134,7 @@ export const actions: Actions = {
         const active = fd.get('active') === 'true';
 
         if (!user_id) {
-            return fail(400, { updateStatus: { error: 'Missing user ID.' } });
+            return fail(400, { updateStatus: { error: m.error_missing_user() } });
         }
 
         try {
@@ -141,8 +144,8 @@ export const actions: Actions = {
         } catch (err: any) {
             console.error('Status update failed:', err);
             const message = err.message === 'CANNOT_DISABLE_SELF' 
-                ? 'You cannot disable your own account.' 
-                : 'Failed to update user status.';
+                ? m.error_cannot_disable_self() 
+                : m.error_status_update();
             
             return fail(400, { updateStatus: { error: message } });
         }

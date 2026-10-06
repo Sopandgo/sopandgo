@@ -4,16 +4,18 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
+		"i18n:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --strategy cookie preferredLanguage baseLocale --emit-ts-declarations",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
+		"check": "npm run i18n:compile && svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
-		"test": "vitest run",
+		"test": "npm run i18n:compile && vitest run",
 		"test:watch": "vitest"
 	},
 	"devDependencies": {
+		"@inlang/paraglide-js": "^2.18.2",
 		"@sveltejs/adapter-node": "^5.4.0",
 		"@sveltejs/kit": "^2.70.3",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",

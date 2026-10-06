@@ -1,4 +1,5 @@
 import { fail } from '@sveltejs/kit';
+import * as m from '$lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -17,7 +18,7 @@ export const actions: Actions = {
         const file = fd.get('backup_file');
         if (!(file instanceof File) || file.size <= 0) {
             return fail(400, {
-                importBackup: { error: 'Please choose a backup .zip file.' }
+                importBackup: { error: m.error_backup_choose() }
             });
         }
         try {
@@ -25,10 +26,10 @@ export const actions: Actions = {
             return { importBackup: { ok: true, manifest: result.manifest, note: result.note } };
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'BACKUP_IMPORT_VALIDATION_FAILED';
-            let pretty = 'Could not validate backup archive.';
-            if (msg === 'BACKUP_BUSY') pretty = 'Another backup operation is already in progress.';
-            if (msg === 'BACKUP_PENDING_RESTART') pretty = 'A backup restore is already staged. Restart the backend/container before uploading another backup.';
-            if (msg === 'BACKUP_INVALID_ARCHIVE') pretty = 'Invalid backup archive. Expected app.db + manifest.json.';
+            let pretty: string = m.error_backup_validate();
+            if (msg === 'BACKUP_BUSY') pretty = m.error_backup_busy();
+            if (msg === 'BACKUP_PENDING_RESTART') pretty = m.error_backup_pending();
+            if (msg === 'BACKUP_INVALID_ARCHIVE') pretty = m.error_backup_invalid();
             if (msg.includes('unsupported backup format')) pretty = msg;
             if (msg.includes('backup schema is newer')) pretty = msg;
             return fail(422, {
@@ -44,7 +45,7 @@ export const actions: Actions = {
 
         if (!(file instanceof File) || file.size <= 0) {
             return fail(400, {
-                applyBackup: { error: 'Please choose a backup .zip file.' }
+                applyBackup: { error: m.error_backup_choose() }
             });
         }
         try {
@@ -60,10 +61,10 @@ export const actions: Actions = {
             };
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'BACKUP_APPLY_FAILED';
-            let pretty = 'Could not stage backup apply.';
-            if (msg === 'BACKUP_BUSY') pretty = 'Another backup operation is already in progress.';
-            if (msg === 'BACKUP_PENDING_RESTART') pretty = 'A backup restore is already staged. Restart the backend/container before uploading another backup.';
-            if (msg === 'BACKUP_CONFIRMATION_REQUIRED') pretty = 'Type "APPLY BACKUP" exactly to confirm destructive restore.';
+            let pretty: string = m.error_backup_stage();
+            if (msg === 'BACKUP_BUSY') pretty = m.error_backup_busy();
+            if (msg === 'BACKUP_PENDING_RESTART') pretty = m.error_backup_pending();
+            if (msg === 'BACKUP_CONFIRMATION_REQUIRED') pretty = m.error_backup_confirm();
             if (msg.includes('unsupported backup format')) pretty = msg;
             if (msg.includes('backup schema is newer')) pretty = msg;
             return fail(422, {

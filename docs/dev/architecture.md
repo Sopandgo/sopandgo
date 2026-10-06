@@ -24,7 +24,7 @@ The backend is strictly divided into three distinct layers:
 
 The system is built around these core entities:
 
-* **User:** A registered identity with an assigned role and status (RBAC).
+* **User:** A registered identity with an assigned role, status (RBAC), and `locale` (BCP 47 tag, default `en`).
 * **Session:** A server-tracked record of an active login (Refresh Token).
 * **Password Reset Token:** A hashed, time-boxed, single-use token used for user invites and password recovery.
 * **SOP & Version:** An SOP is a logical container; a Version holds append-only Markdown content plus a lifecycle status (`draft` / `rc` / `published` / `rejected` / `superseded`).
@@ -32,7 +32,7 @@ The system is built around these core entities:
 * **SOP favorite:** A private link between a **User** and an **SOP** (`sop_favorites` in SQLite). Used for bookmarks and list ordering; not shared between users.
 * **Asset:** Immutable files (images/PDFs) linked to specific SOPs.
 * **Audit Event:** A cryptographically linked, permanent record of a state change or significant system action.
-* **Mail settings:** `smtp_settings` holds provider host, port, username, from-address, and AES-GCM-encrypted password. Resend API key is stored similarly when that transport is selected. `app_settings` holds `mail_mode` (`smtp` or `manual_links`) and `mail_transport` (`smtp` or `resend`). The encryption key is supplied only via `SMTP_SECRET_ENCRYPTION_KEY`; configuration is edited in the admin UI.
+* **Mail settings:** `smtp_settings` holds provider host, port, username, from-address, and AES-GCM-encrypted password. Resend API key is stored similarly when that transport is selected. `app_settings` holds `mail_mode` (`smtp` or `manual_links`), `mail_transport` (`smtp` or `resend`), and `default_locale` (organization language for shared notifications, test messages, and PDF chrome). The encryption key is supplied only via `SMTP_SECRET_ENCRYPTION_KEY`; configuration is edited in the admin UI. `users.locale` and `app_settings.default_locale` are plain text with no SQL allow-list, so a new language does not need a migration. Both columns are in SQLite and travel with backups.
 * **Integration settings:** `integration_settings` holds Slack Incoming Webhook URL (encrypted), Gotify URL + token (token encrypted), and generic webhook URL + optional bearer (encrypted), plus per-channel enable flags and event subscriptions. Same encryption key as mail. The `notify` package fans out after lifecycle commits (publish / RC / reject) and for ops alerts (S3 backup failure, failed integrity check).
 * **Backup:** Admin export/validate/staged restore; optional scheduled S3 uploads (`BACKUP_S3_*`).
 
@@ -70,6 +70,20 @@ The architecture uses a **Stateless/Stateful Hybrid**:
 
 * **Database (SQLite):** Stores relational data—user profiles, session status, audit logs, SOP metadata, tags, acknowledgments, and **`sop_favorites`** (user ↔ SOP bookmarks with composite primary key).
 * **Filesystem:** Stores raw Markdown files and binary assets.
+
+## Languages
+
+The interface ships in English (`en`, the fallback) and German (`de`). Signed-in pages use `users.locale`. The login and password-reset pages use the locale cookie, then `Accept-Language`, then English. Emails use the recipient's locale. Slack, Gotify, webhooks, and PDF chrome use `app_settings.default_locale`, because those outputs are shared. A PDF is generated once and is not re-rendered per reader.
+
+SOP titles, Markdown, change summaries, reject reasons, tag names, and display names are stored as written and are not translated. Only the surrounding system sentences change.
+
+Supported tags live in [`i18n/supported-locales.json`](../../i18n/supported-locales.json). The same list is embedded for the Go catalogs and must match Paraglide's `locales` in `frontend/project.inlang/settings.json`. Handlers reject any other tag. There is no locale prefix in URLs.
+
+To add a language:
+
+1. Append the BCP 47 tag to `i18n/supported-locales.json` and to the copy at `backend/internal/i18n/supported-locales.json` (a test fails if they differ), and to Paraglide's `locales`.
+2. Add `frontend/messages/<tag>.json` and `backend/internal/i18n/messages/<tag>.json`.
+3. Leave missing keys to fall back to English. Language pickers read the supported list and label each language in its own name. `lang` and `dir` on the document follow the active locale.
 
 ## PDF generation (backend)
 

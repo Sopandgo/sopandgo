@@ -8,6 +8,7 @@
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
   import { enhance } from '$app/forms';
+  import * as m from '$lib/paraglide/messages.js';
 
   let { data } = $props();
 
@@ -20,10 +21,14 @@
   );
 </script>
 
+<svelte:head>
+  <title>{m.page_sop()}</title>
+</svelte:head>
+
 <div class="flex flex-col gap-6">
     <Breadcrumbs items={[
-        { label: 'Dashboard', href: '/sops', icon: HouseIcon},
-        { label: 'SOPs', href: '/sops', icon: NotebookIcon},
+        { label: m.page_dashboard(), href: '/sops', icon: HouseIcon},
+        { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
         { label: data.sop.title, icon: NotebookIcon},
     ]}/>
 
@@ -52,10 +57,10 @@
                   <button
                     type="submit"
                     class="btn btn-outline btn-warning btn-sm gap-1"
-                    aria-label="Remove from favorites"
+                    aria-label={m.sops_remove_favorites_aria()}
                   >
                     <StarIcon class="w-4 h-4 fill-current" />
-                    Favorited
+                    {m.sops_favorited()}
                   </button>
                 </form>
               {:else}
@@ -67,9 +72,9 @@
                       await update({ invalidateAll: true });
                     }}
                 >
-                  <button type="submit" class="btn btn-ghost btn-sm gap-1" aria-label="Add to favorites">
+                  <button type="submit" class="btn btn-ghost btn-sm gap-1" aria-label={m.sops_add_favorites_aria()}>
                     <StarIcon class="w-4 h-4" />
-                    Add to favorites
+                    {m.sops_add_to_favorites()}
                   </button>
                 </form>
               {/if}
@@ -79,7 +84,7 @@
                 <div class="card-actions justify-end pt-4 border-t border-base-200">
                     <a href={`/sops/${data.sop.id}/new`}  class="btn btn-primary">
                         <PlusIcon class="w-5 h-5" />
-                        New Version
+                        {m.common_new_version()}
                     </a>
                 </div>
             {/if}
@@ -89,14 +94,14 @@
 <Card>
   <div class="card-body">
     <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
-      Tags
+      {m.common_tags()}
     </span>
 
     <div class="pt-4 border-t border-base-200 flex flex-col gap-4">
       <!-- current tags -->
       <div class="flex flex-wrap gap-2">
         {#if (data.sop.tags ?? []).length === 0}
-          <span class="text-sm opacity-60">No tags assigned.</span>
+          <span class="text-sm opacity-60">{m.sops_no_tags_assigned()}</span>
         {:else}
           {#each data.sop.tags as tag (tag.id)}
             <form method="POST" action="?/detach_tag">
@@ -104,8 +109,8 @@
               <button
                 type="submit"
                 class="badge badge-primary gap-1 cursor-pointer"
-                aria-label={`Remove tag ${tag.title}`}
-                title="Remove tag"
+                aria-label={m.sops_remove_tag({ title: tag.title })}
+                title={m.sops_remove_tag_title()}
               >
                 <TagIcon class="w-3 h-3" />
                 {tag.title}
@@ -118,14 +123,14 @@
 
       <!-- attach existing -->
       <form method="POST" action="?/attach_tag" class="flex flex-col md:flex-row gap-2 md:items-center">
-        <select class="select select-bordered flex-1" name="tag_id" aria-label="Select tag to attach">
+        <select class="select select-bordered flex-1" name="tag_id" aria-label={m.sops_select_tag()}>
           {#each addableTags as t (t.id)}
             <option value={t.id}>{t.title}</option>
           {/each}
         </select>
-        <button class="btn btn-primary" type="submit" aria-label="Attach selected tag">
+        <button class="btn btn-primary" type="submit" aria-label={m.sops_attach_tag()}>
           <PlusCircleIcon class="w-5 h-5" />
-          Add
+          {m.common_add()}
         </button>
       </form>      
 
@@ -134,12 +139,12 @@
         <input
           class="input input-bordered flex-1"
           name="title"
-          placeholder="Create new tag…"
+          placeholder={m.sops_new_tag_placeholder()}
           bind:value={newTagTitle}
         />
-        <button class="btn btn-accent" type="submit" aria-label="Create and attach tag">
+        <button class="btn btn-accent" type="submit" aria-label={m.sops_create_add_aria()}>
           <PlusIcon class="w-5 h-5" />
-          Create & Add
+          {m.sops_create_add()}
         </button>
       </form>
     </div>
@@ -149,9 +154,9 @@
     {#if data.user?.role === 'admin' || data.user?.role === 'approver'}
       <Card>
         <div class="border-b border-base-200 p-4 sm:p-5">
-          <h2 class="text-lg font-semibold">Who still needs to sign</h2>
+          <h2 class="text-lg font-semibold">{m.dashboard_training_title()}</h2>
           <p class="mt-1 text-sm text-base-content/70">
-            Reader signatures on the latest published version.
+            {m.sops_training_help()}
           </p>
         </div>
         <SopTrainingCoverage items={data.trainingCoverage ?? []} />

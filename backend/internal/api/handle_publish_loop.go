@@ -131,6 +131,7 @@ func (s *Server) notifyVersionPublished(versionID, actorID string) {
 			version.Version,
 			version.ChangeSummary,
 			link,
+			user.Locale,
 		); err != nil {
 			log.Printf("publish notice failed for %s: %v", user.Email, err)
 		}

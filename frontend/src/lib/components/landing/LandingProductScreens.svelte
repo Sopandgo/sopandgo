@@ -1,35 +1,33 @@
 <script lang="ts">
-	const shots = [
+	import * as m from '$lib/paraglide/messages.js';
+
+	const shots = $derived([
 		{
 			src: '/landing/browse-sops.png',
-			alt: 'SOP library with search, tags, favorites, and a list of procedures.',
-			title: 'Browse and organize',
-			caption:
-				'Find procedures quickly with search, tags, and per-user favorites — then open any SOP from a single library view.'
+			alt: m.landing_shot_browse_alt(),
+			title: m.landing_shot_browse_title(),
+			caption: m.landing_shot_browse_caption()
 		},
 		{
 			src: '/landing/version-ack.png',
-			alt: 'SOP detail showing tags, immutable version history, and associated assets.',
-			title: 'Versions and acknowledgments',
-			caption:
-				'Each version is immutable; tags and assets stay with the procedure, and acknowledgments align to the version people actually read.'
+			alt: m.landing_shot_version_alt(),
+			title: m.landing_shot_version_title(),
+			caption: m.landing_shot_version_caption()
 		},
 		{
 			src: '/landing/backup-admin.png',
-			alt: 'User management with account list, roles, and a form to register new users.',
-			title: 'Administration and backups',
-			caption:
-				'Manage users, roles, and invites from built-in admin tools, alongside mail, sessions, and backup exports for day-two operations.'
+			alt: m.landing_shot_admin_alt(),
+			title: m.landing_shot_admin_title(),
+			caption: m.landing_shot_admin_caption()
 		}
-	] as const;
+	]);
 </script>
 
 <section class="space-y-6" aria-labelledby="landing-previews-heading">
 	<div class="max-w-2xl space-y-2">
-		<h2 id="landing-previews-heading" class="text-2xl font-bold">Inside the application</h2>
+		<h2 id="landing-previews-heading" class="text-2xl font-bold">{m.landing_inside()}</h2>
 		<p class="text-base-content/70 text-sm md:text-base">
-			Product screens from the SOP library, versioned procedures, and administration tools as they
-			appear in the application today.
+			{m.landing_inside_body()}
 		</p>
 	</div>
 	<div class="grid gap-8 lg:grid-cols-3">

@@ -37,6 +37,7 @@ export const admin = (client: Client) => ({
         display_name: string; 
         email: string; 
         role: UserRole;
+        locale?: string;
     }): Promise<AdminCreateUserResponse> => {
         const res = await client.fetch('/admin/users/register', {
             method: 'POST',
@@ -246,6 +247,15 @@ export const admin = (client: Client) => ({
             throw new Error(t || 'RESEND_SETTINGS_VALIDATION_FAILED');
         }
         if (!res.ok) throw new Error('RESEND_SETTINGS_SAVE_FAILED');
+    },
+
+    updateDefaultLocale: async (default_locale: string): Promise<void> => {
+        const res = await client.fetch('/admin/settings/default-locale', {
+            method: 'PATCH',
+            body: { default_locale }
+        });
+        if (res.status === 400) throw new Error('UNSUPPORTED_LOCALE');
+        if (!res.ok) throw new Error('DEFAULT_LOCALE_UPDATE_FAILED');
     },
 
     updateMailMode: async (mail_mode: 'smtp' | 'manual_links'): Promise<void> => {
