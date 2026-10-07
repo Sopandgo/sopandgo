@@ -2,6 +2,14 @@
 
 All notable releases of sopandgo are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
 
+## 1.0.2
+
+Standalone audit writes no longer race under concurrent SQLite writers.
+
+- Serialize audit writes that run without a caller transaction, and take SQLite's write lock before reading the chain tip, so concurrent writers cannot fork the hash chain.
+- Bound lock waits with `AUDIT_BUSY_TIMEOUT` (default `5s`); timed-out or failed audit writes are reported in the application log.
+- Document the behavior and env var for operators and developers.
+
 ## 1.0.1
 
 The interface, emails, notifications, and PDF chrome now ship in English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, and Swedish. SOP titles and Markdown stay in the language the author wrote.
