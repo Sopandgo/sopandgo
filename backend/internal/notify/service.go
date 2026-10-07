@@ -197,21 +197,25 @@ func (s *Service) auditOK(channel string, ev Event) {
 	if s.auditor == nil {
 		return
 	}
-	_ = s.auditor.Log(nil, audit.EventNotificationSent, audit.EntityNotification, channel, nil, map[string]any{
+	if err := s.auditor.Log(nil, audit.EventNotificationSent, audit.EntityNotification, channel, nil, map[string]any{
 		"channel": channel,
 		"event":   ev.Type,
 		"sop_id":  ev.SOPID,
-	})
+	}); err != nil {
+		log.Printf("audit write failed for sent %s notification: %v", channel, err)
+	}
 }
 
 func (s *Service) auditFail(channel string, ev Event, err error) {
 	if s.auditor == nil {
 		return
 	}
-	_ = s.auditor.Log(nil, audit.EventNotificationFailed, audit.EntityNotification, channel, nil, map[string]any{
+	if auditErr := s.auditor.Log(nil, audit.EventNotificationFailed, audit.EntityNotification, channel, nil, map[string]any{
 		"channel": channel,
 		"event":   ev.Type,
 		"sop_id":  ev.SOPID,
 		"error":   err.Error(),
-	})
+	}); auditErr != nil {
+		log.Printf("audit write failed for failed %s notification: %v", channel, auditErr)
+	}
 }

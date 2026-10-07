@@ -105,7 +105,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			entityID = *userID
 		}
 
-		_ = s.auditLogger.Log(nil, audit.EventLoginFailed, audit.EntityUser, entityID, nil, payload)
+		s.writeAudit(audit.EventLoginFailed, audit.EntityUser, entityID, nil, payload)
 	}
 
 	// 1. Fetch user
@@ -149,7 +149,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 6. Log Login
-	_ = s.auditLogger.Log(nil, audit.EventLogin, audit.EntityUser, user.ID, &user.ID, map[string]string{
+	s.writeAudit(audit.EventLogin, audit.EntityUser, user.ID, &user.ID, map[string]string{
 		"ip_address": r.RemoteAddr,
 	})
 

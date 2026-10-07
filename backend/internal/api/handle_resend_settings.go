@@ -37,7 +37,7 @@ func (s *Server) handleAdminPatchMailTransport(w http.ResponseWriter, r *http.Re
 	payload := map[string]string{
 		"mail_transport": req.MailTransport,
 	}
-	_ = s.auditLogger.Log(nil, audit.EventMailTransportUpdated, audit.EntitySystem, "mail_transport", &actorID, payload)
+	s.writeAudit(audit.EventMailTransportUpdated, audit.EntitySystem, "mail_transport", &actorID, payload)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -82,7 +82,7 @@ func (s *Server) handleAdminPutResendSettings(w http.ResponseWriter, r *http.Req
 	payload := map[string]string{
 		"from": req.FromAddress,
 	}
-	_ = s.auditLogger.Log(nil, audit.EventResendSettingsUpdated, audit.EntitySystem, "resend", &actorID, payload)
+	s.writeAudit(audit.EventResendSettingsUpdated, audit.EntitySystem, "resend", &actorID, payload)
 
 	w.WriteHeader(http.StatusNoContent)
 }

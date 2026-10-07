@@ -265,9 +265,11 @@ func (sch *S3Scheduler) Start(ctx context.Context, initialDelay time.Duration) {
 				if err != nil {
 					log.Printf("s3 automatic backup failed: %v", err)
 					if sch.auditLogger != nil {
-						_ = sch.auditLogger.Log(nil, audit.EventBackupS3Failed, audit.EntitySystem, "backup", nil, map[string]any{
+						if auditErr := sch.auditLogger.Log(nil, audit.EventBackupS3Failed, audit.EntitySystem, "backup", nil, map[string]any{
 							"error": err.Error(),
-						})
+						}); auditErr != nil {
+							log.Printf("audit write failed for S3 backup failure: %v", auditErr)
+						}
 					}
 					if sch.onFailure != nil {
 						sch.onFailure(ctx, err)
@@ -275,11 +277,13 @@ func (sch *S3Scheduler) Start(ctx context.Context, initialDelay time.Duration) {
 				} else {
 					log.Printf("s3 automatic backup uploaded: %s", objKey)
 					if sch.auditLogger != nil {
-						_ = sch.auditLogger.Log(nil, audit.EventBackupS3Uploaded, audit.EntitySystem, "backup", nil, map[string]any{
+						if auditErr := sch.auditLogger.Log(nil, audit.EventBackupS3Uploaded, audit.EntitySystem, "backup", nil, map[string]any{
 							"bucket":     sch.cfg.Bucket,
 							"object_key": objKey,
 							"manifest":   manifest,
-						})
+						}); auditErr != nil {
+							log.Printf("audit write failed for S3 backup upload: %v", auditErr)
+						}
 					}
 				}
 				timer.Reset(sch.cfg.Interval)

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -151,7 +152,7 @@ func (s *Service) ensureVersionPDFArtifact(versionID, stage, actorUserID string)
 		return fmt.Errorf("failed to persist pdf artifact: %w", err)
 	}
 
-	_ = s.auditLogger.Log(
+	if err := s.auditLogger.Log(
 		s.db,
 		audit.EventSOPVersionPDFArtifactCreated,
 		audit.EntitySOPVersion,
@@ -163,7 +164,9 @@ func (s *Service) ensureVersionPDFArtifact(versionID, stage, actorUserID string)
 			"artifact_id":       artifactID,
 			"file_path":         relPath,
 		},
-	)
+	); err != nil {
+		log.Printf("audit write failed for PDF artifact %s: %v", artifactID, err)
+	}
 	return nil
 }
 

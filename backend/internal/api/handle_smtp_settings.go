@@ -73,7 +73,7 @@ func (s *Server) handleAdminPutSMTPSettings(w http.ResponseWriter, r *http.Reque
 		"port": req.Port,
 		"from": req.FromAddress,
 	}
-	_ = s.auditLogger.Log(nil, audit.EventSmtpSettingsUpdated, audit.EntitySystem, "smtp", &actorID, payload)
+	s.writeAudit(audit.EventSmtpSettingsUpdated, audit.EntitySystem, "smtp", &actorID, payload)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -105,7 +105,7 @@ func (s *Server) handleAdminPatchMailMode(w http.ResponseWriter, r *http.Request
 	payload := map[string]string{
 		"mail_mode": req.MailMode,
 	}
-	_ = s.auditLogger.Log(nil, audit.EventMailModeUpdated, audit.EntitySystem, "mail", &actorID, payload)
+	s.writeAudit(audit.EventMailModeUpdated, audit.EntitySystem, "mail", &actorID, payload)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -128,7 +128,7 @@ func (s *Server) handleAdminPatchDefaultLocale(w http.ResponseWriter, r *http.Re
 	}
 	tag, _ := i18n.Normalize(req.DefaultLocale)
 	actorID := GetUserID(r.Context())
-	_ = s.auditLogger.Log(nil, audit.EventDefaultLocaleUpdated, audit.EntitySystem, "locale", &actorID, map[string]string{
+	s.writeAudit(audit.EventDefaultLocaleUpdated, audit.EntitySystem, "locale", &actorID, map[string]string{
 		"default_locale": tag,
 	})
 	w.WriteHeader(http.StatusNoContent)

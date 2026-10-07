@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -33,6 +34,15 @@ type Server struct {
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
+}
+
+func (s *Server) writeAudit(eventType, entityType, entityID string, actorUserID *string, payload any) {
+	if s.auditLogger == nil {
+		return
+	}
+	if err := s.auditLogger.Log(nil, eventType, entityType, entityID, actorUserID, payload); err != nil {
+		log.Printf("audit write failed for %s/%s/%s: %v", eventType, entityType, entityID, err)
+	}
 }
 
 func New(
