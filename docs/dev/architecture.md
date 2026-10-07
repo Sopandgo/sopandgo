@@ -102,7 +102,7 @@ Integrity is verified via SHA-256 cryptographic hashes in two distinct ways:
 
 All state-changing events (logins, password updates, role changes) are recorded.
 
-* **Transactional:** Audit events are committed in the same SQL transaction as the action they record.
+* **Transactional:** State-changing actions commit their audit event in the same SQL transaction. Writes with no caller transaction (login, mail, notifications, startup, PDF artifacts) serialize per logger and take SQLite's write lock before reading the chain tip, so concurrent writers cannot fork the chain. Lock waits are bounded by `AUDIT_BUSY_TIMEOUT`; failures are reported to the application log.
 * **Immutable:** The API prevents modification or deletion of logs.
 * **Tamper-Evident:** Logs are cryptographically linked. Any modification breaks the hash chain, which the system can detect and flag.
 * **Canonical Taxonomy:** `event_type` and `entity_type` are normalized to lowercase to keep filtering/reporting stable over time.

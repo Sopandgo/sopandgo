@@ -43,7 +43,7 @@ func (s *Server) handleAdminBackupExport(w http.ResponseWriter, r *http.Request)
 	defer os.RemoveAll(filepath.Dir(zipPath))
 
 	actorID := GetUserID(r.Context())
-	_ = s.auditLogger.Log(nil, audit.EventBackupExported, audit.EntitySystem, "backup", &actorID, map[string]any{
+	s.writeAudit(audit.EventBackupExported, audit.EntitySystem, "backup", &actorID, map[string]any{
 		"manifest": manifest,
 	})
 
@@ -95,7 +95,7 @@ func (s *Server) handleAdminBackupImport(w http.ResponseWriter, r *http.Request)
 	}
 
 	actorID := GetUserID(r.Context())
-	_ = s.auditLogger.Log(nil, audit.EventBackupImportValidated, audit.EntitySystem, "backup", &actorID, map[string]any{
+	s.writeAudit(audit.EventBackupImportValidated, audit.EntitySystem, "backup", &actorID, map[string]any{
 		"manifest": result.Manifest,
 	})
 
@@ -147,7 +147,7 @@ func (s *Server) handleAdminBackupApply(w http.ResponseWriter, r *http.Request) 
 	}
 
 	actorID := GetUserID(r.Context())
-	_ = s.auditLogger.Log(nil, audit.EventBackupApplyStaged, audit.EntitySystem, "backup", &actorID, map[string]any{
+	s.writeAudit(audit.EventBackupApplyStaged, audit.EntitySystem, "backup", &actorID, map[string]any{
 		"manifest":         result.Manifest,
 		"requires_restart": result.RequiresRestart,
 		"pre_apply_backup": result.PreApplyBackup,

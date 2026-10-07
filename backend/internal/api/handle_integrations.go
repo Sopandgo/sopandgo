@@ -47,7 +47,7 @@ func (s *Server) handleAdminPutSlackIntegration(w http.ResponseWriter, r *http.R
 		return
 	}
 	actorID := GetUserID(r.Context())
-	_ = s.auditLogger.Log(nil, audit.EventIntegrationSettingsUpdated, audit.EntityIntegration, notify.ChannelSlack, &actorID, map[string]any{
+	s.writeAudit(audit.EventIntegrationSettingsUpdated, audit.EntityIntegration, notify.ChannelSlack, &actorID, map[string]any{
 		"channel": notify.ChannelSlack,
 		"enabled": req.Enabled,
 		"events":  req.Events,
@@ -77,7 +77,7 @@ func (s *Server) handleAdminPutGotifyIntegration(w http.ResponseWriter, r *http.
 		return
 	}
 	actorID := GetUserID(r.Context())
-	_ = s.auditLogger.Log(nil, audit.EventIntegrationSettingsUpdated, audit.EntityIntegration, notify.ChannelGotify, &actorID, map[string]any{
+	s.writeAudit(audit.EventIntegrationSettingsUpdated, audit.EntityIntegration, notify.ChannelGotify, &actorID, map[string]any{
 		"channel": notify.ChannelGotify,
 		"enabled": req.Enabled,
 		"events":  req.Events,
@@ -107,7 +107,7 @@ func (s *Server) handleAdminPutWebhookIntegration(w http.ResponseWriter, r *http
 		return
 	}
 	actorID := GetUserID(r.Context())
-	_ = s.auditLogger.Log(nil, audit.EventIntegrationSettingsUpdated, audit.EntityIntegration, notify.ChannelWebhook, &actorID, map[string]any{
+	s.writeAudit(audit.EventIntegrationSettingsUpdated, audit.EntityIntegration, notify.ChannelWebhook, &actorID, map[string]any{
 		"channel": notify.ChannelWebhook,
 		"enabled": req.Enabled,
 		"events":  req.Events,

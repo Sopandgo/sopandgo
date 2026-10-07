@@ -62,14 +62,16 @@ func main() {
 	}
 
 	// Log the startup event for compliance tracking.
-	auditLogger.Log(
+	if err := auditLogger.Log(
 		store.DB,
 		audit.EventSystemRestart,
 		audit.EntitySystem,
 		audit.EntitySystem,
 		nil,
 		`{"status": "ready"}`,
-	)
+	); err != nil {
+		log.Printf("audit write failed for system startup: %v", err)
+	}
 
 	// Auth Service: Manages users, roles, and sessions.
 	authService := auth.NewService(store.DB, auditLogger)

@@ -79,6 +79,7 @@ The `audit_events` table is the system's Tamper-Evident "Black Box."
     * Every log entry contains a cryptographic hash of itself and the previous entry's hash.
     * This creates an immutable chain.
     * The API automatically verifies this chain on retrieval to detect if logs have been modified or deleted manually.
+    * Events written without a caller transaction (mail, notifications, logins, settings changes, startup, PDF artifacts) serialize per logger and take SQLite's write lock before reading the chain tip, so concurrent writers cannot link two entries to the same predecessor. If another writer holds the lock beyond `AUDIT_BUSY_TIMEOUT`, the failure is reported to the application log.
 
 
 ## 6. Database Schema (Security Relevant)

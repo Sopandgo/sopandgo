@@ -64,7 +64,7 @@ func (s *Server) handleAdminIntegrity(w http.ResponseWriter, r *http.Request) {
 
 	// 4. Audit Log the check
 	actorID := GetUserID(r.Context())
-	s.auditLogger.Log(nil, audit.EventIntegrityCheck, audit.EntitySystem, audit.EntitySystem, &actorID, extendedReport)
+	s.writeAudit(audit.EventIntegrityCheck, audit.EntitySystem, audit.EntitySystem, &actorID, extendedReport)
 
 	if !systemOK && s.notifyService != nil {
 		locale := s.orgLocale()
@@ -152,7 +152,7 @@ func (s *Server) handleAdminRegisterUser(w http.ResponseWriter, r *http.Request)
 		mailMode = mail.MailModeSMTP
 	}
 	if mailMode == mail.MailModeManualLinks {
-		_ = s.auditLogger.Log(nil, audit.EventManualInviteLinkGenerated, audit.EntityUser, userID, &actorID, map[string]string{
+		s.writeAudit(audit.EventManualInviteLinkGenerated, audit.EntityUser, userID, &actorID, map[string]string{
 			"delivery_mode": mail.MailModeManualLinks,
 		})
 		w.WriteHeader(http.StatusCreated)
@@ -278,7 +278,7 @@ func (s *Server) handleAdminTriggerPasswordReset(w http.ResponseWriter, r *http.
 	}
 	if mailMode == mail.MailModeManualLinks {
 		actorID := GetUserID(r.Context())
-		_ = s.auditLogger.Log(nil, audit.EventManualResetLinkGenerated, audit.EntityUser, user.ID, &actorID, map[string]string{
+		s.writeAudit(audit.EventManualResetLinkGenerated, audit.EntityUser, user.ID, &actorID, map[string]string{
 			"delivery_mode": mail.MailModeManualLinks,
 		})
 		w.WriteHeader(http.StatusOK)
