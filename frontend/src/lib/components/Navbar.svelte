@@ -1,37 +1,59 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
     import { resolve } from '$app/paths';
-    import { ArchiveIcon, CircleUserIcon, LogOutIcon, LogsIcon, SettingsIcon, ShieldUserIcon, UsersIcon } from 'lucide-svelte';
+    import { CircleUserIcon, LogOutIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, SettingsIcon } from 'lucide-svelte';
     import Avatar from '$lib/components/Avatar.svelte';
     import GuestLocaleMenu from '$lib/components/GuestLocaleMenu.svelte';
     import GuestThemeToggle from '$lib/components/GuestThemeToggle.svelte';
     import * as m from '$lib/paraglide/messages.js';
+    import type { UserRole } from '$lib/sdk/types';
 
-    let { user } = $props();
+    let { user, rail = false } = $props();
+
+    function roleBadge(role: UserRole): { label: string; tone: string } {
+        switch (role) {
+            case 'admin':
+                return { label: m.role_admin(), tone: 'badge-error' };
+            case 'auditor':
+                return { label: m.role_auditor(), tone: 'badge-info' };
+            case 'editor':
+                return { label: m.role_editor(), tone: 'badge-ghost' };
+            case 'approver':
+                return { label: m.role_approver(), tone: 'badge-ghost' };
+            case 'viewer':
+                return { label: m.role_viewer(), tone: 'badge-ghost' };
+        }
+    }
 </script>
 
-<div class="navbar sticky top-0 z-50 bg-base-100 shadow-sm" class:navbar-guest={!user}>
+<div
+    class="navbar sticky top-0 z-30 bg-base-100 shadow-sm"
+    class:navbar-guest={!user}
+    class:navbar-app={!!user}
+>
     <div class="navbar-start">
-        {#if user}
-            {@render logo('/dashboard')}
-        {:else}
-            {@render logo('/')}
+        {#if rail}
+            <label
+                for="app-drawer"
+                aria-label={m.nav_menu()}
+                class="btn btn-square btn-ghost drawer-button shrink-0"
+            >
+                <span class="rail-when-closed inline-flex">
+                    <PanelLeftOpenIcon size={18} aria-hidden="true" />
+                </span>
+                <span class="rail-when-open inline-flex">
+                    <PanelLeftCloseIcon size={18} aria-hidden="true" />
+                </span>
+            </label>
+        {:else if !user}
+            {@render logo()}
         {/if}
     </div>
-
-    {#if user?.role === 'admin'}
-        <div class="navbar-center">
-            <div class="badge badge-lg badge-dash badge-error">{m.role_admin()}</div>
-        </div>
-    {:else if user?.role === 'auditor'}
-        <div class="navbar-center">
-            <div class="badge badge-lg badge-dash badge-info">{m.role_auditor()}</div>
-        </div>
-    {/if}
 
     <div class="navbar-end">
         <div class="flex items-center gap-2">
             {#if user}
+                {@render roleChip(user.role)}
                 <div class="dropdown dropdown-end">
                     <div
                         tabindex="0"
@@ -62,41 +84,6 @@
                             </a>
                         </li>
 
-                        {#if user.role === 'admin'}
-                            <div class="divider my-0"></div> 
-
-                            <li>
-                                <a href={resolve('/admin/users')} class="w-full text-left flex gap-4 items-center">
-                                    <UsersIcon size={16}/>
-                                    {m.nav_users()}
-                                </a>
-                            </li>
-                            <li>
-                                <a href={resolve('/admin/sessions')} class="w-full text-left flex gap-4 items-center">
-                                    <ShieldUserIcon size={16}/>
-                                    {m.nav_sessions()}
-                                </a>
-                            </li>
-                            <li>
-                                <a href={resolve('/admin/audit-logs')} class="w-full text-left flex gap-4 items-center">
-                                    <LogsIcon size={16}/>
-                                    {m.nav_audit_logs()}
-                                </a>
-                            </li>
-                            <li>
-                                <a href={resolve('/admin/settings')} class="w-full text-left flex gap-4 items-center">
-                                    <SettingsIcon size={16}/>
-                                    {m.nav_settings()}
-                                </a>
-                            </li>
-                            <li>
-                                <a href={resolve('/admin/backup')} class="w-full text-left flex gap-4 items-center">
-                                    <ArchiveIcon size={16}/>
-                                    {m.nav_backup()}
-                                </a>
-                            </li>
-                        {/if}
-
                         <div class="divider my-0"></div> 
 
                         <li>
@@ -123,8 +110,8 @@
     </div>
 </div>
 
-{#snippet logo(url: '/' | '/dashboard')}
-    <a href={resolve(url)} class="flex min-w-0 flex-1 items-center gap-4">
+{#snippet logo()}
+    <a href={resolve('/')} class="flex min-w-0 flex-1 items-center gap-4">
         <div
             tabindex="0"
             role="button"
@@ -132,7 +119,7 @@
         >
             <img src="/favicon.svg" alt={m.page_home()} />
         </div>
-        <span class="truncate font-semibold">
+        <span class="min-w-0 truncate font-semibold">
             SOP and GO
         </span>
     </a>
@@ -150,4 +137,25 @@
         flex: 0 0 auto;
         margin-inline-start: auto;
     }
+
+    .navbar-app .navbar-start {
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .navbar-app .navbar-end {
+        width: auto;
+        flex: 0 0 auto;
+        min-width: 0;
+    }
+
+    .navbar-app .navbar-end {
+        margin-inline-start: auto;
+    }
 </style>
+
+{#snippet roleChip(role: UserRole)}
+    {@const badge = roleBadge(role)}
+    <div class="badge badge-sm shrink-0 {badge.tone}">{badge.label}</div>
+{/snippet}

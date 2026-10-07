@@ -64,7 +64,7 @@ Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left o
 | `AUDIT_STRICT_TYPES` | `false` | If `true`, audit writes reject unknown `event_type`/`entity_type` values (recommended once all extensions use canonical types). |
 | `AUDIT_BUSY_TIMEOUT` | `5s` | Maximum SQLite lock wait for standalone audit writes, as a Go duration. A timeout is reported in the application log; increase this only if legitimate write transactions regularly exceed five seconds. |
 | `SMTP_SECRET_ENCRYPTION_KEY` | - | **Required to save outbound secrets in the UI** (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer) **and to send mail or integration notifications that need those secrets.** A 32-byte AES-256 key, provided as **base64** or **hex** (64 hex chars, optional `0x` prefix). Used only to encrypt secrets stored in SQLite—not for signing JWTs. Generate: `openssl rand -base64 32`. If unset, the server starts, but the admin UI cannot persist those credentials until this is set and the process is restarted. |
-| `APP_VERSION` | baked into the image | Label in the footer and in admin **export** `manifest.json`. Release images set this at build time (for example `1.0.1`). Labs do not set it. Contributor source builds and `go run` use `dev`. Local `npm run dev` ignores this and shows `git describe` instead. The root `package.json` version is not used. |
+| `APP_VERSION` | baked into the image | Label on the public footer, in the signed-in sidebar, and in admin **export** `manifest.json`. Release images set this at build time (for example `1.0.1`). Labs do not set it. Contributor source builds and `go run` use `dev`. Local `npm run dev` ignores this and shows `git describe` instead. The root `package.json` version is not used. |
 | `PDF_EXPORT_ENABLED` | `true` | When `true`, PDF artifact generation/download is enabled (requires a renderer when not `none`). |
 | `PDF_RENDERER` | `gotenberg` | `gotenberg` or `none`. |
 | `GOTENBERG_URL` | `http://gotenberg:3000` | Base URL of the Gotenberg service (default compose service name: `gotenberg`). |
@@ -158,7 +158,7 @@ From **1.0.0** onward, the image tag in `docker-compose.yml` is `ghcr.io/sopandg
 1. Export a backup (admin UI) or stop the container and copy the data directory.
 2. `docker compose pull` and `docker compose up -d`.
 3. Append-only migrations in `backend/internal/storage/migrations.go` apply automatically on startup.
-4. Verify login and a published SOP. The footer shows the exact release, such as `v1.0.1`.
+4. Verify login and a published SOP. After sign-in, the sidebar shows the exact release, such as `v1.0.1`. Public pages still show it in the footer.
 
 ### Rollback and a future major version
 
