@@ -555,6 +555,7 @@
   "backup_apply_staged": "Tillämpning av säkerhetskopia förberedd. Omstart krävs: {restart}. Snapshot före tillämpning: {snapshot}",
   "backup_confirm_label": "Skriv för att bekräfta destruktiv återställning",
   "backup_stage_button": "Förbered tillämpning av säkerhetskopia (kräver omstart)",
+  "settings_general": "Allmänt",
   "settings_email": "E-post",
   "settings_email_lead": "Utgående e-post kan använda",
   "settings_email_mid": "(API) eller vanlig",

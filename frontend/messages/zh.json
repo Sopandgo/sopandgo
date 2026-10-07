@@ -555,6 +555,7 @@
   "backup_apply_staged": "备份应用已暂存。需要重启：{restart}。应用前快照：{snapshot}",
   "backup_confirm_label": "输入以确认破坏性恢复",
   "backup_stage_button": "暂存应用备份（需要重启）",
+  "settings_general": "常规",
   "settings_email": "邮件",
   "settings_email_lead": "出站邮件可使用",
   "settings_email_mid": "（API）或标准",

@@ -110,15 +110,15 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
 - **ORIGIN:** Must match the URL you use in the browser (default: `http://localhost:8087`). If it does not match, login fails with **403 Forbidden**.
 - **SMTP_SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets or send mail/integrations that need them.
 - **SEED_DEMO_DATA:** `true` (default) inserts demo users and a sample SOP on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
-- **Mail mode:** In **Settings** (`/admin/settings`), choose either `smtp` (default; sends invites/resets by email) or `manual_links` (admin copies one-time links and shares them manually).
-- **SMTP provider details** (host, port, user, password, from-address) are configured in the same admin page when using `smtp`, then verified with **Send test email**.
-- **Integrations:** On the same Settings page, optionally enable Slack Incoming Webhooks, Gotify, and/or a generic HTTP webhook for lifecycle and ops alerts. There are no `SLACK_ENABLED`-style env flags — configure destinations in the UI.
+- **Mail mode:** In **Settings → Email** (`/admin/settings/email`), choose either `smtp` (default; sends invites/resets by email) or `manual_links` (admin copies one-time links and shares them manually).
+- **SMTP provider details** (host, port, user, password, from-address) are configured on that Email page when using `smtp`, then verified with **Send test email**.
+- **Integrations:** On **Settings → Integrations** (`/admin/settings/integrations`), optionally enable Slack Incoming Webhooks, Gotify, and/or a generic HTTP webhook for lifecycle and ops alerts. There are no `SLACK_ENABLED`-style env flags — configure destinations in the UI.
 - **PDF export (Gotenberg):**
   - `PDF_EXPORT_ENABLED=true|false` toggles PDF artifact generation and download.
   - `PDF_RENDERER=gotenberg|none` selects renderer mode.
   - `GOTENBERG_URL` points to the Gotenberg service URL (default in Docker: `http://gotenberg:3000`).
   - `PDF_GENERATOR_VERSION` controls append-only artifact generation/backfill versioning.
-- **Backups:** Admins can use **Backup** (`/admin/backup`) to export a `.zip`, validate archives, and stage a restore (restart required). Optional automatic uploads to S3 use `BACKUP_S3_*` in `.env` (see `docs/ops/backup-and-restore.md`).
+- **Backups:** Admins can use **Settings → Backup** (`/admin/settings/backup`) to export a `.zip`, validate archives, and stage a restore (restart required). Optional automatic uploads to S3 use `BACKUP_S3_*` in `.env` (see `docs/ops/backup-and-restore.md`).
 
 See `docs/ops/deployment.md` for the full environment variable reference. How versions ship: `docs/ops/releasing.md`.
 
@@ -175,7 +175,7 @@ All system data is stored in the `backend/data` folder (inside the container: `D
 - **SQLite Database:** `app.db` holds metadata, audit logs, users, per-user SOP favorites (`sop_favorites`), and encrypted SMTP / integration settings.
 - **SOP content:** `sops/` holds versioned Markdown and per-SOP assets.
 
-**Recommended (admin UI):** Sign in as **admin** → **Backup** (`/admin/backup`). You can **export** a `.zip` (consistent DB snapshot plus `sops/` and `manifest.json`), **validate** an archive, and **stage apply** of a restore. Staged restores run on the **next backend/container restart**; see `docs/ops/backup-and-restore.md`.
+**Recommended (admin UI):** Sign in as **admin** → **Settings → Backup** (`/admin/settings/backup`). You can **export** a `.zip` (consistent DB snapshot plus `sops/` and `manifest.json`), **validate** an archive, and **stage apply** of a restore. Staged restores run on the **next backend/container restart**; see `docs/ops/backup-and-restore.md`.
 
 **Alternative (manual):** Stop the container and copy the whole data directory, or archive `backend/data` on the host. SOP Markdown on disk stays readable without the app.
 

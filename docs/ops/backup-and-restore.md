@@ -33,7 +33,7 @@ If the full data directory is backed up, the entire system state is preserved.
 
 ## Admin UI backup (recommended for operators)
 
-Sign in as **admin** and open **Backup**: `/admin/backup`.
+Sign in as **admin** and open **Settings → Backup**: `/admin/settings/backup`. `/admin/backup` redirects there.
 
 ### Export
 
@@ -166,7 +166,7 @@ The appropriate frequency depends on how often SOPs are updated.
 
 ### From admin staged apply
 
-1. Use **Apply** on `/admin/backup` with confirmation `APPLY BACKUP`.
+1. Use **Apply** on `/admin/settings/backup` with confirmation `APPLY BACKUP`.
 2. **Restart** the backend/container so pending files in `_restore_pending` are applied.
 3. Verify in the web UI (SOPs, acknowledgments, audit as expected).
 

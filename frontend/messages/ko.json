@@ -555,6 +555,7 @@
   "backup_apply_staged": "백업 적용이 스테이징되었습니다. 재시작 필요: {restart}. 적용 전 스냅샷: {snapshot}",
   "backup_confirm_label": "파괴적 복원을 확인하려면 입력",
   "backup_stage_button": "백업 적용 스테이징 (재시작 필요)",
+  "settings_general": "일반",
   "settings_email": "이메일",
   "settings_email_lead": "발신 메일은",
   "settings_email_mid": "(API) 또는 표준",

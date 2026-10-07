@@ -558,6 +558,7 @@
   "backup_apply_staged": "Backup apply staged. Restart required: {restart}. Pre-apply snapshot: {snapshot}",
   "backup_confirm_label": "Type to confirm destructive restore",
   "backup_stage_button": "Stage apply backup (requires restart)",
+  "settings_general": "General",
   "settings_email": "Email",
   "settings_email_lead": "Outgoing mail can use",
   "settings_email_mid": "(API) or standard",

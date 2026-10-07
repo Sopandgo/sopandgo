@@ -555,6 +555,7 @@
   "backup_apply_staged": "Aplicação do backup preparada. Reinício necessário: {restart}. Snapshot pré-aplicação: {snapshot}",
   "backup_confirm_label": "Digite para confirmar a restauração destrutiva",
   "backup_stage_button": "Preparar aplicação do backup (requer reinício)",
+  "settings_general": "Geral",
   "settings_email": "E-mail",
   "settings_email_lead": "O e-mail de saída pode usar",
   "settings_email_mid": "(API) ou",

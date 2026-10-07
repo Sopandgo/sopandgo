@@ -555,6 +555,7 @@
   "backup_apply_staged": "Applicazione backup preparata. Riavvio richiesto: {restart}. Snapshot pre-applicazione: {snapshot}",
   "backup_confirm_label": "Digita per confermare il ripristino distruttivo",
   "backup_stage_button": "Prepara applicazione backup (richiede riavvio)",
+  "settings_general": "Generali",
   "settings_email": "E-mail",
   "settings_email_lead": "La posta in uscita può usare",
   "settings_email_mid": "(API) oppure",

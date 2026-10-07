@@ -555,6 +555,7 @@
   "backup_apply_staged": "Anwendung vorgemerkt. Neustart erforderlich: {restart}. Schnappschuss vor der Anwendung: {snapshot}",
   "backup_confirm_label": "Zur Bestätigung der Wiederherstellung eingeben",
   "backup_stage_button": "Anwendung vormerken (Neustart erforderlich)",
+  "settings_general": "Allgemein",
   "settings_email": "E-Mail",
   "settings_email_lead": "Ausgehende E-Mail kann",
   "settings_email_mid": "(API) oder Standard-",

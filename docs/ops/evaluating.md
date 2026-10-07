@@ -56,7 +56,7 @@ Demo accounts are for local exploration only. For a real lab, set **`SEED_DEMO_D
 4. Open a published version: read the Markdown, check acknowledgments / training coverage if your role allows it.
 5. Sign in as **`manager@demo.local`** and create or edit a **draft** (Word import is available in the editor when you want to try it).
 6. Sign in as **`qa@demo.local`** (or admin) and walk a version through the lifecycle toward **published** if you want to see RC → publish and reader signs.
-7. As **admin**, skim **Settings** (mail mode and optional Slack / Gotify / webhook integrations), **Audit**, and **Backup** (export a `.zip` once so you know the path works).
+7. As **admin**, skim **Settings** (language, mail mode, optional Slack / Gotify / webhook integrations, and **Backup** — export a `.zip` once so you know the path works) and **Audit**.
 
 You do not need real SMTP for a first look: use **manual links** mail mode in Settings if you invite another user.
 

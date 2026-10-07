@@ -555,6 +555,7 @@
   "backup_apply_staged": "Yedek uygulama hazırlandı. Yeniden başlatma gerekli: {restart}. Uygulama öncesi anlık görüntü: {snapshot}",
   "backup_confirm_label": "Yıkıcı geri yüklemeyi onaylamak için yazın",
   "backup_stage_button": "Yedek uygulamayı hazırla (yeniden başlatma gerekir)",
+  "settings_general": "Genel",
   "settings_email": "E-posta",
   "settings_email_lead": "Giden posta şunları kullanabilir:",
   "settings_email_mid": "(API) veya standart",

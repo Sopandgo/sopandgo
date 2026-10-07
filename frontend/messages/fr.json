@@ -555,6 +555,7 @@
   "backup_apply_staged": "Application de la sauvegarde préparée. Redémarrage requis : {restart}. Instantané avant application : {snapshot}",
   "backup_confirm_label": "Saisissez pour confirmer la restauration destructive",
   "backup_stage_button": "Préparer l’application de la sauvegarde (redémarrage requis)",
+  "settings_general": "Général",
   "settings_email": "E-mail",
   "settings_email_lead": "Le courrier sortant peut utiliser",
   "settings_email_mid": "(API) ou le",

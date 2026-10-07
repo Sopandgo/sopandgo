@@ -555,6 +555,7 @@
   "backup_apply_staged": "Aplicación de la copia preparada. Reinicio necesario: {restart}. Instantánea previa: {snapshot}",
   "backup_confirm_label": "Escribe para confirmar la restauración destructiva",
   "backup_stage_button": "Preparar aplicación de la copia (requiere reinicio)",
+  "settings_general": "General",
   "settings_email": "Correo",
   "settings_email_lead": "El correo saliente puede usar",
   "settings_email_mid": "(API) o el estándar",

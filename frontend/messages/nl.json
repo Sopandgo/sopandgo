@@ -555,6 +555,7 @@
   "backup_apply_staged": "Back-uptoepassing klaargezet. Herstart vereist: {restart}. Snapshot vóór toepassen: {snapshot}",
   "backup_confirm_label": "Typ om destructief herstel te bevestigen",
   "backup_stage_button": "Back-uptoepassing klaarzetten (vereist herstart)",
+  "settings_general": "Algemeen",
   "settings_email": "E-mail",
   "settings_email_lead": "Uitgaande mail kan",
   "settings_email_mid": "(API) of standaard",

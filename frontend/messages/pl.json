@@ -555,6 +555,7 @@
   "backup_apply_staged": "Zastosowanie kopii przygotowane. Wymagany restart: {restart}. Migawka przed zastosowaniem: {snapshot}",
   "backup_confirm_label": "Wpisz, aby potwierdzić destrukcyjne przywracanie",
   "backup_stage_button": "Przygotuj zastosowanie kopii (wymaga restartu)",
+  "settings_general": "Ogólne",
   "settings_email": "E-mail",
   "settings_email_lead": "Poczta wychodząca może używać",
   "settings_email_mid": "(API) lub standardowego",

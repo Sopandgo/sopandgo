@@ -555,6 +555,7 @@
   "backup_apply_staged": "バックアップの適用をステージしました。再起動が必要: {restart}。適用前スナップショット: {snapshot}",
   "backup_confirm_label": "破壊的な復元を確認するために入力",
   "backup_stage_button": "バックアップの適用をステージ（再起動が必要）",
+  "settings_general": "一般",
   "settings_email": "メール",
   "settings_email_lead": "送信メールは",
   "settings_email_mid": "（API）または標準の",

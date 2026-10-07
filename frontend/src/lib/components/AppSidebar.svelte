@@ -2,7 +2,6 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import {
-        ArchiveIcon,
         GithubIcon,
         HouseIcon,
         LogsIcon,
@@ -71,7 +70,6 @@
                     sectionCurrent('/admin/settings'),
                     SettingsIcon
                 )}
-                {@render item('/admin/backup', m.nav_backup(), sectionCurrent('/admin/backup'), ArchiveIcon)}
             </ul>
         {/if}
         <ul class="menu w-full">
@@ -94,7 +92,7 @@
 </div>
 
 {#snippet item(
-    href: '/dashboard' | '/sops' | '/admin/users' | '/admin/sessions' | '/admin/audit-logs' | '/admin/settings' | '/admin/backup',
+    href: '/dashboard' | '/sops' | '/admin/users' | '/admin/sessions' | '/admin/audit-logs' | '/admin/settings',
     label: string,
     current: boolean,
     Icon: RailIcon
