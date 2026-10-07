@@ -3,12 +3,14 @@
     import { resolve } from '$app/paths';
     import { ArchiveIcon, CircleUserIcon, LogOutIcon, LogsIcon, SettingsIcon, ShieldUserIcon, UsersIcon } from 'lucide-svelte';
     import Avatar from '$lib/components/Avatar.svelte';
+    import GuestLocaleMenu from '$lib/components/GuestLocaleMenu.svelte';
+    import GuestThemeToggle from '$lib/components/GuestThemeToggle.svelte';
     import * as m from '$lib/paraglide/messages.js';
 
     let { user } = $props();
 </script>
 
-<div class="navbar sticky top-0 z-50 bg-base-100 shadow-sm">
+<div class="navbar sticky top-0 z-50 bg-base-100 shadow-sm" class:navbar-guest={!user}>
     <div class="navbar-start">
         {#if user}
             {@render logo('/dashboard')}
@@ -28,7 +30,7 @@
     {/if}
 
     <div class="navbar-end">
-        <div class="flex gap-2">
+        <div class="flex items-center gap-2">
             {#if user}
                 <div class="dropdown dropdown-end">
                     <div
@@ -111,7 +113,9 @@
                     </ul>
                 </div>
             {:else}
-                <a href={resolve('/login')} class="btn btn-ghost">
+                <GuestThemeToggle />
+                <GuestLocaleMenu />
+                <a href={resolve('/login')} class="btn btn-primary shrink-0">
                     {m.nav_login()}
                 </a>
             {/if}
@@ -120,16 +124,30 @@
 </div>
 
 {#snippet logo(url: '/' | '/dashboard')}
-    <a href={resolve(url)} class="flex-1 flex gap-4 items-center">
+    <a href={resolve(url)} class="flex min-w-0 flex-1 items-center gap-4">
         <div
             tabindex="0"
             role="button"
-            class="btn btn-ghost btn-circle avatar avatar-placeholder"
+            class="btn btn-ghost btn-circle avatar avatar-placeholder shrink-0"
         >
             <img src="/favicon.svg" alt={m.page_home()} />
         </div>
-        <span class="font-semibold">
+        <span class="truncate font-semibold">
             SOP and GO
         </span>
     </a>
 {/snippet}
+
+<style>
+    .navbar-guest .navbar-start {
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .navbar-guest .navbar-end {
+        width: auto;
+        flex: 0 0 auto;
+        margin-inline-start: auto;
+    }
+</style>

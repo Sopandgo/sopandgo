@@ -1,7 +1,7 @@
 import { createSDK } from '$lib/sdk';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { cookieName, getTextDirection, isLocale } from '$lib/paraglide/runtime';
-import { themeAttribute } from '$lib/theme';
+import { guestThemeFromCookie, themeAttribute, themeCookieName } from '$lib/theme';
 import { sequence } from '@sveltejs/kit/hooks';
 import { redirect, type Handle } from '@sveltejs/kit';
 
@@ -81,7 +81,13 @@ const handleParaglide: Handle = ({ event, resolve }) =>
                 html
                     .replace('%paraglide.lang%', locale)
                     .replace('%paraglide.dir%', getTextDirection(locale))
-                    .replace('%theme%', themeAttribute(event.locals.user?.theme ?? 'system'))
+                    .replace(
+                        '%theme%',
+                        themeAttribute(
+                            event.locals.user?.theme ??
+                                guestThemeFromCookie(event.cookies.get(themeCookieName))
+                        )
+                    )
         });
     });
 
