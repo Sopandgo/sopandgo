@@ -74,7 +74,7 @@ The architecture uses a **Stateless/Stateful Hybrid**:
 
 ## Languages
 
-The interface ships in English (`en`, the fallback), German (`de`), French (`fr`), Spanish (`es`), Portuguese (`pt`), Chinese (`zh`), Italian (`it`), Dutch (`nl`), Polish (`pl`), Japanese (`ja`), Korean (`ko`), Turkish (`tr`), and Swedish (`sv`). Signed-in pages use `users.locale`. Public pages set the locale cookie from the navbar language menu; resolution is that cookie, then `Accept-Language`, then English. Emails use the recipient's locale. Slack, Gotify, webhooks, and PDF chrome use `app_settings.default_locale`, because those outputs are shared. A PDF is generated once and is not re-rendered per reader.
+The interface ships in English (`en`, the fallback), German (`de`), French (`fr`), Spanish (`es`), Portuguese (`pt`), Chinese (`zh`), Italian (`it`), Dutch (`nl`), Polish (`pl`), Japanese (`ja`), Korean (`ko`), Turkish (`tr`), Swedish (`sv`), Czech (`cs`), and Slovak (`sk`). Signed-in pages use `users.locale`. Public pages set the locale cookie from the navbar language menu; resolution is that cookie, then `Accept-Language`, then English. Emails use the recipient's locale. Slack, Gotify, webhooks, and PDF chrome use `app_settings.default_locale`, because those outputs are shared. A PDF is generated once and is not re-rendered per reader.
 
 SOP titles, Markdown, change summaries, reject reasons, tag names, and display names are stored as written and are not translated. Only the surrounding system sentences change.
 
