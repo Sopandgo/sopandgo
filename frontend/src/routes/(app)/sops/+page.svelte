@@ -96,113 +96,100 @@
     </div>
   </Card>
 
-  <Card>
-    <div class="card-body">
-      <span class="text-sm font-medium text-base-content/70">
-        {m.sops_search_filters()}
-      </span>
-
-      <div class="flex flex-col gap-3 pt-4 border-t border-base-300">
-        <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-          <div class="join w-full md:w-auto">
-            <input
-              type="text"
-              placeholder={m.sops_search_placeholder()}
-              class="input join-item flex-1 md:w-80"
-              bind:value={searchTerm}
-              onkeydown={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <button
-              class="btn join-item"
-              onclick={handleSearch}
-              aria-label={m.sops_submit_search()}
-            >
-              <SearchIcon class="w-5 h-5" />
-            </button>
-          </div>
-
-          {#if hasActiveFilters}
-            <button
-              class="btn btn-error text-error-content md:self-auto"
-              onclick={clearFilters}
-              aria-label={m.sops_clear_filters_aria()}
-            >
-              <XIcon class="w-4 h-4" />
-              {m.sops_clear_filters()}
-            </button>
-          {/if}
-        </div>
-
-          <div class="flex flex-col gap-2 pt-2 border-t border-base-300">
-            <span class="text-sm font-medium text-base-content/70">
-              {m.common_favorites()}
-            </span>
-            <div class="flex flex-wrap gap-3">
-              <label class="label cursor-pointer gap-2 justify-start py-1">
-                <input
-                  type="checkbox"
-                  class="checkbox checkbox-sm checkbox-primary"
-                  checked={data.filters.favorites_only}
-                  onchange={toggleFavoritesOnly}
-                  aria-label={m.sops_favorites_only_aria()}
-                />
-                <span class="label-text text-sm">{m.sops_favorites_only()}</span>
-              </label>
-              <label class="label cursor-pointer gap-2 justify-start py-1">
-                <input
-                  type="checkbox"
-                  class="checkbox checkbox-sm checkbox-primary"
-                  checked={data.filters.favorites_first}
-                  onchange={toggleFavoritesFirst}
-                  aria-label={m.sops_favorites_first_aria()}
-                />
-                <span class="label-text text-sm">{m.sops_favorites_first()}</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-medium text-base-content/70">
-              {m.common_tags()}
-            </span>
-
-            {#if activeTagId}
-              <button
-                type="button"
-                class="btn btn-xs btn-ghost"
-                onclick={() => toggleTag(activeTagId)}
-                aria-label={m.sops_clear_tag_aria()}
-              >
-                {m.sops_clear_tag()}
-              </button>
-            {/if}
-          </div>
-
-          <div class="flex flex-wrap gap-2">
-            {#each data.tags as t (t.id)}
-              <button
-                type="button"
-                onclick={() => toggleTag(t.id)}
-                class="badge badge-sm cursor-pointer {activeTagId === t.id ? 'badge-soft badge-primary' : 'badge-outline'}"
-                aria-pressed={activeTagId === t.id}
-                aria-label={m.sops_filter_tag({ title: t.title })}
-                title={activeTagId === t.id ? m.sops_click_remove() : m.sops_click_filter()}
-              >
-                {t.title}
-              </button>
-            {:else}
-              <span class="text-sm text-base-content/70">{m.sops_no_tags()}</span>
-            {/each}
-          </div>
-        </div>
-      </div>
-    </div>
-  </Card>
-
   <ListSops
     items={{ sops: data.sops, total: data.total }}
     activeFilters={data.filters}
     onTagClick={toggleTag}
-  />
+  >
+    {#snippet toolbar()}
+      <div class="flex flex-col gap-3 md:flex-row md:items-center">
+        <form
+          role="search"
+          class="join w-full md:w-80"
+          onsubmit={(e) => {
+            e.preventDefault();
+            handleSearch();
+          }}
+        >
+          <input
+            type="search"
+            placeholder={m.sops_search_placeholder()}
+            class="input join-item flex-1"
+            bind:value={searchTerm}
+          />
+          <button
+            type="submit"
+            class="btn join-item"
+            aria-label={m.sops_submit_search()}
+            title={m.sops_submit_search()}
+          >
+            <SearchIcon class="size-4" />
+          </button>
+        </form>
+
+        <div class="flex flex-wrap items-center gap-x-4" role="group" aria-label={m.common_favorites()}>
+          <label class="label cursor-pointer gap-2 py-1">
+            <input
+              type="checkbox"
+              class="checkbox checkbox-sm checkbox-primary"
+              checked={data.filters.favorites_only}
+              onchange={toggleFavoritesOnly}
+              aria-label={m.sops_favorites_only_aria()}
+            />
+            <span class="label-text text-sm">{m.sops_favorites_only()}</span>
+          </label>
+          <label class="label cursor-pointer gap-2 py-1">
+            <input
+              type="checkbox"
+              class="checkbox checkbox-sm checkbox-primary"
+              checked={data.filters.favorites_first}
+              onchange={toggleFavoritesFirst}
+              aria-label={m.sops_favorites_first_aria()}
+            />
+            <span class="label-text text-sm">{m.sops_favorites_first()}</span>
+          </label>
+        </div>
+
+        {#if hasActiveFilters}
+          <button
+            type="button"
+            class="btn btn-ghost md:ml-auto"
+            onclick={clearFilters}
+            aria-label={m.sops_clear_filters_aria()}
+          >
+            <XIcon class="size-4" />
+            {m.sops_clear_filters()}
+          </button>
+        {/if}
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2" role="group" aria-label={m.common_tags()}>
+        <span class="text-sm font-medium text-base-content/70">{m.common_tags()}</span>
+        {#each data.tags as t (t.id)}
+          <button
+            type="button"
+            onclick={() => toggleTag(t.id)}
+            class="badge badge-sm cursor-pointer {activeTagId === t.id ? 'badge-soft badge-primary' : 'badge-outline'}"
+            aria-pressed={activeTagId === t.id}
+            aria-label={m.sops_filter_tag({ title: t.title })}
+            title={activeTagId === t.id ? m.sops_click_remove() : m.sops_click_filter()}
+          >
+            {t.title}
+          </button>
+        {:else}
+          <span class="text-sm text-base-content/70">{m.sops_no_tags()}</span>
+        {/each}
+        {#if activeTagId}
+          <button
+            type="button"
+            class="btn btn-xs btn-ghost"
+            onclick={() => toggleTag(activeTagId)}
+            aria-label={m.sops_clear_tag_aria()}
+          >
+            {m.sops_clear_tag()}
+          </button>
+        {/if}
+      </div>
+    {/snippet}
+  </ListSops>
 </div>

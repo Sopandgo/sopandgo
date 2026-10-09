@@ -5,6 +5,7 @@
     ChevronLeftIcon,
     StarIcon
   } from 'lucide-svelte';
+  import type { Snippet } from 'svelte';
   import type { SOPListResponse } from '$lib/sdk/types';
   import Card from './Card.svelte';
   import ListRow from './ListRow.svelte';
@@ -24,6 +25,8 @@
       favorites_first: boolean;
     };
     onTagClick?: (tagId: string) => void; // parent owns filter logic
+    /** Search and filter controls, shown above the rows in the same card. */
+    toolbar?: Snippet;
   }
 
   let {
@@ -36,7 +39,8 @@
       favorites_only: false,
       favorites_first: false
     },
-    onTagClick = () => {}
+    onTagClick = () => {},
+    toolbar
   }: Props = $props();
 
   let sops = $derived(items?.sops ?? []);
@@ -56,9 +60,22 @@
   }
 </script>
 
-<Card title={m.sops_results({ shown: String(sops.length), total: String(total) })}>
-  <ul class="list">
+<Card>
+  <!-- One-row header (count on the right at every width) to leave room for the rows -->
+  <div class="flex items-baseline justify-between gap-3 border-b border-base-300 p-4 sm:p-6">
+    <h2 class="text-lg font-semibold">{m.sops_list_title()}</h2>
+    <span class="text-sm text-base-content/70">
+      {m.sops_showing({ shown: String(sops.length), total: String(total) })}
+    </span>
+  </div>
 
+  {#if toolbar}
+    <div class="flex flex-col gap-4 border-b border-base-300 p-4 sm:p-6">
+      {@render toolbar()}
+    </div>
+  {/if}
+
+  <ul class="list">
     {#each sops as sop (sop.id)}
       <ListRow
         href={rowHref(sop.id)}
