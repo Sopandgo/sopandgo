@@ -29,7 +29,7 @@ It follows a **Service Layer Pattern** (`sop.Service`) for data consistency, ato
 | File | Purpose | Key methods |
 | --- | --- | --- |
 | **`service.go`** | `Service` constructor and PDF config | `NewService`, `IsPDFExportEnabled` |
-| **`sop_service.go`** | SOP containers | `RegisterSOP`, `ListSOPs`, `GetSOPByIDWithTags` |
+| **`sop_service.go`** | SOP containers; list rows carry tags, favorite state, the latest version (number, state, date) and the published version number | `RegisterSOP`, `ListSOPs`, `GetSOPByIDWithTags` |
 | **`version_service.go`** | Drafts, content I/O, lifecycle | `RegisterSOPVersion`, `TransitionVersionState`, `ApproveSOPVersion`, summaries, integrity |
 | **`acknowledgment_service.go`** | Reader sign-off on published versions, and signature status | `AddAcknowledgment`, `GetSignatureStatusByUser` |
 | **`asset_service.go`** | Binary uploads | `AddAsset`, `GetAssetPath`, `VerifyAssetIntegrity` |

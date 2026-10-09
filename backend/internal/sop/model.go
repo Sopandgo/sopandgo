@@ -32,6 +32,16 @@ type SOPListItem struct {
 	SOP
 	Tags       []Tag `json:"tags"`
 	IsFavorite bool  `json:"is_favorite"`
+	// LatestVersion is the highest version number in its current state; nil before the first version.
+	LatestVersion *SOPListVersion `json:"latest_version"`
+	// PublishedVersion is the number of the version readers see; nil until one is published.
+	PublishedVersion *int `json:"published_version"`
+}
+
+type SOPListVersion struct {
+	Version   int       `json:"version"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type Tag struct {

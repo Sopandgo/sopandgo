@@ -170,6 +170,48 @@ func listSOPsRecord(db audit.DBTX, userID string, limit, offset int, tagID strin
 		}
 	}
 
+	// 7. Bulk fetch versions (newest first) for the latest and published version per SOP
+	versionQuery := `
+		SELECT v.sop_id, v.version, v.created_at,
+		       COALESCE((SELECT state FROM sop_version_states WHERE sop_version_id = v.id ORDER BY created_at DESC, rowid DESC LIMIT 1), '') AS status
+		FROM sop_versions v
+		WHERE v.sop_id IN (` + strings.Join(placeholders, ",") + `)
+		ORDER BY v.sop_id, v.version DESC
+	`
+
+	versionRows, err := db.Query(versionQuery, sopIDs...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to fetch versions for sops: %w", err)
+	}
+	defer versionRows.Close()
+
+	latestBySOP := make(map[string]*SOPListVersion)
+	publishedBySOP := make(map[string]int)
+	for versionRows.Next() {
+		var sopID, createdAt string
+		var v SOPListVersion
+		if err := versionRows.Scan(&sopID, &v.Version, &createdAt, &v.Status); err != nil {
+			return nil, 0, err
+		}
+		v.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
+		if _, ok := latestBySOP[sopID]; !ok {
+			latestBySOP[sopID] = &v
+		}
+		if _, ok := publishedBySOP[sopID]; !ok && v.Status == StatePublished {
+			publishedBySOP[sopID] = v.Version
+		}
+	}
+	if err := versionRows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	for i, s := range sops {
+		sops[i].LatestVersion = latestBySOP[s.ID]
+		if n, ok := publishedBySOP[s.ID]; ok {
+			sops[i].PublishedVersion = &n
+		}
+	}
+
 	return sops, total, nil
 }
 

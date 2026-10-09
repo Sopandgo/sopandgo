@@ -20,6 +20,8 @@
      */
     interface Props {
         label: string;
+        /** Keep the label for screen readers only, e.g. in a toolbar where the placeholder says enough. */
+        hideLabel?: boolean;
         options: ComboboxOption[];
         value?: string;
         placeholder?: string;
@@ -34,6 +36,7 @@
 
     let {
         label,
+        hideLabel = false,
         options,
         value = $bindable(''),
         placeholder,
@@ -144,7 +147,7 @@
 </script>
 
 <div class="form-control w-full {extraClass}">
-    <label class="label" for={id}><span class="label-text text-xs">{label}</span></label>
+    <label class="label {hideLabel ? 'sr-only' : ''}" for={id}><span class="label-text text-xs">{label}</span></label>
     <div class="relative">
         <input
             {id}

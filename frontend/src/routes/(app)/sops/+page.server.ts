@@ -5,7 +5,7 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals, url }) => {
     try {
         // 1. Extract query params from the URL
-        const limit = Number(url.searchParams.get('limit')) || 10;
+        const limit = Number(url.searchParams.get('limit')) || 25;
         const offset = Number(url.searchParams.get('offset')) || 0;
         const q = url.searchParams.get('q') || '';
         const tag_id = url.searchParams.get('tag_id') || '';
@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         };
     } catch (err) {
         console.error('SOP List Error:', err);
-        throw error(500, 'Could not connect to the backend');
+        throw error(500, m.error_service_unavailable());
     }
 };
 

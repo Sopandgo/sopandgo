@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
+	"github.com/sopandgo/sopandgo/backend/internal/sop"
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
 
@@ -173,6 +174,40 @@ func TestService_ListSOPs(t *testing.T) {
 	tagResults, totalTags, _ := env.SOPService.ListSOPs(actorID, 50, 0, tagID, "", false, false)
 	if len(tagResults) != 2 || totalTags != 2 {
 		t.Errorf("Tag filter failed. Expected 2 tagged SOPs, got %d", len(tagResults))
+	}
+
+	// 6. Version summary: SOP A has v1 published and a newer v2 draft; SOP C has no versions
+	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopA, "V1 content", "First version", &actorID)
+	if err != nil {
+		t.Fatalf("RegisterSOPVersion v1: %v", err)
+	}
+	if err := env.SOPService.TransitionVersionState(v1ID, sop.StateRC, actorID); err != nil {
+		t.Fatalf("Promote v1: %v", err)
+	}
+	if _, err := env.SOPService.ApproveSOPVersion(v1ID, actorID); err != nil {
+		t.Fatalf("Publish v1: %v", err)
+	}
+	if _, _, err := env.SOPService.RegisterSOPVersion(sopA, "V2 content", "Second version", &actorID); err != nil {
+		t.Fatalf("RegisterSOPVersion v2: %v", err)
+	}
+
+	sops, _, err = env.SOPService.ListSOPs(actorID, 50, 0, "", "", false, false)
+	if err != nil {
+		t.Fatalf("ListSOPs failed: %v", err)
+	}
+	byID := map[string]sop.SOPListItem{}
+	for _, s := range sops {
+		byID[s.ID] = s
+	}
+	a := byID[sopA]
+	if a.LatestVersion == nil || a.LatestVersion.Version != 2 || a.LatestVersion.Status != sop.StateDraft {
+		t.Errorf("Expected SOP A latest version 2 in draft, got %+v", a.LatestVersion)
+	}
+	if a.PublishedVersion == nil || *a.PublishedVersion != 1 {
+		t.Errorf("Expected SOP A published version 1, got %v", a.PublishedVersion)
+	}
+	if c := byID[sopC]; c.LatestVersion != nil || c.PublishedVersion != nil {
+		t.Errorf("Expected SOP C without versions, got latest %+v published %v", c.LatestVersion, c.PublishedVersion)
 	}
 }
 

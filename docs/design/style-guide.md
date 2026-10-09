@@ -88,6 +88,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 - Breadcrumbs live in the signed-in navbar, next to the sidebar toggle. Trails are defined per route in `$lib/breadcrumbs.ts` and start at the section (SOPs, Profile, or the admin page itself), never at the dashboard or an "Admin" crumb, because the sidebar already marks the section. Pages do not render their own breadcrumbs. On phones only the last two crumbs show.
 - Pages: page header (`page-title` plus one line of `body-sm` in `base-content-muted`, actions on the right), then cards stacked with `space-6` gaps.
 - Lists, not tables, for SOPs, versions, assets and signatures: a `ListRow` per item inside one bordered card.
+- A list's search and filters sit in a toolbar at the top of that same card, under its header, and apply as they change (search after a short pause). Choices that exclude each other are one segmented `join`, not separate checkboxes; long option sets use the Combobox. "Clear filters" is a ghost button, and the empty state says whether nothing exists yet or nothing matches.
 - Phones first: rows stack, secondary metadata wraps under the title, badges hide only if their meaning is repeated elsewhere.
 
 ## Components
@@ -118,6 +119,7 @@ One linked item in a list inside a `Card` — an SOP, a version, an asset, a sig
 **Anatomy**
 - Leading: a 40px `radius-field` tile on `base-200` with a 20px icon in `base-content-muted` (file-text for SOPs, paperclip for assets).
 - Main: title in `label` (truncates on one line), meta line in `meta` / `base-content-muted`; IDs and versions in `mono-id`.
+- Tags on the meta line: at most three, then a `badge-ghost` "+N" button that shows the rest in place (its `title` names the hidden tags) and turns into "Show fewer". A tag the list is filtered by is always among the visible ones.
 - Trailing: a `StatusBadge` or `IntegrityStatus`, small actions (`btn-sm`), and a chevron when the whole row is a link.
 - Rows are separated by `base-300` hairlines; the last row has none.
 

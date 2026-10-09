@@ -82,9 +82,16 @@ export interface SOP {
     title: string;
     created_at: string;
     tags: Tag[];
-    latest_published_version_id: string | null;
     /** Present on list/detail when the backend includes per-user favorite state */
     is_favorite?: boolean;
+}
+
+/** A row of `GET /sops`: the SOP plus a summary of its versions. */
+export interface SOPListItem extends SOP {
+    /** Highest version number in its current state; null before the first version. */
+    latest_version: { version: number; status: SOPVersionStatus; created_at: string } | null;
+    /** Number of the version readers see; null until one is published. */
+    published_version: number | null;
 }
 
 export interface Tag {
@@ -96,7 +103,7 @@ export interface Tag {
 
 // Add this near your other SOP interfaces
 export interface SOPListResponse {
-    sops: SOP[];
+    sops: SOPListItem[];
     total: number;
 }
 
