@@ -18,7 +18,7 @@
     {#if isSelf}
         <input
             type="checkbox"
-            class="toggle"
+            class="toggle toggle-success"
             checked={user.is_active}
             disabled={true}
         />
@@ -52,7 +52,7 @@
             >
                 <input
                     type="checkbox"
-                    class="toggle toggle-secondary pointer-events-none"
+                    class="toggle toggle-success pointer-events-none"
                     checked={user.is_active}
                     disabled={loading}
                 />

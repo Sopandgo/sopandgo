@@ -103,6 +103,8 @@ The bordered `base-100` section that holds every block of content on a page; alw
 
 **Consumer provides**: `title` (optional), `description` (optional), an `actions` snippet (optional) and `children`.
 
+**Collapsible**: when a page lists several similar sections that are configured once and then left alone (the channels on Settings → Integrations, `IntegrationChannelCard`), put a native `<details>` inside the `Card`. The `<summary>` is the header row: `section-title`, a `meta` line, a status word as a badge, and a 20px chevron that turns when open. Collapsed by default; open the section by itself when a form inside it returns a result, so the message is never hidden. The summary hovers to `base-200` and keeps the focus ring inset.
+
 **Don't**
 - Don't write `class="card …"` by hand in pages. Today 16 places do; route them through `Card`.
 - Don't nest cards. Use a divider or a group heading inside one card.
@@ -235,6 +237,20 @@ A labelled input, select or textarea: daisyUI `input` / `select` / `textarea` wi
 **Don't**
 - Don't use placeholders as labels.
 - Don't use `input-bordered` or colour variants (`input-primary`) for decoration; the default already has a visible border.
+
+### Toggle and checkbox
+
+A toggle switches something on or off (a notification channel, a user account); a checkbox picks items from a set (the events a channel sends).
+
+**Toggle**: `toggle toggle-success`. On is a state, so it takes `success`; off stays neutral. A word sits next to the toggle ("On" / "Off", "active" / "disabled"), so the state never rests on colour alone.
+
+**Checkbox**: `checkbox checkbox-sm checkbox-primary`: ink fill with a paper check, the selection colour. The plain `checkbox` fills in the 55% `field-border` grey and its check barely shows. Several options go in a `fieldset` with a `label`-style `legend`, in a one-column grid on phones and two columns from `sm`.
+
+**Labels**: wrap the input and its words in a plain `<label class="flex items-center gap-3 text-sm">`. daisyUI 5's `.label` keeps text on one line and dims it below `text-base-content/70`, and `form-control` / `label-text` no longer exist in daisyUI 5.
+
+**Don't**
+- Don't add `@tailwindcss/forms`: its base styles draw a second checkmark into daisyUI checkboxes and toggles.
+- Don't use `toggle-primary` or `toggle-secondary`; neither says "on".
 
 ### Combobox
 

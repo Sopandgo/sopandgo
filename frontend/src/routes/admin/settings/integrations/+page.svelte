@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { enhance } from '$app/forms';
     import Alert from '$lib/components/Alert.svelte';
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
+    import IntegrationChannelCard from '$lib/components/IntegrationChannelCard.svelte';
     import { WebhookIcon } from 'lucide-svelte';
     import * as m from '$lib/paraglide/messages.js';
     import type { IntegrationEvent } from '$lib/sdk/types';
@@ -29,10 +29,6 @@
         (integrations?.known_events as IntegrationEvent[] | undefined) ??
             (Object.keys(eventLabels) as IntegrationEvent[])
     );
-
-    function eventChecked(channelEvents: string[] | undefined, event: IntegrationEvent) {
-        return (channelEvents ?? []).includes(event);
-    }
 </script>
 
 <svelte:head>
@@ -60,230 +56,122 @@
         </div>
     </Card>
 
-    <Card>
-        <div class="card-body space-y-4">
-            <h2 class="card-title">{m.settings_slack()}</h2>
-            {#if saveSlackResult?.error}
-                <Alert type="error" message={saveSlackResult.error} />
-            {/if}
-            {#if saveSlackResult?.ok}
-                <Alert type="success" message={m.settings_slack_saved()} />
-            {/if}
-            {#if testSlackResult?.error}
-                <Alert type="error" message={testSlackResult.error} />
-            {/if}
-            {#if testSlackResult?.ok}
-                <Alert type="success" message={m.settings_slack_test_sent()} />
-            {/if}
+    <IntegrationChannelCard
+        title={m.settings_slack()}
+        channel={integrations?.slack}
+        {knownEvents}
+        {eventLabels}
+        enableLabel={m.settings_slack_enable()}
+        saveLabel={m.settings_save_slack()}
+        saveAction="saveSlack"
+        testAction="testSlack"
+        saveResult={saveSlackResult}
+        testResult={testSlackResult}
+        savedMessage={m.settings_slack_saved()}
+        testSentMessage={m.settings_slack_test_sent()}
+    >
+        {#snippet fields()}
+            <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-medium">{m.settings_webhook_url()}</span>
+                <input
+                    type="password"
+                    name="webhook_url"
+                    class="input w-full"
+                    autocomplete="off"
+                    placeholder={integrations?.slack?.secret_configured
+                        ? m.settings_keep_webhook()
+                        : 'https://hooks.slack.com/services/...'}
+                />
+            </label>
+        {/snippet}
+    </IntegrationChannelCard>
 
-            <form method="POST" action="?/saveSlack" use:enhance class="grid grid-cols-1 gap-4">
-                <label class="label cursor-pointer justify-start gap-3">
-                    <input
-                        type="checkbox"
-                        name="enabled"
-                        class="toggle toggle-primary"
-                        checked={integrations?.slack?.enabled ?? false}
-                    />
-                    <span class="label-text">{m.settings_slack_enable()}</span>
-                </label>
+    <IntegrationChannelCard
+        title={m.settings_gotify()}
+        channel={integrations?.gotify}
+        {knownEvents}
+        {eventLabels}
+        enableLabel={m.settings_gotify_enable()}
+        saveLabel={m.settings_save_gotify()}
+        saveAction="saveGotify"
+        testAction="testGotify"
+        saveResult={saveGotifyResult}
+        testResult={testGotifyResult}
+        savedMessage={m.settings_gotify_saved()}
+        testSentMessage={m.settings_gotify_test_sent()}
+    >
+        {#snippet fields()}
+            <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-medium">{m.settings_gotify_url()}</span>
+                <input
+                    type="url"
+                    name="url"
+                    class="input w-full"
+                    autocomplete="off"
+                    placeholder="https://gotify.example.com"
+                    value={integrations?.gotify?.url ?? ''}
+                />
+            </label>
+            <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-medium">{m.settings_gotify_token()}</span>
+                <input
+                    type="password"
+                    name="token"
+                    class="input w-full"
+                    autocomplete="off"
+                    placeholder={integrations?.gotify?.secret_configured
+                        ? m.settings_keep_token()
+                        : m.common_required()}
+                />
+            </label>
+        {/snippet}
+    </IntegrationChannelCard>
 
-                <label class="form-control w-full">
-                    <span class="label-text">{m.settings_webhook_url()}</span>
-                    <input
-                        type="password"
-                        name="webhook_url"
-                        class="input w-full"
-                        autocomplete="off"
-                        placeholder={integrations?.slack?.secret_configured
-                            ? m.settings_keep_webhook()
-                            : 'https://hooks.slack.com/services/...'}
-                    />
-                </label>
-
-                <fieldset class="space-y-2">
-                    <legend class="text-sm font-medium">{m.common_events()}</legend>
-                    {#each knownEvents as event (event)}
-                        <label class="label cursor-pointer justify-start gap-3 py-1">
-                            <input
-                                type="checkbox"
-                                name="events"
-                                value={event}
-                                class="checkbox checkbox-sm"
-                                checked={eventChecked(integrations?.slack?.events, event)}
-                            />
-                            <span class="label-text">{eventLabels[event] ?? event}</span>
-                        </label>
-                    {/each}
-                </fieldset>
-
-                <div class="card-actions w-full flex-col sm:flex-row sm:justify-end gap-2">
-                    <button type="submit" class="btn w-full sm:w-auto">{m.settings_save_slack()}</button>
-                </div>
-            </form>
-            <form method="POST" action="?/testSlack" use:enhance>
-                <button type="submit" class="btn btn-sm">{m.common_send_test()}</button>
-            </form>
-        </div>
-    </Card>
-
-    <Card>
-        <div class="card-body space-y-4">
-            <h2 class="card-title">{m.settings_gotify()}</h2>
-            {#if saveGotifyResult?.error}
-                <Alert type="error" message={saveGotifyResult.error} />
-            {/if}
-            {#if saveGotifyResult?.ok}
-                <Alert type="success" message={m.settings_gotify_saved()} />
-            {/if}
-            {#if testGotifyResult?.error}
-                <Alert type="error" message={testGotifyResult.error} />
-            {/if}
-            {#if testGotifyResult?.ok}
-                <Alert type="success" message={m.settings_gotify_test_sent()} />
-            {/if}
-
-            <form method="POST" action="?/saveGotify" use:enhance class="grid grid-cols-1 gap-4">
-                <label class="label cursor-pointer justify-start gap-3">
-                    <input
-                        type="checkbox"
-                        name="enabled"
-                        class="toggle toggle-primary"
-                        checked={integrations?.gotify?.enabled ?? false}
-                    />
-                    <span class="label-text">{m.settings_gotify_enable()}</span>
-                </label>
-
-                <label class="form-control w-full">
-                    <span class="label-text">{m.settings_gotify_url()}</span>
-                    <input
-                        type="url"
-                        name="url"
-                        class="input w-full"
-                        autocomplete="off"
-                        placeholder="https://gotify.example.com"
-                        value={integrations?.gotify?.url ?? ''}
-                    />
-                </label>
-
-                <label class="form-control w-full">
-                    <span class="label-text">{m.settings_gotify_token()}</span>
-                    <input
-                        type="password"
-                        name="token"
-                        class="input w-full"
-                        autocomplete="off"
-                        placeholder={integrations?.gotify?.secret_configured
-                            ? m.settings_keep_token()
-                            : m.common_required()}
-                    />
-                </label>
-
-                <fieldset class="space-y-2">
-                    <legend class="text-sm font-medium">{m.common_events()}</legend>
-                    {#each knownEvents as event (event)}
-                        <label class="label cursor-pointer justify-start gap-3 py-1">
-                            <input
-                                type="checkbox"
-                                name="events"
-                                value={event}
-                                class="checkbox checkbox-sm"
-                                checked={eventChecked(integrations?.gotify?.events, event)}
-                            />
-                            <span class="label-text">{eventLabels[event] ?? event}</span>
-                        </label>
-                    {/each}
-                </fieldset>
-
-                <div class="card-actions w-full flex-col sm:flex-row sm:justify-end">
-                    <button type="submit" class="btn w-full sm:w-auto">{m.settings_save_gotify()}</button>
-                </div>
-            </form>
-            <form method="POST" action="?/testGotify" use:enhance>
-                <button type="submit" class="btn btn-sm">{m.common_send_test()}</button>
-            </form>
-        </div>
-    </Card>
-
-    <Card>
-        <div class="card-body space-y-4">
-            <h2 class="card-title">{m.settings_webhook()}</h2>
-            <p class="text-sm text-base-content/70">
-                {m.settings_webhook_lead()}<code class="text-xs">event</code>,
-                <code class="text-xs">occurred_at</code>, <code class="text-xs">title</code>,
-                <code class="text-xs">message</code>{m.settings_webhook_mid()} <code class="text-xs">-</code> {m.settings_webhook_tail()}
+    <IntegrationChannelCard
+        title={m.settings_webhook()}
+        channel={integrations?.webhook}
+        {knownEvents}
+        {eventLabels}
+        enableLabel={m.settings_webhook_enable()}
+        saveLabel={m.settings_save_webhook()}
+        saveAction="saveWebhook"
+        testAction="testWebhook"
+        saveResult={saveWebhookResult}
+        testResult={testWebhookResult}
+        savedMessage={m.settings_webhook_saved()}
+        testSentMessage={m.settings_webhook_test_sent()}
+    >
+        {#snippet description()}
+            <p>
+                {m.settings_webhook_lead()}<code class="font-mono text-xs">event</code>,
+                <code class="font-mono text-xs">occurred_at</code>, <code class="font-mono text-xs">title</code>,
+                <code class="font-mono text-xs">message</code>{m.settings_webhook_mid()} <code class="font-mono text-xs">-</code> {m.settings_webhook_tail()}
             </p>
-            {#if saveWebhookResult?.error}
-                <Alert type="error" message={saveWebhookResult.error} />
-            {/if}
-            {#if saveWebhookResult?.ok}
-                <Alert type="success" message={m.settings_webhook_saved()} />
-            {/if}
-            {#if testWebhookResult?.error}
-                <Alert type="error" message={testWebhookResult.error} />
-            {/if}
-            {#if testWebhookResult?.ok}
-                <Alert type="success" message={m.settings_webhook_test_sent()} />
-            {/if}
-
-            <form method="POST" action="?/saveWebhook" use:enhance class="grid grid-cols-1 gap-4">
-                <label class="label cursor-pointer justify-start gap-3">
-                    <input
-                        type="checkbox"
-                        name="enabled"
-                        class="toggle toggle-primary"
-                        checked={integrations?.webhook?.enabled ?? false}
-                    />
-                    <span class="label-text">{m.settings_webhook_enable()}</span>
-                </label>
-
-                <label class="form-control w-full">
-                    <span class="label-text">{m.settings_webhook_url_label()}</span>
-                    <input
-                        type="url"
-                        name="url"
-                        class="input w-full"
-                        autocomplete="off"
-                        placeholder="https://example.com/hooks/sopandgo"
-                        value={integrations?.webhook?.url ?? ''}
-                    />
-                </label>
-
-                <label class="form-control w-full">
-                    <span class="label-text">{m.settings_bearer()}</span>
-                    <input
-                        type="password"
-                        name="bearer_token"
-                        class="input w-full"
-                        autocomplete="off"
-                        placeholder={integrations?.webhook?.secret_configured
-                            ? m.settings_keep_or_clear()
-                            : m.common_optional()}
-                    />
-                </label>
-
-                <fieldset class="space-y-2">
-                    <legend class="text-sm font-medium">{m.common_events()}</legend>
-                    {#each knownEvents as event (event)}
-                        <label class="label cursor-pointer justify-start gap-3 py-1">
-                            <input
-                                type="checkbox"
-                                name="events"
-                                value={event}
-                                class="checkbox checkbox-sm"
-                                checked={eventChecked(integrations?.webhook?.events, event)}
-                            />
-                            <span class="label-text">{eventLabels[event] ?? event}</span>
-                        </label>
-                    {/each}
-                </fieldset>
-
-                <div class="card-actions w-full flex-col sm:flex-row sm:justify-end">
-                    <button type="submit" class="btn w-full sm:w-auto">{m.settings_save_webhook()}</button>
-                </div>
-            </form>
-            <form method="POST" action="?/testWebhook" use:enhance>
-                <button type="submit" class="btn btn-sm">{m.common_send_test()}</button>
-            </form>
-        </div>
-    </Card>
+        {/snippet}
+        {#snippet fields()}
+            <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-medium">{m.settings_webhook_url_label()}</span>
+                <input
+                    type="url"
+                    name="url"
+                    class="input w-full"
+                    autocomplete="off"
+                    placeholder="https://example.com/hooks/sopandgo"
+                    value={integrations?.webhook?.url ?? ''}
+                />
+            </label>
+            <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-medium">{m.settings_bearer()}</span>
+                <input
+                    type="password"
+                    name="bearer_token"
+                    class="input w-full"
+                    autocomplete="off"
+                    placeholder={integrations?.webhook?.secret_configured
+                        ? m.settings_keep_or_clear()
+                        : m.common_optional()}
+                />
+            </label>
+        {/snippet}
+    </IntegrationChannelCard>
 </div>
