@@ -52,6 +52,10 @@ func main() {
 	}
 	defer store.DB.Close()
 	log.Println("database ready")
+	// After a restore, put back this instance's S3 backup settings (the archive's are not used).
+	if err := backup.ApplyCarriedS3Settings(store.DB, dataDir); err != nil {
+		log.Fatalf("failed to keep S3 backup settings across restore: %v", err)
+	}
 
 	// 3. Initialize Core Services (Dependency Injection)
 
@@ -155,24 +159,23 @@ func main() {
 	}
 	backupService := backup.NewService(store.DB, dataDir, appVersion, storage.LatestSchemaVersion())
 
-	s3BackupCfg, err := backup.LoadS3SchedulerConfigFromEnv()
-	if err != nil {
-		log.Fatalf("invalid S3 backup configuration: %v", err)
-	}
-	s3Scheduler, err := backup.NewS3Scheduler(ctx, s3BackupCfg, backupService, auditLogger)
-	if err != nil {
-		log.Fatalf("failed to initialize S3 backup scheduler: %v", err)
-	}
-	if s3Scheduler != nil {
-		log.Printf("S3 automatic backups enabled: bucket=%s key_prefix=%s interval=%s",
-			s3BackupCfg.Bucket, s3Scheduler.Status().KeyPrefix, s3BackupCfg.Interval)
-		s3Scheduler.SetOnFailure(func(c context.Context, failErr error) {
-			notifyService.Dispatch(c, notify.Event{
-				Type:    notify.EventBackupS3Failed,
-				Title:   i18n.T(i18n.ReadDefaultLocale(store.DB), "notify.backup_failed.title", nil),
-				Message: failErr.Error(),
-			})
+	// Scheduled S3 backups: configured under Settings → Backup, applied without a restart.
+	s3Settings := backup.NewS3SettingsStore(store.DB, encKey)
+	s3Scheduler := backup.NewS3Scheduler(backupService, auditLogger)
+	s3Scheduler.SetOnFailure(func(c context.Context, failErr error) {
+		notifyService.Dispatch(c, notify.Event{
+			Type:    notify.EventBackupS3Failed,
+			Title:   i18n.T(i18n.ReadDefaultLocale(store.DB), "notify.backup_failed.title", nil),
+			Message: failErr.Error(),
 		})
+	})
+	if s3Cfg, err := s3Settings.LoadConfig(); err != nil {
+		log.Printf("WARNING: S3 backups stay off until the settings are saved again: %v", err)
+	} else if err := s3Scheduler.Configure(ctx, s3Cfg); err != nil {
+		log.Printf("WARNING: S3 backups stay off until the settings are saved again: %v", err)
+	} else if s3Cfg.Enabled {
+		log.Printf("S3 automatic backups enabled: bucket=%s key_prefix=%s interval=%s",
+			s3Cfg.Bucket, s3Scheduler.Status().KeyPrefix, s3Cfg.Interval)
 	}
 
 	mailService, err := mail.NewService(mailSender, auditLogger)
@@ -194,12 +197,10 @@ func main() {
 		Origin: origin,
 	}
 
-	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Scheduler)
+	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler)
 	log.Println("backend initialized successfully")
 
-	if s3Scheduler != nil {
-		s3Scheduler.Start(ctx, s3BackupCfg.Interval)
-	}
+	s3Scheduler.Start(ctx)
 
 	// Run the HTTP server in a separate goroutine so it doesn't block the main thread.
 	// This allows the main thread to listen for the shutdown signal below.

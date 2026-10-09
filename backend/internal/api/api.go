@@ -28,6 +28,7 @@ type Server struct {
 	notifyService       *notify.Service
 	integrationSettings *notify.SettingsStore
 	backupSvc           *backup.Service
+	s3Settings          *backup.S3SettingsStore
 	s3Backup            *backup.S3Scheduler
 	mux                 *http.ServeMux
 }
@@ -55,6 +56,7 @@ func New(
 	notifyService *notify.Service,
 	integrationSettings *notify.SettingsStore,
 	backupSvc *backup.Service,
+	s3Settings *backup.S3SettingsStore,
 	s3Backup *backup.S3Scheduler,
 ) *Server {
 	s := &Server{
@@ -67,6 +69,7 @@ func New(
 		notifyService:       notifyService,
 		integrationSettings: integrationSettings,
 		backupSvc:           backupSvc,
+		s3Settings:          s3Settings,
 		s3Backup:            s3Backup,
 		mux:                 http.NewServeMux(),
 	}
@@ -266,6 +269,19 @@ func (s *Server) registerRoutes() {
 	)
 	s.mux.HandleFunc("POST /api/admin/backups/apply", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminBackupApply)),
+	)
+	s.mux.HandleFunc("POST /api/admin/backups/s3/run", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminBackupS3Run)),
+	)
+	// admin / scheduled S3 backup settings
+	s.mux.HandleFunc("GET /api/admin/settings/backup-s3", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminGetBackupS3Settings)),
+	)
+	s.mux.HandleFunc("PUT /api/admin/settings/backup-s3", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutBackupS3Settings)),
+	)
+	s.mux.HandleFunc("POST /api/admin/settings/backup-s3/test", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminPostBackupS3Test)),
 	)
 }
 

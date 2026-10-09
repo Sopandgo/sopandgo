@@ -219,7 +219,42 @@ export interface BackupManifest {
     data_layout_version: number;
 }
 
-/** Admin backup status: automatic S3 uploads (when BACKUP_S3_ENABLED). */
+/** Saved scheduled S3 backup settings (Settings → Backup). The secret is never returned. */
+export interface BackupS3Settings {
+    encryption_key_set: boolean;
+    enabled: boolean;
+    /** A bucket is saved. */
+    configured: boolean;
+    bucket: string;
+    region: string;
+    key_prefix: string;
+    endpoint: string;
+    use_path_style: boolean;
+    /** Empty = the server's default AWS credential chain. */
+    access_key_id: string;
+    secret_configured: boolean;
+    /** Go duration, e.g. `24h0m0s`. */
+    interval: string;
+    retention_max: number;
+    retention_days: number;
+}
+
+/** PUT body: an empty `secret_access_key` keeps the stored secret. */
+export interface BackupS3SettingsInput {
+    enabled: boolean;
+    bucket: string;
+    region: string;
+    key_prefix: string;
+    endpoint: string;
+    use_path_style: boolean;
+    access_key_id: string;
+    secret_access_key: string;
+    interval: string;
+    retention_max: number;
+    retention_days: number;
+}
+
+/** Admin backup status: automatic S3 uploads (when switched on under Settings → Backup). */
 export interface S3ScheduledBackupStatus {
     enabled: boolean;
     bucket?: string;

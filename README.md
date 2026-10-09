@@ -108,7 +108,7 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
 2. **Configure environment (critical)** Copy **`.env.example`** to **`.env`** and set at least the values you need for your deployment. The repo already includes **`docker-compose.yml`**; you normally do **not** need to author compose from scratch.
 
 - **ORIGIN:** Must match the URL you use in the browser (default: `http://localhost:8087`). If it does not match, login fails with **403 Forbidden**.
-- **SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets or send mail/integrations that need them.
+- **SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets or send mail/integrations that need them.
 - **SEED_DEMO_DATA:** `true` (default) inserts demo users and a sample SOP on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
 - **Mail mode:** In **Settings → Email** (`/admin/settings/email`), choose either `smtp` (default; sends invites/resets by email) or `manual_links` (admin copies one-time links and shares them manually).
 - **SMTP provider details** (host, port, user, password, from-address) are configured on that Email page when using `smtp`, then verified with **Send test email**.
@@ -118,7 +118,7 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
   - `PDF_RENDERER=gotenberg|none` selects renderer mode.
   - `GOTENBERG_URL` points to the Gotenberg service URL (default in Docker: `http://gotenberg:3000`).
   - `PDF_GENERATOR_VERSION` controls append-only artifact generation/backfill versioning.
-- **Backups:** Admins can use **Settings → Backup** (`/admin/settings/backup`) to export a `.zip`, validate archives, and stage a restore (restart required). Optional automatic uploads to S3 use `BACKUP_S3_*` in `.env` (see `docs/ops/backup-and-restore.md`).
+- **Backups:** Admins can use **Settings → Backup** (`/admin/settings/backup`) to export a `.zip`, validate archives, and stage a restore (restart required). Optional automatic uploads to S3 (or S3-compatible storage) are set up on the same page, with a connection test and a run-now button; see `docs/ops/backup-and-restore.md`.
 
 See `docs/ops/deployment.md` for the full environment variable reference. How versions ship: `docs/ops/releasing.md`.
 

@@ -20,12 +20,7 @@ func (s *Server) handleAdminBackupStatus(w http.ResponseWriter, r *http.Request)
 		"locked":          locked,
 		"message":         message,
 		"pending_restore": pendingRestore,
-	}
-	if s.s3Backup != nil {
-		st := s.s3Backup.Status()
-		status["s3_scheduled"] = st
-	} else {
-		status["s3_scheduled"] = backup.S3SchedulerStatus{Enabled: false}
+		"s3_scheduled":    s.s3Backup.Status(),
 	}
 	_ = json.NewEncoder(w).Encode(status)
 }

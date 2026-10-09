@@ -72,7 +72,11 @@ func New(t *testing.T) *Env {
 	}
 	backupService := backup.NewService(store.DB, dataDir, "test", storage.LatestSchemaVersion())
 
-	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, nil)
+	s3Settings := backup.NewS3SettingsStore(store.DB, testEncKey)
+	// Never started: API tests read status and settings but do not upload.
+	s3Scheduler := backup.NewS3Scheduler(backupService, auditLogger)
+
+	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler)
 
 	return &Env{
 		Store:          store,

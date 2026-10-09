@@ -12,7 +12,9 @@ import type {
     AdminPasswordResetResponse,
     BackupStatus,
     BackupImportValidation,
-    BackupApplyResponse
+    BackupApplyResponse,
+    BackupS3Settings,
+    BackupS3SettingsInput
 } from './types';
 
 export const admin = (client: Client) => ({
@@ -396,6 +398,40 @@ export const admin = (client: Client) => ({
             throw new Error(t || 'BACKUP_APPLY_INVALID');
         }
         if (!res.ok) throw new Error('BACKUP_APPLY_FAILED');
+        return await res.json();
+    },
+
+    // --- Scheduled S3 backups ---
+
+    getBackupS3Settings: async (): Promise<BackupS3Settings> => {
+        const res = await client.fetch('/admin/settings/backup-s3', { method: 'GET' });
+        if (!res.ok) throw new Error('BACKUP_S3_SETTINGS_FETCH_FAILED');
+        return await res.json();
+    },
+
+    /** Throws the server's message for validation (400) and apply (502) failures. */
+    updateBackupS3Settings: async (payload: BackupS3SettingsInput): Promise<void> => {
+        const res = await client.fetch('/admin/settings/backup-s3', { method: 'PUT', body: payload });
+        if (res.status === 412) throw new Error('SECRET_ENCRYPTION_KEY_MISSING');
+        if (res.status === 400 || res.status === 502) {
+            throw new Error((await res.text()).trim() || 'BACKUP_S3_SETTINGS_INVALID');
+        }
+        if (!res.ok) throw new Error('BACKUP_S3_SETTINGS_SAVE_FAILED');
+    },
+
+    /** Writes and deletes a probe object with the saved settings. Throws the S3 error text. */
+    testBackupS3: async (): Promise<void> => {
+        const res = await client.fetch('/admin/settings/backup-s3/test', { method: 'POST' });
+        if (res.status === 412) throw new Error('BACKUP_S3_NOT_CONFIGURED');
+        if (!res.ok) throw new Error((await res.text()).trim() || 'BACKUP_S3_TEST_FAILED');
+    },
+
+    /** Uploads one backup now; returns the object key. */
+    runBackupS3Now: async (): Promise<{ object_key: string }> => {
+        const res = await client.fetch('/admin/backups/s3/run', { method: 'POST' });
+        if (res.status === 412) throw new Error('BACKUP_S3_OFF');
+        if (res.status === 409) throw new Error('BACKUP_BUSY');
+        if (!res.ok) throw new Error((await res.text()).trim() || 'BACKUP_S3_RUN_FAILED');
         return await res.json();
     }
 });

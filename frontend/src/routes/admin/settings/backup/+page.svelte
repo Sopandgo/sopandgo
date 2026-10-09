@@ -9,6 +9,7 @@
     import { ArchiveIcon, CalendarClock, History } from 'lucide-svelte';
     import * as m from '$lib/paraglide/messages.js';
     import { getLocale } from '$lib/paraglide/runtime';
+    import type { BackupS3Settings, S3ScheduledBackupStatus } from '$lib/sdk/types';
 
     let { data, form }: { data: any; form: any } = $props();
 
@@ -38,8 +39,31 @@
     const pendingRestart = $derived(backupStatus?.pending_restore ?? false);
     const uploadsLocked = $derived((backupStatus?.locked ?? false) || pendingRestart);
 
-    // Which upload is in flight, for its button's spinner.
-    let pending = $state<'validate' | 'apply' | null>(null);
+    type ActionResult = { error?: string; ok?: boolean } | undefined;
+    const s3Settings = $derived(data.s3Settings as BackupS3Settings | null);
+    const s3Status = $derived(backupStatus?.s3_scheduled as S3ScheduledBackupStatus | undefined);
+    const saveS3Result = $derived(form?.saveS3 as ActionResult);
+    const setS3EnabledResult = $derived(form?.setS3Enabled as ActionResult);
+    const testS3Result = $derived(form?.testS3 as ActionResult);
+    const runS3Result = $derived(form?.runS3 as (ActionResult & { objectKey?: string }) | undefined);
+
+    // The header toggle flips at once and follows the saved value after each reload.
+    const savedS3Enabled = () => s3Settings?.enabled ?? false;
+    let s3Enabled = $state(savedS3Enabled());
+    $effect(() => {
+        s3Enabled = savedS3Enabled();
+    });
+
+    // Schedule presets as Go durations (the API's format); a saved custom value stays selectable.
+    const intervalPresets = ['1h0m0s', '6h0m0s', '12h0m0s', '24h0m0s', '168h0m0s'];
+    const intervalOptions = $derived(
+        s3Settings?.interval && !intervalPresets.includes(s3Settings.interval)
+            ? [...intervalPresets, s3Settings.interval]
+            : intervalPresets
+    );
+
+    // Which form is in flight, for its button's spinner.
+    let pending = $state<'validate' | 'apply' | 's3save' | 's3test' | 's3run' | null>(null);
 
     function submitting(which: NonNullable<typeof pending>): SubmitFunction {
         return () => {
@@ -50,6 +74,17 @@
             };
         };
     }
+
+    // One S3 form, three buttons: Save, Test connection and Back up now (both use the saved settings).
+    const s3Submit: SubmitFunction = ({ submitter }) => {
+        const action = submitter?.getAttribute('formaction');
+        pending = action === '?/testS3' ? 's3test' : action === '?/runS3' ? 's3run' : 's3save';
+        return async ({ update }) => {
+            // Testing or running must not wipe edits the admin has not saved yet.
+            await update({ reset: pending === 's3save' });
+            pending = null;
+        };
+    };
 
     function formatUtc(iso?: string): string {
         if (!iso) return '—';
@@ -72,6 +107,9 @@
         const h = interval.match(/^(\d+)h/);
         if (h) {
             const n = parseInt(h[1], 10);
+            const wholeHours = /^\d+h(0m0s)?$/.test(interval);
+            if (wholeHours && n === 24) return m.backup_every_day();
+            if (wholeHours && n === 168) return m.backup_every_week();
             return every(n, m.backup_every_hour, (count) => m.backup_every_hours({ n: count }));
         }
         const minutes = interval.match(/^(\d+)m/);
@@ -130,139 +168,303 @@
         </div>
     </Card>
 
-    {#if backupStatus?.s3_scheduled}
-        {@const s3 = backupStatus.s3_scheduled}
-        {@const intervalLabel = intervalSummary(s3.interval)}
-        <CollapsibleCard
-            title={m.backup_s3_title()}
-            meta={s3.enabled ? s3Meta(intervalLabel, s3.bucket, s3.key_prefix) : undefined}
-            openWhen={Boolean(s3.last_error)}
-        >
-            {#snippet trailing()}
-                {#if s3.last_error}
-                    <span class="badge badge-soft badge-error">{m.backup_upload_failed()}</span>
-                {/if}
-                {#if s3.enabled}
-                    <span class="badge badge-soft badge-success">{m.backup_enabled()}</span>
-                {:else}
-                    <span class="badge badge-outline">{m.backup_disabled_badge()}</span>
-                {/if}
-            {/snippet}
+    {#snippet s3ToggleError()}
+        <Alert type="error" message={setS3EnabledResult?.error} />
+    {/snippet}
 
-            <p class="max-w-prose text-sm text-base-content/70">
-                {m.backup_s3_help_before()}
-                <code class="rounded bg-base-200 px-1 py-0.5 text-xs">BACKUP_S3_*</code>
-                {m.backup_s3_help_after()}
-            </p>
-
-            {#if s3.enabled}
-                {#if s3.last_error}
-                    <Alert type="error" title={m.backup_last_error()} message={s3.last_error} />
-                {/if}
-
-                <div class="stats stats-vertical border border-base-300 bg-base-100 w-full sm:stats-horizontal">
-                    <div class="stat place-items-start border-base-300 py-4 sm:border-e">
-                        <div class="stat-title text-sm font-medium text-base-content/70">{m.backup_bucket()}</div>
-                        <div class="stat-value font-mono text-lg font-normal break-all text-start leading-snug">
-                            {s3.bucket ?? '—'}
-                        </div>
-                    </div>
-                    <div class="stat place-items-start border-base-300 py-4 sm:border-e">
-                        <div class="stat-title text-sm font-medium text-base-content/70">{m.backup_prefix()}</div>
-                        <div class="stat-value font-mono text-base font-normal break-all text-start leading-snug">
-                            {#if s3.key_prefix?.trim()}
-                                {s3.key_prefix}
-                            {:else}
-                                <span class="text-base-content/70">{m.backup_bucket_root()}</span>
-                            {/if}
-                        </div>
-                    </div>
-                    <div class="stat place-items-start py-4">
-                        <div class="stat-title text-sm font-medium text-base-content/70">{m.backup_schedule()}</div>
-                        <div class="stat-value text-lg font-normal text-start leading-snug">{intervalLabel}</div>
-                        {#if s3.interval && s3.interval !== intervalLabel}
-                            <div class="stat-desc font-mono text-xs text-base-content/70">{s3.interval}</div>
-                        {/if}
-                    </div>
-                </div>
-
-                {#if s3.retention_max_objects || s3.retention_days}
-                    <div class="rounded-box border border-base-300 bg-base-200 p-4">
-                        <div class="mb-3 text-sm font-medium text-base-content/70">{m.backup_retention()}</div>
-                        <ul class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
-                            {#if s3.retention_max_objects}
-                                <li class="flex items-start gap-2 text-sm">
-                                    <span class="badge badge-outline shrink-0">{m.backup_count()}</span>
-                                    <span>
-                                        {Number(s3.retention_max_objects) === 1
-                                            ? m.backup_keep_one()
-                                            : m.backup_keep_many({ n: String(s3.retention_max_objects) })}
-                                    </span>
-                                </li>
-                            {/if}
-                            {#if s3.retention_days}
-                                <li class="flex items-start gap-2 text-sm">
-                                    <span class="badge badge-outline shrink-0">{m.backup_age()}</span>
-                                    <span>
-                                        {Number(s3.retention_days) === 1
-                                            ? m.backup_age_one()
-                                            : m.backup_age_many({ n: String(s3.retention_days) })}
-                                    </span>
-                                </li>
-                            {/if}
-                        </ul>
-                    </div>
-                {/if}
-
-                <h3 class="text-sm font-medium text-base-content/70">{m.backup_recent()}</h3>
-
-                <div class="grid gap-4 lg:grid-cols-2">
-                    <div class="rounded-box border border-base-300 bg-base-100 p-4">
-                        <div class="mb-2 flex items-center gap-2 text-sm font-medium text-base-content/70">
-                            <History class="size-4" aria-hidden="true" />
-                            {m.backup_last_success()}
-                        </div>
-                        {#if s3.last_success_utc}
-                            <p class="text-lg font-medium leading-snug">{formatUtc(s3.last_success_utc)}</p>
-                            {#if s3.last_object_key}
-                                <div class="mt-3">
-                                    <div class="mb-1 text-xs text-base-content/70">{m.backup_object_key()}</div>
-                                    <code class="block w-full overflow-x-auto rounded-field border border-base-300 bg-base-200 px-3 py-2 font-mono text-xs leading-relaxed">
-                                        {s3.last_object_key}
-                                    </code>
-                                </div>
-                            {/if}
-                        {:else if s3.last_run_utc}
-                            <p class="text-sm text-base-content/70">
-                                {m.backup_last_run({ when: formatUtc(s3.last_run_utc) })}
-                            </p>
-                        {:else}
-                            <p class="text-sm text-base-content/70">{m.backup_no_upload()}</p>
-                        {/if}
-                    </div>
-
-                    <div class="rounded-box border border-base-300 bg-base-100 p-4">
-                        <div class="mb-2 flex items-center gap-2 text-sm font-medium text-base-content/70">
-                            <CalendarClock class="size-4" aria-hidden="true" />
-                            {m.backup_next()}
-                        </div>
-                        {#if s3.next_run_utc}
-                            <p class="text-lg font-medium leading-snug">{formatUtc(s3.next_run_utc)}</p>
-                            <p class="mt-2 text-xs text-base-content/70">{m.backup_next_help()}</p>
-                        {:else}
-                            <p class="text-sm text-base-content/70">—</p>
-                        {/if}
-                    </div>
-                </div>
-            {:else}
-                <Alert type="info">
-                    {m.backup_s3_off_before()}
-                    <code class="mx-0.5 rounded bg-base-200 px-1 py-0.5 text-xs">BACKUP_S3_ENABLED</code>
-                    {m.backup_s3_off_after()}
-                </Alert>
+    <CollapsibleCard
+        title={m.backup_s3_title()}
+        meta={s3Settings?.configured ? s3Meta(intervalSummary(s3Settings.interval), s3Settings.bucket, s3Settings.key_prefix) : undefined}
+        openWhen={Boolean(saveS3Result || testS3Result || runS3Result || s3Status?.last_error)}
+        notice={setS3EnabledResult?.error ? s3ToggleError : undefined}
+    >
+        {#snippet trailing()}
+            {#if s3Status?.last_error}
+                <span class="badge badge-soft badge-error">{m.backup_upload_failed()}</span>
             {/if}
-        </CollapsibleCard>
-    {/if}
+            {#if s3Settings?.configured}
+                <form
+                    method="POST"
+                    action="?/setS3Enabled"
+                    use:enhance={() => {
+                        return async ({ result, update }) => {
+                            await update({ reset: false });
+                            // On failure the data does not change, so put the toggle back by hand.
+                            if (result.type === 'failure' || result.type === 'error') {
+                                s3Enabled = s3Settings?.enabled ?? false;
+                            }
+                        };
+                    }}
+                >
+                    <label class="flex cursor-pointer items-center gap-2 text-sm">
+                        <!-- The word repeats the toggle's state for sighted users; the checkbox conveys it to assistive tech. -->
+                        <span class="text-base-content/70" aria-hidden="true">
+                            {s3Enabled ? m.settings_integration_on() : m.settings_integration_off()}
+                        </span>
+                        <input
+                            type="checkbox"
+                            name="enabled"
+                            class="toggle toggle-success"
+                            aria-label={m.backup_s3_enable()}
+                            bind:checked={s3Enabled}
+                            onchange={(e) => e.currentTarget.form?.requestSubmit()}
+                        />
+                    </label>
+                </form>
+            {:else}
+                <span class="badge badge-outline">{m.common_not_configured()}</span>
+            {/if}
+        {/snippet}
+
+        <p class="max-w-prose text-sm text-base-content/70">{m.backup_s3_help()}</p>
+
+        {#if s3Settings && !s3Settings.encryption_key_set}
+            <Alert type="info" message={m.backup_s3_key_missing()} />
+        {/if}
+        {#if saveS3Result?.error}
+            <Alert type="error" message={saveS3Result.error} />
+        {:else if saveS3Result?.ok}
+            <Alert type="success" message={m.backup_s3_saved()} />
+        {/if}
+        {#if testS3Result?.error}
+            <Alert type="error" message={testS3Result.error} />
+        {:else if testS3Result?.ok}
+            <Alert type="success" message={m.backup_s3_test_ok()} />
+        {/if}
+        {#if runS3Result?.error}
+            <Alert type="error" message={runS3Result.error} />
+        {:else if runS3Result?.ok}
+            <Alert type="success" message={m.backup_s3_run_ok({ key: runS3Result.objectKey ?? '' })} />
+        {/if}
+        {#if s3Status?.last_error && !runS3Result}
+            <Alert type="error" title={m.backup_last_error()} message={s3Status.last_error} />
+        {/if}
+
+        {#if s3Status?.enabled}
+            <div class="grid gap-4 lg:grid-cols-2">
+                <div class="rounded-box border border-base-300 bg-base-100 p-4">
+                    <div class="mb-2 flex items-center gap-2 text-sm font-medium text-base-content/70">
+                        <History class="size-4" aria-hidden="true" />
+                        {m.backup_last_success()}
+                    </div>
+                    {#if s3Status.last_success_utc}
+                        <p class="text-lg font-medium leading-snug">{formatUtc(s3Status.last_success_utc)}</p>
+                        {#if s3Status.last_object_key}
+                            <div class="mt-3">
+                                <div class="mb-1 text-xs text-base-content/70">{m.backup_object_key()}</div>
+                                <code class="block w-full overflow-x-auto rounded-field border border-base-300 bg-base-200 px-3 py-2 font-mono text-xs leading-relaxed">
+                                    {s3Status.last_object_key}
+                                </code>
+                            </div>
+                        {/if}
+                    {:else if s3Status.last_run_utc}
+                        <p class="text-sm text-base-content/70">
+                            {m.backup_last_run({ when: formatUtc(s3Status.last_run_utc) })}
+                        </p>
+                    {:else}
+                        <p class="text-sm text-base-content/70">{m.backup_no_upload()}</p>
+                    {/if}
+                </div>
+
+                <div class="rounded-box border border-base-300 bg-base-100 p-4">
+                    <div class="mb-2 flex items-center gap-2 text-sm font-medium text-base-content/70">
+                        <CalendarClock class="size-4" aria-hidden="true" />
+                        {m.backup_next()}
+                    </div>
+                    {#if s3Status.next_run_utc}
+                        <p class="text-lg font-medium leading-snug">{formatUtc(s3Status.next_run_utc)}</p>
+                        <p class="mt-2 text-xs text-base-content/70">{m.backup_next_help()}</p>
+                    {:else}
+                        <p class="text-sm text-base-content/70">—</p>
+                    {/if}
+                </div>
+            </div>
+        {/if}
+
+        <form
+            method="POST"
+            action="?/saveS3"
+            use:enhance={s3Submit}
+            class="grid grid-cols-1 gap-5 md:grid-cols-2"
+        >
+            {#if s3Settings?.configured}
+                <!-- The header toggle owns `enabled`; saving the fields keeps it as it is. -->
+                {#if s3Enabled}
+                    <input type="hidden" name="enabled" value="on" />
+                {/if}
+            {:else}
+                <label class="flex w-fit cursor-pointer items-center gap-3 text-sm md:col-span-2">
+                    <input
+                        type="checkbox"
+                        name="enabled"
+                        class="toggle toggle-success peer"
+                        checked={s3Settings?.enabled ?? false}
+                    />
+                    <span class="font-medium">{m.backup_s3_enable()}</span>
+                    <!-- The word repeats the toggle's state for sighted users; the checkbox conveys it to assistive tech. -->
+                    <span class="text-base-content/70 peer-checked:hidden" aria-hidden="true">
+                        {m.settings_integration_off()}
+                    </span>
+                    <span class="hidden text-base-content/70 peer-checked:inline" aria-hidden="true">
+                        {m.settings_integration_on()}
+                    </span>
+                </label>
+            {/if}
+
+            <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-medium">{m.backup_bucket()}</span>
+                <input
+                    type="text"
+                    name="bucket"
+                    class="input w-full font-mono"
+                    autocomplete="off"
+                    placeholder="lab-backups"
+                    value={s3Settings?.bucket ?? ''}
+                />
+            </label>
+
+            <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-medium">{m.backup_s3_region()}</span>
+                <input
+                    type="text"
+                    name="region"
+                    class="input w-full font-mono"
+                    autocomplete="off"
+                    placeholder="eu-central-1"
+                    value={s3Settings?.region ?? ''}
+                />
+            </label>
+
+            <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-medium">{m.backup_prefix()}</span>
+                <input
+                    type="text"
+                    name="key_prefix"
+                    class="input w-full font-mono"
+                    autocomplete="off"
+                    placeholder="myorg/prod"
+                    value={s3Settings?.key_prefix ?? ''}
+                />
+                <span class="text-xs text-base-content/70">{m.backup_s3_prefix_help()}</span>
+            </label>
+
+            <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-medium">{m.backup_s3_endpoint()}</span>
+                <input
+                    type="url"
+                    name="endpoint"
+                    class="input w-full font-mono"
+                    autocomplete="off"
+                    placeholder="https://minio.example.com"
+                    value={s3Settings?.endpoint ?? ''}
+                />
+                <span class="text-xs text-base-content/70">{m.backup_s3_endpoint_help()}</span>
+            </label>
+
+            <label class="flex w-fit cursor-pointer items-center gap-3 text-sm md:col-span-2">
+                <input
+                    type="checkbox"
+                    name="use_path_style"
+                    class="checkbox checkbox-sm checkbox-primary"
+                    checked={s3Settings?.use_path_style ?? false}
+                />
+                <span>{m.backup_s3_path_style()}</span>
+            </label>
+
+            <fieldset class="grid grid-cols-1 gap-5 md:col-span-2 md:grid-cols-2">
+                <legend class="mb-1 text-sm font-medium md:col-span-2">{m.backup_s3_credentials()}</legend>
+                <p class="-mt-3 text-xs text-base-content/70 md:col-span-2">{m.backup_s3_credentials_help()}</p>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-sm font-medium">{m.backup_s3_access_key()}</span>
+                    <input
+                        type="text"
+                        name="access_key_id"
+                        class="input w-full font-mono"
+                        autocomplete="off"
+                        value={s3Settings?.access_key_id ?? ''}
+                    />
+                </label>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-sm font-medium">{m.backup_s3_secret_key()}</span>
+                    <input
+                        type="password"
+                        name="secret_access_key"
+                        class="input w-full"
+                        autocomplete="new-password"
+                        placeholder={s3Settings?.secret_configured ? m.settings_keep_key() : m.common_optional()}
+                    />
+                </label>
+            </fieldset>
+
+            <fieldset class="grid grid-cols-1 gap-5 md:col-span-2 md:grid-cols-3">
+                <legend class="mb-1 text-sm font-medium md:col-span-3">{m.backup_retention_schedule()}</legend>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-sm font-medium">{m.backup_schedule()}</span>
+                    <select name="interval" class="select w-full" value={s3Settings?.interval ?? '24h0m0s'}>
+                        {#each intervalOptions as option (option)}
+                            <option value={option}>{intervalSummary(option)}</option>
+                        {/each}
+                    </select>
+                </label>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-sm font-medium">{m.backup_s3_retention_max()}</span>
+                    <input
+                        type="number"
+                        name="retention_max"
+                        class="input w-full"
+                        min="0"
+                        step="1"
+                        value={s3Settings?.retention_max ?? 14}
+                    />
+                    <span class="text-xs text-base-content/70">{m.backup_s3_retention_max_help()}</span>
+                </label>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-sm font-medium">{m.backup_s3_retention_days()}</span>
+                    <input
+                        type="number"
+                        name="retention_days"
+                        class="input w-full"
+                        min="0"
+                        step="1"
+                        value={s3Settings?.retention_days ?? 30}
+                    />
+                    <span class="text-xs text-base-content/70">{m.backup_s3_retention_days_help()}</span>
+                </label>
+            </fieldset>
+
+            <div
+                class="flex flex-col-reverse gap-3 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between md:col-span-2"
+            >
+                <p class="text-xs text-base-content/70">{m.backup_s3_test_hint()}</p>
+                <!-- Save comes first in the DOM so Enter in a field saves rather than tests. -->
+                <div class="flex flex-col gap-2 sm:flex-row-reverse">
+                    <button type="submit" class="btn w-full sm:w-auto" disabled={pending !== null}>
+                        {@render buttonLabel(pending === 's3save', m.backup_s3_save(), m.common_saving())}
+                    </button>
+                    {#if s3Settings?.configured}
+                        <button
+                            type="submit"
+                            formaction="?/testS3"
+                            class="btn btn-ghost w-full sm:w-auto"
+                            disabled={pending !== null}
+                        >
+                            {@render buttonLabel(pending === 's3test', m.backup_s3_test(), m.backup_s3_testing())}
+                        </button>
+                    {/if}
+                    {#if s3Status?.enabled}
+                        <button
+                            type="submit"
+                            formaction="?/runS3"
+                            class="btn btn-ghost w-full sm:w-auto"
+                            disabled={pending !== null}
+                        >
+                            {@render buttonLabel(pending === 's3run', m.backup_s3_run(), m.backup_s3_running())}
+                        </button>
+                    {/if}
+                </div>
+            </div>
+        </form>
+    </CollapsibleCard>
 
     <CollapsibleCard
         title={m.backup_validate_title()}

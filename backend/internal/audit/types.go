@@ -52,6 +52,7 @@ const (
 	EventBackupApplyStaged            = "backup_apply_staged"
 	EventBackupS3Uploaded             = "backup_s3_uploaded"
 	EventBackupS3Failed               = "backup_s3_failed"
+	EventBackupS3SettingsUpdated      = "backup_s3_settings_updated"
 	EventSOPVersionPDFArtifactCreated = "sop_version_pdf_artifact_created"
 	EventSOPFavoriteAdded             = "sop_favorite_added"
 	EventSOPFavoriteRemoved           = "sop_favorite_removed"
@@ -97,6 +98,7 @@ var knownEventTypes = map[string]struct{}{
 	EventBackupApplyStaged:            {},
 	EventBackupS3Uploaded:             {},
 	EventBackupS3Failed:               {},
+	EventBackupS3SettingsUpdated:      {},
 	EventSOPVersionPDFArtifactCreated: {},
 	EventSOPFavoriteAdded:             {},
 	EventSOPFavoriteRemoved:           {},

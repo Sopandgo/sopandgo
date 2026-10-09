@@ -82,6 +82,14 @@ Admins may configure instance-level destinations (Slack Incoming Webhooks, Gotif
 - **Best-effort delivery:** failed notification sends are audited (`notification_failed`) and do not undo publish/promote/reject.
 - **Not a bot platform:** Incoming Webhooks / HTTP push only — no OAuth Slack apps, slash commands, or interactive components.
 
+## Scheduled S3 backups
+
+Admins configure automatic backups to an S3 bucket under **Settings → Backup**. Each run uploads the same full archive as **Export**: the database (including password hashes and the audit log) and every SOP file.
+
+- **Admin-controlled only:** the settings live in SQLite; the secret access key is encrypted with `SECRET_ENCRYPTION_KEY` and never returned. Leaving the credentials empty uses the server's own AWS credentials (for example an IAM role) instead.
+- **Trust the destination:** an admin can point backups at any bucket, which sends a full copy of the data there on every run. Admins can already download the same archive with **Export**, so this is not a new power, but it is persistent and quiet. Every change is audited as `backup_s3_settings_updated` (without the secret); review it with the other admin events.
+- **Restores do not redirect backups:** a staged restore keeps the running instance's S3 settings instead of the archive's, so restoring an old or foreign archive cannot change where backups go.
+
 
 ## Data integrity and auditability
 

@@ -63,22 +63,12 @@ Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left o
 | `BODY_SIZE_LIMIT` | `52428800` | Max request size (bytes). Default is ~50MB. |
 | `AUDIT_STRICT_TYPES` | `false` | If `true`, audit writes reject unknown `event_type`/`entity_type` values (recommended once all extensions use canonical types). |
 | `AUDIT_BUSY_TIMEOUT` | `5s` | Maximum SQLite lock wait for standalone audit writes, as a Go duration. A timeout is reported in the application log; increase this only if legitimate write transactions regularly exceed five seconds. |
-| `SECRET_ENCRYPTION_KEY` | - | **Required to save outbound secrets in the UI** (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer) **and to send mail or integration notifications that need those secrets.** A 32-byte AES-256 key, provided as **base64** or **hex** (64 hex chars, optional `0x` prefix). Used only to encrypt secrets stored in SQLite—not for signing JWTs. Generate: `openssl rand -base64 32`. If unset, the server starts, but the admin UI cannot persist those credentials until this is set and the process is restarted. |
+| `SECRET_ENCRYPTION_KEY` | - | **Required to save outbound secrets in the UI** (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key) **and to send mail or integration notifications that need those secrets.** A 32-byte AES-256 key, provided as **base64** or **hex** (64 hex chars, optional `0x` prefix). Used only to encrypt secrets stored in SQLite—not for signing JWTs. Generate: `openssl rand -base64 32`. If unset, the server starts, but the admin UI cannot persist those credentials until this is set and the process is restarted. |
 | `APP_VERSION` | baked into the image | Label on the public footer, in the signed-in sidebar, and in admin **export** `manifest.json`. Release images set this at build time (for example `1.0.1`). Labs do not set it. Contributor source builds and `go run` use `dev`. Local `npm run dev` ignores this and shows `git describe` instead. The root `package.json` version is not used. |
 | `PDF_EXPORT_ENABLED` | `true` | When `true`, PDF artifact generation/download is enabled (requires a renderer when not `none`). |
 | `PDF_RENDERER` | `gotenberg` | `gotenberg` or `none`. |
 | `GOTENBERG_URL` | `http://gotenberg:3000` | Base URL of the Gotenberg service (default compose service name: `gotenberg`). |
 | `PDF_GENERATOR_VERSION` | `1` | Integer version for PDF pipeline/backfill; bump when output format changes. |
-| `BACKUP_S3_ENABLED` | `false` | When `true`, schedule automatic full-data `.zip` uploads to S3 (same archive as Admin → Export). See `docs/ops/backup-and-restore.md`. |
-| `BACKUP_S3_BUCKET` | - | Target bucket (required when S3 backups are enabled). |
-| `BACKUP_S3_REGION` | `us-east-1` | AWS region (or compatible). |
-| `BACKUP_S3_PREFIX` | - | Optional key prefix (e.g. `myorg/prod`). |
-| `BACKUP_S3_INTERVAL` | `24h` | How often to upload (Go duration). |
-| `BACKUP_S3_RETENTION_MAX` | `14` | Max number of remote backups to keep (0 = unlimited by count). |
-| `BACKUP_S3_RETENTION_DAYS` | `30` | Delete remote backups older than this many days (0 = unlimited by age). |
-| `BACKUP_S3_ENDPOINT` | - | Optional custom endpoint (MinIO / S3-compatible). |
-| `BACKUP_S3_USE_PATH_STYLE` | `false` | Path-style addressing for compatible endpoints. |
-| `BACKUP_S3_ACCESS_KEY_ID` / `BACKUP_S3_SECRET_ACCESS_KEY` | - | Optional static credentials; if both empty, the AWS SDK default chain is used (e.g. IAM role). |
 
 The Go backend does **not** read a `.env` file on its own. With **Docker Compose**, put values in a root **`.env`** (substituted into `docker-compose.yml`) and/or under `environment:` in the compose file. For local **`go run`**, export variables in your shell or IDE run configuration.
 
