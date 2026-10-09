@@ -46,7 +46,7 @@ Revocation is handled at three levels of granularity. When a revocation event oc
 | --- | --- | --- |
 | **Session Logout** | `POST /api/auth/logout` | Deactivates the specific Refresh Token used. |
 | **User Revocation** | `DELETE /api/admin/users/{userID}/sessions` | Deactivates all Refresh Tokens associated with a `userID`. |
-| **Start Password Reset** | `POST /api/admin/users/{userID}/reset-password` | Admin starts invite/reset; email or manual link depending on mail mode. |
+| **Start Password Reset** | `POST /api/admin/users/{userID}/reset-password` | Admin starts invite/reset; email when a saved transport is switched on, otherwise a manual link (`effective_mail_mode`). |
 | **Complete Password Reset** | `PATCH /api/auth/reset-password` | User sets a new password with the one-time token; related sessions are revoked as part of the reset flow. |
 | **System Panic** | `DELETE /api/admin/sessions` | Deactivates every active Refresh Token in the database. |
 

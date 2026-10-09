@@ -13,18 +13,30 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-    saveTransport: async ({ locals, request }) => {
+    // The SMTP and Resend header toggles. One transport sends at a time: switching one
+    // on makes it the transport and turns email on; switching the sending one off
+    // falls back to manual links.
+    setDelivery: async ({ locals, request }) => {
         const fd = await request.formData();
-        const mail_transport = String(fd.get('mail_transport') ?? '').trim() as 'smtp' | 'resend';
-        if (mail_transport !== 'smtp' && mail_transport !== 'resend') {
-            return fail(400, { saveTransport: { error: m.error_select_transport() } });
+        const transport = String(fd.get('transport') ?? '').trim();
+        const enabled = fd.get('enabled') === 'on';
+        if (transport !== 'smtp' && transport !== 'resend') {
+            return fail(400, { setDelivery: { error: m.error_select_transport() } });
         }
         try {
-            await locals.api.admin.updateMailTransport(mail_transport);
-            return { saveTransport: { ok: true, transport: mail_transport } };
+            if (enabled) {
+                await locals.api.admin.updateMailTransport(transport);
+                await locals.api.admin.updateMailMode('smtp');
+            } else {
+                const current = await locals.api.admin.getEmailSettings();
+                if (current.mail_transport === transport) {
+                    await locals.api.admin.updateMailMode('manual_links');
+                }
+            }
+            return { setDelivery: { ok: true, transport } };
         } catch (err) {
-            console.error('Mail transport update failed:', err);
-            return fail(500, { saveTransport: { error: m.error_transport_update(), transport: mail_transport } });
+            console.error('Mail delivery update failed:', err);
+            return fail(500, { setDelivery: { error: m.error_mail_delivery_toggle(), transport } });
         }
     },
 
@@ -61,20 +73,6 @@ export const actions: Actions = {
         }
     },
 
-    saveMode: async ({ locals, request }) => {
-        const fd = await request.formData();
-        const mail_mode = String(fd.get('mail_mode') ?? '').trim() as 'smtp' | 'manual_links';
-        if (mail_mode !== 'smtp' && mail_mode !== 'manual_links') {
-            return fail(400, { saveMode: { error: m.error_mail_mode() } });
-        }
-        try {
-            await locals.api.admin.updateMailMode(mail_mode);
-            return { saveMode: { ok: true, mode: mail_mode } };
-        } catch (err) {
-            console.error('Mail mode update failed:', err);
-            return fail(500, { saveMode: { error: m.error_mail_mode_update() } });
-        }
-    },
 
     save: async ({ locals, request }) => {
         const fd = await request.formData();

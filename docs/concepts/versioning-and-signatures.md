@@ -71,7 +71,7 @@ Only one RC per SOP may be open at a time. When a new version is published, the 
 
 The change summary is stored on the version and shown in the version list, on the version page, and in the dashboard’s recent-publishes list. The version page also shows a line diff against the previous published version (or the previous version, if nothing is published yet).
 
-When mail is set to send (not manual links), **publishing** a version emails other active users who can reader-sign. If mail cannot be delivered, the version stays published. Optional Slack / Gotify / generic webhook notifications for publish, RC, and reject are configured under admin Settings → Integrations and likewise never roll back the lifecycle action. Reminder digests for unsigned acknowledgments are not part of 1.0; use the dashboard and training coverage views.
+When an email transport is switched on (not manual links), **publishing** a version emails other active users who can reader-sign. If mail cannot be delivered, the version stays published. Optional Slack / Gotify / generic webhook notifications for publish, RC, and reject are configured under admin Settings → Integrations and likewise never roll back the lifecycle action. Reminder digests for unsigned acknowledgments are not part of 1.0; use the dashboard and training coverage views.
 
 ---
 

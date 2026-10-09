@@ -24,8 +24,8 @@ The data directory contains:
 
 The SMTP password and integration secrets are stored encrypted; recovery still requires the same
 `SECRET_ENCRYPTION_KEY` (or re-entered secrets after key rotation) when
-`mail_mode` is `smtp` or outbound integrations are enabled.
-If `mail_mode` is `manual_links`, invites/resets do not require SMTP delivery.
+an email transport or outbound integrations are switched on.
+With no email transport on, invites/resets use manual links and do not need SMTP delivery.
 
 If the full data directory is backed up, the entire system state is preserved.
 

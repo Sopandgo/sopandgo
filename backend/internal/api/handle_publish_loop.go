@@ -91,7 +91,7 @@ func (s *Server) writeTrainingCoverage(w http.ResponseWriter, sopID string) {
 // notifyVersionPublished emails active readers when mail can actually be sent.
 // Manual-link mode and delivery failures leave the published version in place.
 func (s *Server) notifyVersionPublished(versionID, actorID string) {
-	mode, err := s.smtpSettings.GetMailMode()
+	mode, err := s.smtpSettings.EffectiveMailMode()
 	if err != nil {
 		log.Printf("publish notice skipped: mail mode: %v", err)
 		return

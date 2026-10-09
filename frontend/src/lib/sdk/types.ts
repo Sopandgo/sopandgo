@@ -165,6 +165,8 @@ export interface PublicSmtpSettings {
     username: string;
     from_address: string;
     mail_mode: 'smtp' | 'manual_links';
+    /** What invites and resets actually use: email only when it is on and the chosen transport is saved. */
+    effective_mail_mode: 'smtp' | 'manual_links';
     mail_transport: 'smtp' | 'resend';
     default_locale: string;
     password_configured: boolean;

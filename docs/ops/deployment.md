@@ -76,20 +76,18 @@ The Go backend does **not** read a `.env` file on its own. With **Docker Compose
 
 Outgoing mail (user invites, password resets) is **not** configured via `SMTP_HOST` / `SMTP_USER` style environment variables. Credentials live in SQLite and are encrypted with `SECRET_ENCRYPTION_KEY`.
 
-**Mail delivery mode** (admin UI, **Mail delivery mode** on `/admin/settings/email`):
+**How mail is delivered** (`/admin/settings/email`): the **SMTP** and **Resend** cards each get an on/off toggle in their header once their settings are saved, like the integration channels. At most one is on; switching one on switches the other off.
 
-- `smtp` (default): invite/reset links are sent by email when a transport is configured and working.
-- `manual_links`: invite/reset links are returned to admins in the UI/API for manual sharing over a trusted channel.
-
-**Outbound transport** (when not in `manual_links`): choose **SMTP** (your own server) or **Resend** ([resend.com](https://resend.com) API). Only the selected transport is used for sends and for **Send test email**.
+- **A transport is on:** invite/reset links (and publish notices) are sent by email through it. **Send test email** uses it too.
+- **Neither is on, or none is saved (the default on a fresh install):** invite/reset links are returned to admins in the UI/API for manual sharing over a trusted channel (**manual links**), and the Email page says so. Nothing tries to send through an empty configuration.
 
 1. Set `SECRET_ENCRYPTION_KEY` as above (required to save any stored secret and to send).
 2. Sign in as **admin**, open **Settings → Email** (`/admin/settings/email`).
 3. For **SMTP**: enter host, port, username, password, and from-address, then save.
-4. For **Resend**: create an API key in the Resend dashboard, set **Outbound transport** to Resend, enter from-address and API key, then save. Use a verified domain (or Resend’s test sender for trials).
-5. Use **Send test email** to verify connectivity.
+4. For **Resend**: create an API key in the Resend dashboard, enter from-address and API key, then save. Use a verified domain (or Resend’s test sender for trials).
+5. Switch the transport on in its card header, then use **Send test email** to verify connectivity.
 
-If you use `manual_links`, SMTP and Resend fields are optional until you switch back to email delivery.
+To go back to manual links, switch the transport off; its saved settings stay. The API still exposes `mail_mode` and `mail_transport`; `effective_mail_mode` in `GET /api/admin/settings/email` is what invites and resets actually use.
 
 **What mail does in 1.0:** invites, password resets, test email, and **optional notices when a version is published** (to other active users who can reader-sign). Publish notices are skipped in `manual_links` mode; a failed send does **not** unpublish the version. Pending-acknowledgment reminder digests and emails for RC/reject/archive are **not** included — use the home dashboard and training coverage views instead.
 

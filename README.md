@@ -110,8 +110,7 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
 - **ORIGIN:** Must match the URL you use in the browser (default: `http://localhost:8087`). If it does not match, login fails with **403 Forbidden**.
 - **SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets or send mail/integrations that need them.
 - **SEED_DEMO_DATA:** `true` (default) inserts demo users and a sample SOP on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
-- **Mail mode:** In **Settings → Email** (`/admin/settings/email`), choose either `smtp` (default; sends invites/resets by email) or `manual_links` (admin copies one-time links and shares them manually).
-- **SMTP provider details** (host, port, user, password, from-address) are configured on that Email page when using `smtp`, then verified with **Send test email**.
+- **Mail:** In **Settings → Email** (`/admin/settings/email`), save **SMTP** (host, port, user, password, from-address) or **Resend** and switch it on in its card header to send invites and resets by email; verify with **Send test email**. Until a transport is on, admins get one-time links to share manually (manual links).
 - **Integrations:** On **Settings → Integrations** (`/admin/settings/integrations`), optionally enable Slack Incoming Webhooks, Gotify, and/or a generic HTTP webhook for lifecycle and ops alerts. There are no `SLACK_ENABLED`-style env flags — configure destinations in the UI.
 - **PDF export (Gotenberg):**
   - `PDF_EXPORT_ENABLED=true|false` toggles PDF artifact generation and download.
@@ -144,7 +143,7 @@ Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`
 
 1. Set **`ORIGIN`** and **`SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOP are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
 2. Sign in as `admin` / `admin` and **set a strong password** (required).
-3. Configure mail (`smtp` + transport, or `manual_links`) and send a **test email** if using SMTP/Resend.
+3. Optionally save SMTP or Resend under **Settings → Email**, switch it on and send a **test email**; without it, invites use manual links.
 4. Create a real user invite (or keep demo data only for a trial).
 5. **Backup:** Admin → **Backup** → export a `.zip`, then optionally **validate** it.
 6. Practice restore once on a non-production copy: stage apply → restart container → confirm SOPs and acknowledgments. See `docs/ops/backup-and-restore.md`.

@@ -7,34 +7,48 @@
     import CollapsibleCard from '$lib/components/CollapsibleCard.svelte';
     import { MailIcon } from 'lucide-svelte';
     import * as m from '$lib/paraglide/messages.js';
+    import type { PublicSmtpSettings } from '$lib/sdk/types';
 
     type Transport = 'smtp' | 'resend';
 
     let { data, form }: { data: any; form: any } = $props();
 
-    const smtp = $derived(data.smtp);
-    const saveModeResult = $derived(form?.saveMode as { error?: string; ok?: boolean; mode?: 'smtp' | 'manual_links' } | undefined);
-    const saveTransportResult = $derived(
-        form?.saveTransport as { error?: string; ok?: boolean; transport?: Transport } | undefined
+    const smtp = $derived(data.smtp as PublicSmtpSettings | null);
+    const setDeliveryResult = $derived(
+        form?.setDelivery as { error?: string; ok?: boolean; transport?: Transport } | undefined
     );
     const saveResendResult = $derived(form?.saveResend as { error?: string; ok?: boolean } | undefined);
     const saveResult = $derived(form?.save as { error?: string; ok?: boolean } | undefined);
     const testResult = $derived(form?.test as { error?: string; ok?: boolean } | undefined);
 
-    const manualLinks = $derived(smtp?.mail_mode === 'manual_links');
+    // Invites and resets fall back to manual links unless a saved transport is switched on.
+    const manualFallback = $derived(smtp?.effective_mail_mode === 'manual_links');
     const smtpMeta = $derived(
         smtp?.configured ? `${smtp.host}:${smtp.port} · ${smtp.from_address}` : undefined
     );
     const resendMeta = $derived(smtp?.resend_configured ? smtp.resend_from_address : undefined);
 
-    function transportError(kind: Transport) {
-        return saveTransportResult?.error && saveTransportResult.transport === kind
-            ? saveTransportResult.error
-            : undefined;
+    function configured(kind: Transport): boolean {
+        return kind === 'smtp' ? (smtp?.configured ?? false) : (smtp?.resend_configured ?? false);
+    }
+
+    // A transport's toggle is on when email is on and it is the chosen, saved transport.
+    const savedDelivery = () => ({
+        smtp: smtp?.mail_mode === 'smtp' && smtp?.mail_transport === 'smtp' && configured('smtp'),
+        resend: smtp?.mail_mode === 'smtp' && smtp?.mail_transport === 'resend' && configured('resend')
+    });
+    // The toggles flip at once (switching one on switches the other off) and follow the saved state after each reload.
+    let deliveryOn = $state(savedDelivery());
+    $effect(() => {
+        deliveryOn = savedDelivery();
+    });
+
+    function deliveryError(kind: Transport) {
+        return setDeliveryResult?.error && setDeliveryResult.transport === kind ? setDeliveryResult.error : undefined;
     }
 
     // Which form is in flight, for its button's spinner.
-    let pending = $state<'mode' | 'transport' | 'smtp' | 'resend' | 'test' | null>(null);
+    let pending = $state<'smtp' | 'resend' | 'test' | null>(null);
 
     function submitting(which: NonNullable<typeof pending>, reset = true): SubmitFunction {
         return () => {
@@ -45,6 +59,14 @@
             };
         };
     }
+
+    const deliverySubmit: SubmitFunction = () => {
+        return async ({ result, update }) => {
+            await update({ reset: false });
+            // On failure the data does not change, so put the toggles back by hand.
+            if (result.type === 'failure' || result.type === 'error') deliveryOn = savedDelivery();
+        };
+    };
 </script>
 
 <svelte:head>
@@ -60,32 +82,42 @@
     {/if}
 {/snippet}
 
-<!-- Header of each transport card: which one sends, or a button to switch to it. -->
-{#snippet transportState(kind: Transport, name: string, configured: boolean)}
-    {#if smtp?.mail_transport === kind}
-        {#if manualLinks}
-            <span class="badge badge-outline">{m.settings_transport_selected()}</span>
-        {:else}
-            <span class="badge badge-soft badge-success">{m.settings_transport_in_use()}</span>
-        {/if}
-    {:else if configured}
-        <form method="POST" action="?/saveTransport" use:enhance={submitting('transport', false)}>
-            <input type="hidden" name="mail_transport" value={kind} />
-            <button type="submit" class="btn btn-sm" disabled={pending !== null}>
-                {@render buttonLabel(pending === 'transport', m.settings_transport_use({ name }), m.common_saving())}
-            </button>
+<!-- Header of each transport card: its on/off toggle once saved, like the integration channels. -->
+{#snippet deliveryToggle(kind: Transport, name: string)}
+    {#if configured(kind)}
+        <form method="POST" action="?/setDelivery" use:enhance={deliverySubmit}>
+            <input type="hidden" name="transport" value={kind} />
+            <label class="flex cursor-pointer items-center gap-2 text-sm">
+                <!-- The word repeats the toggle's state for sighted users; the checkbox conveys it to assistive tech. -->
+                <span class="text-base-content/70" aria-hidden="true">
+                    {deliveryOn[kind] ? m.settings_integration_on() : m.settings_integration_off()}
+                </span>
+                <input
+                    type="checkbox"
+                    name="enabled"
+                    class="toggle toggle-success"
+                    aria-label={m.settings_email_send_with({ name })}
+                    checked={deliveryOn[kind]}
+                    onchange={(e) => {
+                        const on = e.currentTarget.checked;
+                        // Only one transport sends at a time.
+                        deliveryOn = { smtp: false, resend: false, [kind]: on };
+                        e.currentTarget.form?.requestSubmit();
+                    }}
+                />
+            </label>
         </form>
     {:else}
         <span class="badge badge-outline">{m.common_not_configured()}</span>
     {/if}
 {/snippet}
 
-{#snippet smtpTransportError()}
-    <Alert type="error" message={transportError('smtp')} />
+{#snippet smtpDeliveryError()}
+    <Alert type="error" message={deliveryError('smtp')} />
 {/snippet}
 
-{#snippet resendTransportError()}
-    <Alert type="error" message={transportError('resend')} />
+{#snippet resendDeliveryError()}
+    <Alert type="error" message={deliveryError('resend')} />
 {/snippet}
 
 <div class="flex flex-col gap-6">
@@ -106,40 +138,9 @@
             {#if smtp && !smtp.encryption_key_set}
                 <Alert type="error" message={m.settings_encryption_missing()} />
             {/if}
-            {#if manualLinks}
-                <Alert type="info" message={m.settings_manual_active()} />
+            {#if manualFallback}
+                <Alert type="info" message={m.settings_email_manual_fallback()} />
             {/if}
-            {#if saveModeResult?.error}
-                <Alert type="error" message={saveModeResult.error} />
-            {:else if saveModeResult?.ok}
-                <Alert type="success" message={m.settings_mail_mode_saved()} />
-            {/if}
-            {#if saveTransportResult?.ok}
-                <Alert type="success" message={m.settings_transport_saved()} />
-            {/if}
-
-            <form
-                method="POST"
-                action="?/saveMode"
-                use:enhance={submitting('mode', false)}
-                class="flex flex-col gap-1.5"
-            >
-                <label for="mail_mode" class="text-sm font-medium">{m.settings_mail_mode()}</label>
-                <div class="flex flex-col gap-2 sm:flex-row">
-                    <select
-                        id="mail_mode"
-                        name="mail_mode"
-                        class="select w-full sm:flex-1"
-                        value={saveModeResult?.mode ?? smtp?.mail_mode ?? 'smtp'}
-                    >
-                        <option value="smtp">{m.settings_mode_smtp()}</option>
-                        <option value="manual_links">{m.settings_mode_manual()}</option>
-                    </select>
-                    <button type="submit" class="btn w-full sm:w-auto" disabled={pending !== null}>
-                        {@render buttonLabel(pending === 'mode', m.settings_save_mode(), m.common_saving())}
-                    </button>
-                </div>
-            </form>
         </div>
     </Card>
 
@@ -147,10 +148,10 @@
         title={m.settings_smtp()}
         meta={smtpMeta}
         openWhen={Boolean(saveResult)}
-        notice={transportError('smtp') ? smtpTransportError : undefined}
+        notice={deliveryError('smtp') ? smtpDeliveryError : undefined}
     >
         {#snippet trailing()}
-            {@render transportState('smtp', 'SMTP', smtp?.configured ?? false)}
+            {@render deliveryToggle('smtp', 'SMTP')}
         {/snippet}
 
         {#if saveResult?.error}
@@ -238,10 +239,10 @@
         title={m.settings_resend()}
         meta={resendMeta}
         openWhen={Boolean(saveResendResult)}
-        notice={transportError('resend') ? resendTransportError : undefined}
+        notice={deliveryError('resend') ? resendDeliveryError : undefined}
     >
         {#snippet trailing()}
-            {@render transportState('resend', 'Resend', smtp?.resend_configured ?? false)}
+            {@render deliveryToggle('resend', 'Resend')}
         {/snippet}
 
         <p class="text-sm text-base-content/70">{m.settings_resend_help()}</p>
