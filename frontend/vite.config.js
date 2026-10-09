@@ -31,7 +31,12 @@ export default defineConfig({
 			project: './project.inlang',
 			outdir: './src/lib/paraglide',
 			strategy: ['cookie', 'preferredLanguage', 'baseLocale'],
-			emitTsDeclarations: true
+			emitTsDeclarations: true,
+			// Pinned so dev, build and the i18n:compile script (npm test / check) all write the
+			// same layout into src/lib/paraglide. Otherwise the plugin uses locale-modules in dev
+			// and message-modules in production, and a compile while `vite dev` runs leaves the
+			// dev server importing files that no longer exist (404 on messages/<key>.js).
+			outputStructure: 'message-modules'
 		}),
 		tailwindcss(),
 		sveltekit()
