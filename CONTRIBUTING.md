@@ -14,7 +14,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 That local image is tagged `ghcr.io/sopandgo/sopandgo:1` on your machine. Run `docker compose pull` when you want the published image back.
 
 3. Or run components separately:
-    - Backend: `cd backend && go run cmd/sopandgo/main.go`
+    - Backend: `cd backend && go run cmd/sopandgo/main.go`, or `cd backend && air` for live reload (seeds demo data on a fresh `backend/data`)
     - Frontend: `cd frontend && npm install && npm run dev`
 
 New to the product surface? [docs/ops/evaluating.md](docs/ops/evaluating.md) covers demo users and a short local tour.

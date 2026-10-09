@@ -187,7 +187,8 @@ If you wish to run the services outside of Docker:
 - **Backend:** `cd backend && go run cmd/sopandgo/main.go`  
   The Go binary does **not** read a `.env` file; export `SMTP_SECRET_ENCRYPTION_KEY` (and other vars) in your shell or IDE if you need mail or to match production.
 - **Frontend:** `cd frontend && npm run dev`
-- **Seeder:** `cd backend && go run cmd/seed-demo-data/main.go` (Only run on an empty `data` folder). Honors `SEED_DEMO_DATA=false`.
+- **Seeder:** `cd backend && go run cmd/seed-demo-data/main.go` (Only run on an empty `data` folder). Honors `SEED_DEMO_DATA=false`. Run it **before** the backend's first start: the backend creates `app.db` with the bootstrap admin, and the seeder skips once `app.db` exists.
+- **Live reload:** `cd backend && air` uses `backend/.air.toml`, which runs the seeder before each build, so a fresh `backend/data` gets demo users and the sample SOP. To reset demo data, stop air and delete `backend/data`.
 
 ### Tests
 - **Backend:** `cd backend && go test ./...`
