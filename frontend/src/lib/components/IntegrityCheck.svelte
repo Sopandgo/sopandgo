@@ -1,7 +1,7 @@
 <script lang="ts">
     import { applyAction, enhance } from '$app/forms';
     import { page } from '$app/state';
-    import { RotateCwIcon, ShieldIcon } from 'lucide-svelte';
+    import { RotateCwIcon, ShieldQuestionMarkIcon } from 'lucide-svelte';
     import IntegrityStatusBadge from './IntegrityStatusBadge.svelte';
     import { integrityResultFromForm, type IntegrityStatus } from '$lib/integrity';
     import * as m from '$lib/paraglide/messages.js';
@@ -76,7 +76,7 @@
                 <span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
                 {m.integrity_checking()}
             {:else}
-                <ShieldIcon class="size-4" aria-hidden="true" />
+                <ShieldQuestionMarkIcon class="size-4" aria-hidden="true" />
                 {m.integrity_verify()}
             {/if}
         </button>
