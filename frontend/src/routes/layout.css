@@ -15,8 +15,8 @@
 	--color-base-200: #f8f7f2;
 	--color-base-300: #d9d5cc;
 	--color-base-content: #2c2a29;
-	--color-primary: #1f5f86;
-	--color-primary-content: #ffffff;
+	--color-primary: #2c2a29;
+	--color-primary-content: #f8f7f2;
 	--color-secondary: #5c5853;
 	--color-secondary-content: #ffffff;
 	--color-accent: #e1cbab;
@@ -49,8 +49,8 @@
 	--color-base-200: #222120;
 	--color-base-300: #45423e;
 	--color-base-content: #f2f1f0;
-	--color-primary: #a4d5ee;
-	--color-primary-content: #1a2a33;
+	--color-primary: #f2f1f0;
+	--color-primary-content: #2c2a29;
 	--color-secondary: #c9c5be;
 	--color-secondary-content: #2c2a29;
 	--color-accent: #e1cbab;
@@ -100,7 +100,7 @@
 	--tw-prose-body: var(--color-base-content);
 	--tw-prose-headings: var(--color-base-content);
 	--tw-prose-lead: var(--color-base-content);
-	--tw-prose-links: var(--color-primary);
+	--tw-prose-links: var(--color-base-content);
 	--tw-prose-bold: var(--color-base-content);
 	--tw-prose-counters: color-mix(in oklab, var(--color-base-content) 70%, transparent);
 	--tw-prose-bullets: color-mix(in oklab, var(--color-base-content) 70%, transparent);

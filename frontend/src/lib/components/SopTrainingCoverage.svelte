@@ -14,7 +14,7 @@
 		<li class="border-b border-base-300 last:border-b-0">
 			<div class="flex flex-col gap-2 px-4 py-3 sm:px-5">
 				<div class="flex flex-wrap items-center justify-between gap-2">
-					<a href={`/sops/${row.sop_id}/v/latest`} class="font-semibold hover:underline">
+					<a href={`/sops/${row.sop_id}/v/latest`} class="font-semibold underline">
 						{row.title}
 					</a>
 					{#if row.has_published}

@@ -6,7 +6,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 
 ## Principles
 
-- **Calm over cheerful.** One accent colour (`primary`), warm neutrals from the logo, no gradients, no decorative shadows. The content is the procedure, not the chrome.
+- **Calm over cheerful.** One accent (`primary`, the logo's ink), warm neutrals from the logo, no gradients, no decorative shadows. The content is the procedure, not the chrome.
 - **Colour means something.** A colour other than `base-content`, `base-content-muted` or `primary` always signals a state: success, warning, error or info. If nothing is wrong or done, it is neutral.
 - **Never by colour alone.** Every status carries a word, and integrity states carry an icon too. Success and error must read correctly in greyscale and for colour-blind users.
 - **Honest states.** Show exactly what is known: "Hash mismatch" and "Couldn't check" are different states and never share a badge.
@@ -26,11 +26,14 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 
 - Page background is `base-200`. Cards, the navbar, the sidebar, menus and inputs are `base-100`.
 - Body text is `base-content`. Metadata, timestamps and help text are `base-content-muted`. Do not dim text with `opacity-40/50/60`: those fail contrast. Use `text-base-content/70` at the least.
-- `primary` is for the main action on a page, links, the active nav item, the focus ring and selection (`primary-soft` behind it). At most one filled `btn-primary` per view.
+- `primary` is the logo's ink (the same value as `base-content` in each theme), so the blue mascot is the only hue in the UI. It is for the main action on a page, the active nav item, the focus ring and selection (`primary-soft` behind it).
+- Colour no longer marks links: links are always underlined (`underline`, including in `prose`), in `base-content`. Hover may thicken the underline; it never removes it.
+- Because the primary button is now dark ink on paper (light on ink in dark), it stands out only by being the sole filled button. Keep at most one filled `btn-primary` per view; this rule matters more than before. Other actions are `btn-ghost` or outline.
+- Selected and active states use `primary-soft` plus a non-colour cue (a 2px `primary` marker, bold label or check icon), not tint alone.
 - `secondary` is a near-neutral; use it rarely. `accent` (sand) is decorative only.
 - Status colours appear as soft badges and alerts: `success` text on `success-soft`, and so on. Solid status fills (`btn-error`) are only for destructive confirmations.
 - `base-300` is for hairlines, never a text ground.
-- `brand-sky`, `brand-sand` and `brand-deep` are the logo's colours for the landing page, the cover and PDF exports, not for UI state.
+- `brand-sky`, `brand-sand` and `brand-deep` are the logo's colours for the landing page, the cover and PDF exports, not for UI state. `info` is the only blue left in UI state, and only for informational alerts.
 
 ### Status mapping
 
@@ -54,7 +57,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 - Styles: `page-title` (one per page), `section-title` (card headings), `body` (lead text and SOP prose), `body-sm` (the default UI size), `label`, `meta`, `mono-id`.
 - `meta` (12px) is the floor: no `text-[10px]`.
 - IDs and hashes use `mono-id`, normal case, normal tracking. Truncate hashes to 8 characters and put the full value in a `title`.
-- Rendered SOP content uses Tailwind Typography (`prose`) at `body` size with `prose-headings:font-semibold`; links in `primary`.
+- Rendered SOP content uses Tailwind Typography (`prose`) at `body` size with `prose-headings:font-semibold`; links underlined in `base-content`.
 
 ## Space, radius, borders, depth
 
@@ -67,7 +70,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 ## States and motion
 
 - Focus: every interactive element shows `focus-ring` — a 2px solid outline with a 2px offset. Never remove outlines without this replacement.
-- Hover on list rows: background `base-200`. Hover on links: underline.
+- Hover on list rows: background `base-200`. Links are always underlined; hover thickens the underline.
 - Disabled: daisyUI's default (reduced opacity, no pointer). Keep the label legible.
 - Loading: a 16px spinner inside the button that triggered it, label kept ("Checking…"). No full-page spinners for actions that take under a second.
 - Motion: colour and background transitions at 150ms. No bounces, no scale effects, nothing that animates on page load.
@@ -262,8 +265,8 @@ Replace both `@plugin "daisyui"` lines in `frontend/src/routes/layout.css` with:
   --color-base-200: #f8f7f2;
   --color-base-300: #d9d5cc;
   --color-base-content: #2c2a29;
-  --color-primary: #1f5f86;
-  --color-primary-content: #ffffff;
+  --color-primary: #2c2a29;
+  --color-primary-content: #f8f7f2;
   --color-secondary: #5c5853;
   --color-secondary-content: #ffffff;
   --color-accent: #e1cbab;
@@ -296,8 +299,8 @@ Replace both `@plugin "daisyui"` lines in `frontend/src/routes/layout.css` with:
   --color-base-200: #222120;
   --color-base-300: #45423e;
   --color-base-content: #f2f1f0;
-  --color-primary: #a4d5ee;
-  --color-primary-content: #1a2a33;
+  --color-primary: #f2f1f0;
+  --color-primary-content: #2c2a29;
   --color-secondary: #c9c5be;
   --color-secondary-content: #2c2a29;
   --color-accent: #e1cbab;

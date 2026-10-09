@@ -135,7 +135,7 @@
                                     <tr>
                                         <td>{failure.kind}</td>
                                         <td>
-                                            <a href={failure.href} class="link link-hover font-mono text-xs">{failure.item}</a>
+                                            <a href={failure.href} class="link font-mono text-xs">{failure.item}</a>
                                         </td>
                                         <td class="font-mono text-xs text-error">{failure.error}</td>
                                     </tr>
