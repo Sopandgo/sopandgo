@@ -2,7 +2,7 @@
     import type { PageData, ActionData } from './$types';
     import SopVersionEditor from '$lib/components/editor/SopVersionEditor.svelte';
     import SopEditorAssetSidebar from '$lib/components/editor/SopEditorAssetSidebar.svelte';
-    import { HouseIcon, NotebookIcon, NotebookPenIcon, PlusIcon } from 'lucide-svelte';
+    import { NotebookIcon, NotebookPenIcon, PlusIcon } from 'lucide-svelte';
     import IdBadge from '$lib/components/IdBadge.svelte';
   import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Card from '$lib/components/Card.svelte';
@@ -21,7 +21,6 @@
 
 <div class="flex flex-col gap-6">
     <Breadcrumbs items={[
-        { label: m.page_dashboard(), href: '/dashboard', icon: HouseIcon},
         { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
         { label: data.sop.title, href: `/sops/${data.sop.id}`, icon: NotebookIcon},
         { label: m.common_new_version(), icon: PlusIcon},

@@ -1,7 +1,7 @@
 <script lang="ts">
     import Alert from '$lib/components/Alert.svelte';
     import { enhance } from '$app/forms';
-    import { HouseIcon, NotebookIcon, NotebookPenIcon, PlusIcon, RocketIcon } from 'lucide-svelte';
+    import { NotebookIcon, NotebookPenIcon, PlusIcon, RocketIcon } from 'lucide-svelte';
     import type { ActionData } from './$types';
     import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Card from '$lib/components/Card.svelte';
@@ -19,7 +19,6 @@
 
 <div class="flex flex-col gap-6">
     <Breadcrumbs items={[
-        { label: m.page_dashboard(), href: '/sops', icon: HouseIcon},
         { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
         { label: m.common_new_sop(), icon: PlusIcon},
     ]}/>

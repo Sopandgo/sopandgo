@@ -5,7 +5,7 @@
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
   import ListSops from '$lib/components/ListSops.svelte';
-  import { HouseIcon, NotebookIcon, PlusIcon, SearchIcon, XIcon } from 'lucide-svelte';
+  import { NotebookIcon, PlusIcon, SearchIcon, XIcon } from 'lucide-svelte';
   import * as m from '$lib/paraglide/messages.js';
   import type { PageData } from './$types';
 
@@ -76,7 +76,6 @@
 <div class="flex flex-col gap-6">
   <Breadcrumbs
     items={[
-      { label: m.page_dashboard(), href: '/dashboard', icon: HouseIcon },
       { label: m.page_sops(), icon: NotebookIcon }
     ]}
   />

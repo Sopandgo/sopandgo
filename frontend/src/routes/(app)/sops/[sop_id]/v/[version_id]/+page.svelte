@@ -4,7 +4,7 @@
     import SopDetails from '$lib/components/SopDetails.svelte';
     import type { PageData, ActionData } from './$types';
     import AcknowledgmentContainerSOPVersion from '$lib/components/Acknowledgment/AcknowledgmentContainerSOPVersion.svelte';
-    import { DownloadIcon, HouseIcon, NotebookIcon, NotebookTextIcon, PlusIcon, StarIcon } from 'lucide-svelte';
+    import { DownloadIcon, NotebookIcon, NotebookTextIcon, PlusIcon, StarIcon } from 'lucide-svelte';
     import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
@@ -60,7 +60,6 @@
 
 <div class="flex flex-col gap-6">
     <Breadcrumbs items={[
-        { label: m.page_dashboard(), href: '/dashboard', icon: HouseIcon},
         { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
         { label: data.sop.title, href: `/sops/${data.sop.id}`, icon: NotebookIcon},
         { label: m.version_breadcrumb({ version: String(data.versionSummary.version), date: new Date(data.versionSummary.created_at).toLocaleDateString(getLocale()) }), icon: NotebookTextIcon},

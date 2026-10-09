@@ -2,7 +2,7 @@
   import IdBadge from '$lib/components/IdBadge.svelte';
   import ListSopVersions from '$lib/components/ListSopVersions.svelte';
   import SopTrainingCoverage from '$lib/components/SopTrainingCoverage.svelte';
-  import { HouseIcon, NotebookIcon, PlusIcon, TagIcon, XIcon, PlusCircleIcon, StarIcon } from 'lucide-svelte';
+  import { NotebookIcon, PlusIcon, TagIcon, XIcon, PlusCircleIcon, StarIcon } from 'lucide-svelte';
   import ListAssociatedAssets from '$lib/components/ListAssociatedAssets.svelte';
   import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Card from '$lib/components/Card.svelte';
@@ -27,7 +27,6 @@
 
 <div class="flex flex-col gap-6">
     <Breadcrumbs items={[
-        { label: m.page_dashboard(), href: '/sops', icon: HouseIcon},
         { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
         { label: data.sop.title, icon: NotebookIcon},
     ]}/>
