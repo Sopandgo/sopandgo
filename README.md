@@ -109,7 +109,7 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
 
 - **ORIGIN:** Must match the URL you use in the browser (default: `http://localhost:8087`). If it does not match, login fails with **403 Forbidden**.
 - **SMTP_SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets or send mail/integrations that need them.
-- **SEED_DEMO_DATA:** `true` (default) inserts demo users and a sample SOP on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
+- **SEED_DEMO_DATA:** `true` (default) inserts demo users and sample SOPs on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
 - **Mail mode:** In **Settings** (`/admin/settings`), choose either `smtp` (default; sends invites/resets by email) or `manual_links` (admin copies one-time links and shares them manually).
 - **SMTP provider details** (host, port, user, password, from-address) are configured in the same admin page when using `smtp`, then verified with **Send test email**.
 - **Integrations:** On the same Settings page, optionally enable Slack Incoming Webhooks, Gotify, and/or a generic HTTP webhook for lifecycle and ops alerts. There are no `SLACK_ENABLED`-style env flags — configure destinations in the UI.
@@ -142,7 +142,7 @@ Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`
 
 ### First-week checklist
 
-1. Set **`ORIGIN`** and **`SMTP_SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOP are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
+1. Set **`ORIGIN`** and **`SMTP_SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOPs are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
 2. Sign in as `admin` / `admin` and **set a strong password** (required).
 3. Configure mail (`smtp` + transport, or `manual_links`) and send a **test email** if using SMTP/Resend.
 4. Create a real user invite (or keep demo data only for a trial).

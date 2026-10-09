@@ -1,0 +1,9 @@
+{
+  "tags": ["Molecular Biology"],
+  "change_summaries": [
+    "Initial release",
+    "Expanded casting steps and added gel documentation"
+  ],
+  "read_by": { "researcher": [2] },
+  "favorited_by": ["researcher"]
+}

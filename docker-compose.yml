@@ -7,7 +7,7 @@ services:
       - ./backend/data:/app/data
     environment:
       - DATA_DIR=/app/data
-      # false skips demo users and the sample SOP on first start (no effect once app.db exists).
+      # false skips demo users and the sample SOPs on first start (no effect once app.db exists).
       - SEED_DEMO_DATA=${SEED_DEMO_DATA:-true}
       # Must match the URL users type in the browser (scheme + host + port if non-default).
       # Override in `.env` for production; default matches HOST_WEB_PORT below.
