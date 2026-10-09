@@ -1,6 +1,9 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
     import { resolve } from '$app/paths';
+    import { page } from '$app/state';
+    import { breadcrumbsFor } from '$lib/breadcrumbs';
+    import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
     import { CircleUserIcon, LogOutIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, SettingsIcon } from 'lucide-svelte';
     import Avatar from '$lib/components/Avatar.svelte';
     import GuestLocaleMenu from '$lib/components/GuestLocaleMenu.svelte';
@@ -17,6 +20,8 @@
         approver: m.role_approver,
         viewer: m.role_viewer
     };
+
+    const crumbs = $derived(rail ? breadcrumbsFor(page.route.id, page.data) : []);
 </script>
 
 <div
@@ -24,7 +29,7 @@
     class:navbar-guest={!user}
     class:navbar-app={!!user}
 >
-    <div class="navbar-start">
+    <div class="navbar-start gap-2">
         {#if rail}
             <label
                 for="app-drawer"
@@ -38,6 +43,7 @@
                     <PanelLeftCloseIcon size={18} aria-hidden="true" />
                 </span>
             </label>
+            <Breadcrumbs items={crumbs} />
         {:else if !user}
             {@render logo()}
         {/if}

@@ -1,34 +1,34 @@
 <script lang="ts">
-  import type { Icon } from 'lucide-svelte';
-  import Card from './Card.svelte';
+  import { ChevronRightIcon } from 'lucide-svelte';
+  import type { Crumb } from '$lib/breadcrumbs';
+  import * as m from '$lib/paraglide/messages.js';
 
-  export interface BreadcrumbItem {
-    label: string;
-    href?: string;
-    icon: typeof Icon;
-  }
-
-  let { items = [] }: { items: BreadcrumbItem[] } = $props();
+  let { items = [] }: { items: Crumb[] } = $props();
 </script>
 
-<Card>
-  <div class="breadcrumbs p-4 text-sm">
-    <ul>
-      {#each items as { label, href, icon: IconComponent }}
-        <li>
-          {#if href}
-            <a {href}>
-              <IconComponent class="h-4 w-4 stroke-current" />
-              {label}
-            </a>
+<!-- Phones keep the last two crumbs: the page and the way back to its parent. -->
+{#if items.length}
+  <nav aria-label={m.nav_breadcrumb()} class="min-w-0">
+    <ol class="flex min-w-0 items-center text-sm">
+      {#each items as { label, href }, i}
+        {@const last = i === items.length - 1}
+        <li class="flex min-w-0 items-center {i < items.length - 2 ? 'max-sm:hidden' : ''}">
+          {#if i > 0}
+            <ChevronRightIcon
+              size={16}
+              aria-hidden="true"
+              class="mx-1 shrink-0 text-base-content/70 rtl:rotate-180 {i === items.length - 2 ? 'max-sm:hidden' : ''}"
+            />
+          {/if}
+          {#if href && !last}
+            <a {href} title={label} class="truncate text-base-content/70 underline">{label}</a>
+          {:else if last}
+            <span title={label} class="truncate font-medium" aria-current="page">{label}</span>
           {:else}
-            <span class="inline-flex items-center gap-2">
-              <IconComponent class="h-4 w-4 stroke-current" />
-              {label}
-            </span>
+            <span title={label} class="truncate text-base-content/70">{label}</span>
           {/if}
         </li>
       {/each}
-    </ul>
-  </div>
-</Card>
+    </ol>
+  </nav>
+{/if}

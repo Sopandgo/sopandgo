@@ -4,7 +4,6 @@
   import SopTrainingCoverage from '$lib/components/SopTrainingCoverage.svelte';
   import { NotebookIcon, PlusIcon, TagIcon, XIcon, PlusCircleIcon, StarIcon } from 'lucide-svelte';
   import ListAssociatedAssets from '$lib/components/ListAssociatedAssets.svelte';
-  import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
   import { enhance } from '$app/forms';
@@ -26,11 +25,6 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-    <Breadcrumbs items={[
-        { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
-        { label: data.sop.title, icon: NotebookIcon},
-    ]}/>
-
     <Card>
         <div class="card-body">
             <CardPageHeading>

@@ -1,9 +1,8 @@
 <script lang="ts">
     import Alert from '$lib/components/Alert.svelte';
     import { enhance } from '$app/forms';
-    import { NotebookIcon, NotebookPenIcon, PlusIcon, RocketIcon } from 'lucide-svelte';
+    import { NotebookPenIcon, RocketIcon } from 'lucide-svelte';
     import type { ActionData } from './$types';
-    import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
   import * as m from '$lib/paraglide/messages.js';
@@ -18,11 +17,6 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-    <Breadcrumbs items={[
-        { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
-        { label: m.common_new_sop(), icon: PlusIcon},
-    ]}/>
-
     <Card>
         <div class="card-body">
             <CardPageHeading>

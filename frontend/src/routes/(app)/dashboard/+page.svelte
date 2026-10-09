@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import ListHeading from '$lib/components/ListHeading.svelte';
 	import ListRow from '$lib/components/ListRow.svelte';
@@ -10,7 +9,7 @@
 	} from '$lib/signatureBuckets';
 	import { enhance } from '$app/forms';
 	import SopTrainingCoverage from '$lib/components/SopTrainingCoverage.svelte';
-	import { CircleCheckIcon, FileTextIcon, HouseIcon, NotebookIcon, StarIcon } from 'lucide-svelte';
+	import { CircleCheckIcon, FileTextIcon, NotebookIcon, StarIcon } from 'lucide-svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale } from '$lib/paraglide/runtime';
 
@@ -45,8 +44,6 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-	<Breadcrumbs items={[{ label: m.page_dashboard(), icon: HouseIcon }]} />
-
 	{#if user}
 		<Card as="section" aria-labelledby="greeting-heading">
 			<div class="card-body p-4 sm:p-6">

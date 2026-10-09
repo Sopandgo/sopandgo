@@ -4,8 +4,7 @@
     import SopDetails from '$lib/components/SopDetails.svelte';
     import type { PageData, ActionData } from './$types';
     import AcknowledgmentContainerSOPVersion from '$lib/components/Acknowledgment/AcknowledgmentContainerSOPVersion.svelte';
-    import { DownloadIcon, NotebookIcon, NotebookTextIcon, PlusIcon, StarIcon } from 'lucide-svelte';
-    import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
+    import { DownloadIcon, NotebookTextIcon, PlusIcon, StarIcon } from 'lucide-svelte';
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
     import SopVersionStatusBadge from '$lib/components/SopVersionStatusBadge.svelte';
@@ -14,7 +13,6 @@
     import Alert from '$lib/components/Alert.svelte';
     import VersionDiff from '$lib/components/VersionDiff.svelte';
     import * as m from '$lib/paraglide/messages.js';
-    import { getLocale } from '$lib/paraglide/runtime';
     let pdfError = $state<string | null>(null);
 
     // Receive data and form (ActionData) from the server
@@ -59,12 +57,6 @@
 
 
 <div class="flex flex-col gap-6">
-    <Breadcrumbs items={[
-        { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
-        { label: data.sop.title, href: `/sops/${data.sop.id}`, icon: NotebookIcon},
-        { label: m.version_breadcrumb({ version: String(data.versionSummary.version), date: new Date(data.versionSummary.created_at).toLocaleDateString(getLocale()) }), icon: NotebookTextIcon},
-    ]}/>
-
 <Card>
     <div class="card-body">
         <CardPageHeading>

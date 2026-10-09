@@ -85,6 +85,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 ## Layout
 
 - Navbar: `base-100`, a `base-300` bottom border, no shadow. The logo sits at its own size, not inside a circular button.
+- Breadcrumbs live in the signed-in navbar, next to the sidebar toggle. Trails are defined per route in `$lib/breadcrumbs.ts` and start at the section (SOPs, Profile, or the admin page itself), never at the dashboard or an "Admin" crumb, because the sidebar already marks the section. Pages do not render their own breadcrumbs. On phones only the last two crumbs show.
 - Pages: page header (`page-title` plus one line of `body-sm` in `base-content-muted`, actions on the right), then cards stacked with `space-6` gaps.
 - Lists, not tables, for SOPs, versions, assets and signatures: a `ListRow` per item inside one bordered card.
 - Phones first: rows stack, secondary metadata wraps under the title, badges hide only if their meaning is repeated elsewhere.

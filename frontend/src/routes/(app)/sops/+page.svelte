@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
   import ListSops from '$lib/components/ListSops.svelte';
@@ -74,12 +73,6 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-  <Breadcrumbs
-    items={[
-      { label: m.page_sops(), icon: NotebookIcon }
-    ]}
-  />
-
   <Card>
     <div class="card-body">
       <div class="flex flex-col gap-1">
