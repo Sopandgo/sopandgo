@@ -649,6 +649,7 @@
   "settings_integration_on": "Zapnuto",
   "settings_integration_off": "Vypnuto",
   "settings_integration_not_configured": "Nenastaveno",
+  "settings_integration_toggle_error": "Kanál se nepodařilo zapnout ani vypnout. Zkuste to znovu.",
   "settings_integration_events_selected": "Události: {count} z {total}",
   "settings_integrations_test_hint": "„Odeslat test“ používá uložená nastavení, proto nejdřív uložte změny.",
   "settings_save_webhook": "Uložit webhook",

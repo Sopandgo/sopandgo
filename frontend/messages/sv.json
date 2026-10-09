@@ -646,6 +646,7 @@
   "settings_integration_on": "På",
   "settings_integration_off": "Av",
   "settings_integration_not_configured": "Inte konfigurerad",
+  "settings_integration_toggle_error": "Det gick inte att slå på eller av kanalen. Försök igen.",
   "settings_integration_events_selected": "{count} av {total} händelser",
   "settings_integrations_test_hint": "\"Skicka test\" använder de sparade inställningarna, så spara dina ändringar först.",
   "settings_save_webhook": "Spara webhook",

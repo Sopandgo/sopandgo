@@ -646,6 +646,7 @@
   "settings_integration_on": "オン",
   "settings_integration_off": "オフ",
   "settings_integration_not_configured": "未設定",
+  "settings_integration_toggle_error": "このチャネルのオン／オフを切り替えられませんでした。もう一度お試しください。",
   "settings_integration_events_selected": "{total} 件中 {count} 件のイベント",
   "settings_integrations_test_hint": "「テスト送信」は保存済みの設定を使用します。先に変更を保存してください。",
   "settings_save_webhook": "Webhook を保存",

@@ -646,6 +646,7 @@
   "settings_integration_on": "Açık",
   "settings_integration_off": "Kapalı",
   "settings_integration_not_configured": "Yapılandırılmadı",
+  "settings_integration_toggle_error": "Bu kanal açılamadı veya kapatılamadı. Tekrar deneyin.",
   "settings_integration_events_selected": "{total} olaydan {count} tanesi",
   "settings_integrations_test_hint": "\"Test gönder\" kayıtlı ayarları kullanır; önce değişikliklerinizi kaydedin.",
   "settings_save_webhook": "Webhook'u kaydet",

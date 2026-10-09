@@ -17,6 +17,12 @@
     const testGotifyResult = $derived(form?.testGotify as { error?: string; ok?: boolean } | undefined);
     const testWebhookResult = $derived(form?.testWebhook as { error?: string; ok?: boolean } | undefined);
 
+    // The header toggle's result, for the one channel it switched.
+    function toggleResult(channel: 'slack' | 'gotify' | 'webhook') {
+        const r = form?.setEnabled as { channel?: string; error?: string; ok?: boolean } | undefined;
+        return r?.channel === channel ? r : undefined;
+    }
+
     const eventLabels: Record<IntegrationEvent, string> = {
         sop_published: m.notify_event_published(),
         sop_rc: m.notify_event_rc(),
@@ -57,6 +63,7 @@
     </Card>
 
     <IntegrationChannelCard
+        channelKey="slack"
         title={m.settings_slack()}
         channel={integrations?.slack}
         {knownEvents}
@@ -67,6 +74,7 @@
         testAction="testSlack"
         saveResult={saveSlackResult}
         testResult={testSlackResult}
+        toggleResult={toggleResult('slack')}
         savedMessage={m.settings_slack_saved()}
         testSentMessage={m.settings_slack_test_sent()}
     >
@@ -87,6 +95,7 @@
     </IntegrationChannelCard>
 
     <IntegrationChannelCard
+        channelKey="gotify"
         title={m.settings_gotify()}
         channel={integrations?.gotify}
         {knownEvents}
@@ -97,6 +106,7 @@
         testAction="testGotify"
         saveResult={saveGotifyResult}
         testResult={testGotifyResult}
+        toggleResult={toggleResult('gotify')}
         savedMessage={m.settings_gotify_saved()}
         testSentMessage={m.settings_gotify_test_sent()}
     >
@@ -128,6 +138,7 @@
     </IntegrationChannelCard>
 
     <IntegrationChannelCard
+        channelKey="webhook"
         title={m.settings_webhook()}
         channel={integrations?.webhook}
         {knownEvents}
@@ -138,6 +149,7 @@
         testAction="testWebhook"
         saveResult={saveWebhookResult}
         testResult={testWebhookResult}
+        toggleResult={toggleResult('webhook')}
         savedMessage={m.settings_webhook_saved()}
         testSentMessage={m.settings_webhook_test_sent()}
     >

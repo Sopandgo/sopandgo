@@ -646,6 +646,7 @@
   "settings_integration_on": "Włączone",
   "settings_integration_off": "Wyłączone",
   "settings_integration_not_configured": "Nieskonfigurowane",
+  "settings_integration_toggle_error": "Nie udało się włączyć ani wyłączyć tego kanału. Spróbuj ponownie.",
   "settings_integration_events_selected": "Zdarzenia: {count} z {total}",
   "settings_integrations_test_hint": "„Wyślij test” używa zapisanych ustawień, więc najpierw zapisz zmiany.",
   "settings_save_webhook": "Zapisz webhook",

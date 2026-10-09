@@ -646,6 +646,7 @@
   "settings_integration_on": "Attivo",
   "settings_integration_off": "Disattivo",
   "settings_integration_not_configured": "Non configurato",
+  "settings_integration_toggle_error": "Impossibile attivare o disattivare questo canale. Riprova.",
   "settings_integration_events_selected": "{count} di {total} eventi",
   "settings_integrations_test_hint": "\"Invia test\" usa le impostazioni salvate: salva prima le modifiche.",
   "settings_save_webhook": "Salva webhook",

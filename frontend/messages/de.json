@@ -646,6 +646,7 @@
   "settings_integration_on": "An",
   "settings_integration_off": "Aus",
   "settings_integration_not_configured": "Nicht eingerichtet",
+  "settings_integration_toggle_error": "Der Kanal konnte nicht ein- oder ausgeschaltet werden. Versuchen Sie es erneut.",
   "settings_integration_events_selected": "{count} von {total} Ereignissen",
   "settings_integrations_test_hint": "„Test senden“ verwendet die gespeicherten Einstellungen. Speichern Sie Ihre Änderungen zuerst.",
   "settings_save_webhook": "Webhook speichern",

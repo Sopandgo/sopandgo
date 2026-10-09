@@ -649,6 +649,7 @@
   "settings_integration_on": "On",
   "settings_integration_off": "Off",
   "settings_integration_not_configured": "Not configured",
+  "settings_integration_toggle_error": "Could not switch this channel on or off. Try again.",
   "settings_integration_events_selected": "{count} of {total} events",
   "settings_integrations_test_hint": "Send test uses the saved settings, so save your changes first.",
   "settings_save_webhook": "Save webhook",

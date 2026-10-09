@@ -646,6 +646,7 @@
   "settings_integration_on": "Aan",
   "settings_integration_off": "Uit",
   "settings_integration_not_configured": "Niet ingesteld",
+  "settings_integration_toggle_error": "Dit kanaal kon niet worden in- of uitgeschakeld. Probeer het opnieuw.",
   "settings_integration_events_selected": "{count} van {total} gebeurtenissen",
   "settings_integrations_test_hint": "\"Test verzenden\" gebruikt de opgeslagen instellingen. Sla je wijzigingen eerst op.",
   "settings_save_webhook": "Webhook opslaan",

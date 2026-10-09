@@ -101,6 +101,32 @@ export const actions: Actions = {
         }
     },
 
+    // The header toggle: flips only `enabled`. Plain URLs and events are sent back
+    // as stored (the backend overwrites them); blank secrets keep the stored ones.
+    setEnabled: async ({ locals, request }) => {
+        const fd = await request.formData();
+        const channel = String(fd.get('channel') ?? '');
+        const enabled = fd.get('enabled') === 'on';
+        if (channel !== 'slack' && channel !== 'gotify' && channel !== 'webhook') {
+            return fail(400, { setEnabled: { channel, error: m.settings_integration_toggle_error() } });
+        }
+        try {
+            const current = await locals.api.admin.getIntegrationSettings();
+            const { events, url = '' } = current[channel];
+            if (channel === 'slack') {
+                await locals.api.admin.updateSlackIntegration({ enabled, webhook_url: '', events });
+            } else if (channel === 'gotify') {
+                await locals.api.admin.updateGotifyIntegration({ enabled, url, token: '', events });
+            } else {
+                await locals.api.admin.updateWebhookIntegration({ enabled, url, bearer_token: '', events });
+            }
+            return { setEnabled: { channel, ok: true } };
+        } catch (err: unknown) {
+            console.error(`${channel} toggle failed:`, err);
+            return fail(500, { setEnabled: { channel, error: m.settings_integration_toggle_error() } });
+        }
+    },
+
     testSlack: async ({ locals }) => {
         try {
             await locals.api.admin.sendIntegrationTest('slack');

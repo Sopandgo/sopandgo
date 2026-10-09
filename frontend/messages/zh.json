@@ -646,6 +646,7 @@
   "settings_integration_on": "开启",
   "settings_integration_off": "关闭",
   "settings_integration_not_configured": "未配置",
+  "settings_integration_toggle_error": "无法开启或关闭此渠道，请重试。",
   "settings_integration_events_selected": "已选 {count}/{total} 个事件",
   "settings_integrations_test_hint": "“发送测试”使用已保存的设置，请先保存更改。",
   "settings_save_webhook": "保存 Webhook",
