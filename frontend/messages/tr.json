@@ -545,6 +545,7 @@
   "backup_s3_title": "Otomatik S3 yedeklemeleri",
   "backup_s3_help": "Dışa aktarmayla aynı .zip dosyasını bir zamanlamaya göre bir S3 kovasına veya S3 uyumlu depolamaya yükler. Gizli erişim anahtarı SECRET_ENCRYPTION_KEY ile şifrelenmiş olarak saklanır.",
   "backup_s3_key_missing": "SECRET_ENCRYPTION_KEY ayarlı değil, bu yüzden gizli erişim anahtarı saklanamaz. Sunucunun kendi AWS kimlik bilgileri (ör. bir IAM rolü) yine de çalışır.",
+  "backup_s3_destination": "Hedef",
   "backup_s3_enable": "Zamanlanmış yedeklemeleri aç",
   "backup_s3_region": "Bölge",
   "backup_s3_prefix_help": "Arşivler bu önekin altındaki automated/ klasörüne gider. Kova kökü için boş bırakın.",

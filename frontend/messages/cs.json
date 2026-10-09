@@ -548,6 +548,7 @@
   "backup_s3_title": "Automatické zálohy do S3",
   "backup_s3_help": "Podle plánu nahrává stejný .zip jako export do bucketu S3 nebo úložiště kompatibilního s S3. Tajný přístupový klíč je uložen zašifrovaný pomocí SECRET_ENCRYPTION_KEY.",
   "backup_s3_key_missing": "SECRET_ENCRYPTION_KEY není nastaven, takže nelze uložit tajný přístupový klíč. Vlastní přihlašovací údaje AWS serveru, například role IAM, stále fungují.",
+  "backup_s3_destination": "Cíl",
   "backup_s3_enable": "Zapnout plánované zálohy",
   "backup_s3_region": "Region",
   "backup_s3_prefix_help": "Archivy se ukládají do složky automated/ pod touto předponou. Pro kořen bucketu nechte prázdné.",

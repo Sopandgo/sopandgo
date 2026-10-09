@@ -545,6 +545,7 @@
   "backup_s3_title": "Automatyczne kopie zapasowe S3",
   "backup_s3_help": "Według harmonogramu przesyła ten sam plik .zip co eksport do zasobnika S3 lub magazynu zgodnego z S3. Tajny klucz dostępu jest przechowywany zaszyfrowany kluczem SECRET_ENCRYPTION_KEY.",
   "backup_s3_key_missing": "SECRET_ENCRYPTION_KEY nie jest ustawiony, więc nie można zapisać tajnego klucza dostępu. Własne poświadczenia AWS serwera, np. rola IAM, nadal działają.",
+  "backup_s3_destination": "Miejsce docelowe",
   "backup_s3_enable": "Włącz zaplanowane kopie zapasowe",
   "backup_s3_region": "Region",
   "backup_s3_prefix_help": "Archiwa trafiają do folderu automated/ pod tym prefiksem. Pozostaw puste, aby użyć katalogu głównego zasobnika.",

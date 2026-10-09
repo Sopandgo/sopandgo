@@ -545,6 +545,7 @@
   "backup_s3_title": "Automatische S3-back-ups",
   "backup_s3_help": "Uploadt volgens een schema dezelfde .zip als de export naar een S3-bucket of S3-compatibele opslag. De geheime toegangssleutel wordt versleuteld opgeslagen met SECRET_ENCRYPTION_KEY.",
   "backup_s3_key_missing": "SECRET_ENCRYPTION_KEY is niet ingesteld, dus er kan geen geheime toegangssleutel worden opgeslagen. De eigen AWS-referenties van de server, zoals een IAM-rol, werken nog wel.",
+  "backup_s3_destination": "Bestemming",
   "backup_s3_enable": "Geplande back-ups inschakelen",
   "backup_s3_region": "Regio",
   "backup_s3_prefix_help": "Archieven komen in een map automated/ onder dit voorvoegsel. Laat leeg voor de hoofdmap van de bucket.",

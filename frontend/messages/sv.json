@@ -545,6 +545,7 @@
   "backup_s3_title": "Automatiska S3-säkerhetskopior",
   "backup_s3_help": "Laddar enligt ett schema upp samma .zip som exporten till en S3-bucket eller S3-kompatibel lagring. Den hemliga åtkomstnyckeln lagras krypterad med SECRET_ENCRYPTION_KEY.",
   "backup_s3_key_missing": "SECRET_ENCRYPTION_KEY är inte satt, så ingen hemlig åtkomstnyckel kan lagras. Serverns egna AWS-autentiseringsuppgifter, till exempel en IAM-roll, fungerar fortfarande.",
+  "backup_s3_destination": "Destination",
   "backup_s3_enable": "Slå på schemalagda säkerhetskopior",
   "backup_s3_region": "Region",
   "backup_s3_prefix_help": "Arkiven hamnar i en mapp automated/ under detta prefix. Lämna tomt för bucketens rot.",

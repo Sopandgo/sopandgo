@@ -545,6 +545,7 @@
   "backup_s3_title": "자동 S3 백업",
   "backup_s3_help": "내보내기와 같은 .zip을 일정에 따라 S3 버킷 또는 S3 호환 스토리지에 업로드합니다. 비밀 액세스 키는 SECRET_ENCRYPTION_KEY로 암호화되어 저장됩니다.",
   "backup_s3_key_missing": "SECRET_ENCRYPTION_KEY가 설정되지 않아 비밀 액세스 키를 저장할 수 없습니다. IAM 역할 같은 서버 자체의 AWS 자격 증명은 계속 사용할 수 있습니다.",
+  "backup_s3_destination": "대상",
   "backup_s3_enable": "예약 백업 켜기",
   "backup_s3_region": "리전",
   "backup_s3_prefix_help": "아카이브는 이 접두사 아래의 automated/ 폴더에 저장됩니다. 버킷 루트를 쓰려면 비워 두세요.",

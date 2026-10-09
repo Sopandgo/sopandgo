@@ -545,6 +545,7 @@
   "backup_s3_title": "Automatische S3-Sicherungen",
   "backup_s3_help": "Lädt dasselbe .zip wie der Export nach Zeitplan in einen S3-Bucket oder S3-kompatiblen Speicher hoch. Der geheime Zugriffsschlüssel wird mit SECRET_ENCRYPTION_KEY verschlüsselt gespeichert.",
   "backup_s3_key_missing": "SECRET_ENCRYPTION_KEY ist nicht gesetzt, daher kann kein geheimer Zugriffsschlüssel gespeichert werden. Die eigenen AWS-Zugangsdaten des Servers, etwa eine IAM-Rolle, funktionieren weiterhin.",
+  "backup_s3_destination": "Ziel",
   "backup_s3_enable": "Geplante Backups einschalten",
   "backup_s3_region": "Region",
   "backup_s3_prefix_help": "Archive landen in einem Ordner automated/ unter diesem Präfix. Leer lassen für die oberste Ebene des Buckets.",

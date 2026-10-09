@@ -545,6 +545,7 @@
   "backup_s3_title": "自动 S3 备份",
   "backup_s3_help": "按计划将与导出相同的 .zip 上传到 S3 存储桶或兼容 S3 的存储。秘密访问密钥使用 SECRET_ENCRYPTION_KEY 加密存储。",
   "backup_s3_key_missing": "未设置 SECRET_ENCRYPTION_KEY，因此无法存储秘密访问密钥。服务器自身的 AWS 凭据（例如 IAM 角色）仍可使用。",
+  "backup_s3_destination": "目标位置",
   "backup_s3_enable": "开启计划备份",
   "backup_s3_region": "区域",
   "backup_s3_prefix_help": "归档文件存放在此前缀下的 automated/ 文件夹中。留空则使用存储桶根目录。",

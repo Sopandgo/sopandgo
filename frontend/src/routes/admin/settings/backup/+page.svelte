@@ -233,7 +233,7 @@
             {/if}
         {/snippet}
 
-        <p class="max-w-prose text-sm text-base-content/70">{m.backup_s3_help()}</p>
+        <p class="text-sm text-base-content/70">{m.backup_s3_help()}</p>
 
         {#if s3Settings && !s3Settings.encryption_key_set}
             <Alert type="info" message={m.backup_s3_key_missing()} />
@@ -328,79 +328,90 @@
                 </label>
             {/if}
 
-            <label class="flex flex-col gap-1.5">
-                <span class="text-sm font-medium">{m.backup_bucket()}</span>
-                <input
-                    type="text"
-                    name="bucket"
-                    class="input w-full font-mono"
-                    autocomplete="off"
-                    placeholder="lab-backups"
-                    value={s3Settings?.bucket ?? ''}
-                />
-            </label>
+            <!-- Three groups, each under a muted group heading with a hairline (style guide: group heading). -->
+            <div role="group" aria-labelledby="s3-destination" class="grid grid-cols-1 gap-5 border-t border-base-300 pt-5 md:col-span-2 md:grid-cols-2">
+                <h3 id="s3-destination" class="text-sm font-medium text-base-content/70 md:col-span-2">
+                    {m.backup_s3_destination()}
+                </h3>
 
-            <label class="flex flex-col gap-1.5">
-                <span class="text-sm font-medium">{m.backup_s3_region()}</span>
-                <input
-                    type="text"
-                    name="region"
-                    class="input w-full font-mono"
-                    autocomplete="off"
-                    placeholder="eu-central-1"
-                    value={s3Settings?.region ?? ''}
-                />
-            </label>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-sm font-medium">{m.backup_bucket()}</span>
+                    <input
+                        type="text"
+                        name="bucket"
+                        class="input w-full"
+                        autocomplete="off"
+                        placeholder="lab-backups"
+                        value={s3Settings?.bucket ?? ''}
+                    />
+                </label>
 
-            <label class="flex flex-col gap-1.5">
-                <span class="text-sm font-medium">{m.backup_prefix()}</span>
-                <input
-                    type="text"
-                    name="key_prefix"
-                    class="input w-full font-mono"
-                    autocomplete="off"
-                    placeholder="myorg/prod"
-                    value={s3Settings?.key_prefix ?? ''}
-                />
-                <span class="text-xs text-base-content/70">{m.backup_s3_prefix_help()}</span>
-            </label>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-sm font-medium">{m.backup_s3_region()}</span>
+                    <input
+                        type="text"
+                        name="region"
+                        class="input w-full"
+                        autocomplete="off"
+                        placeholder="eu-central-1"
+                        value={s3Settings?.region ?? ''}
+                    />
+                </label>
 
-            <label class="flex flex-col gap-1.5">
-                <span class="text-sm font-medium">{m.backup_s3_endpoint()}</span>
-                <input
-                    type="url"
-                    name="endpoint"
-                    class="input w-full font-mono"
-                    autocomplete="off"
-                    placeholder="https://minio.example.com"
-                    value={s3Settings?.endpoint ?? ''}
-                />
-                <span class="text-xs text-base-content/70">{m.backup_s3_endpoint_help()}</span>
-            </label>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-sm font-medium">{m.backup_prefix()}</span>
+                    <input
+                        type="text"
+                        name="key_prefix"
+                        class="input w-full"
+                        autocomplete="off"
+                        placeholder="myorg/prod"
+                        value={s3Settings?.key_prefix ?? ''}
+                    />
+                    <span class="text-xs text-base-content/70">{m.backup_s3_prefix_help()}</span>
+                </label>
 
-            <label class="flex w-fit cursor-pointer items-center gap-3 text-sm md:col-span-2">
-                <input
-                    type="checkbox"
-                    name="use_path_style"
-                    class="checkbox checkbox-sm checkbox-primary"
-                    checked={s3Settings?.use_path_style ?? false}
-                />
-                <span>{m.backup_s3_path_style()}</span>
-            </label>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-sm font-medium">{m.backup_s3_endpoint()}</span>
+                    <input
+                        type="url"
+                        name="endpoint"
+                        class="input w-full"
+                        autocomplete="off"
+                        placeholder="https://minio.example.com"
+                        value={s3Settings?.endpoint ?? ''}
+                    />
+                    <span class="text-xs text-base-content/70">{m.backup_s3_endpoint_help()}</span>
+                </label>
 
-            <fieldset class="grid grid-cols-1 gap-5 md:col-span-2 md:grid-cols-2">
-                <legend class="mb-1 text-sm font-medium md:col-span-2">{m.backup_s3_credentials()}</legend>
-                <p class="-mt-3 text-xs text-base-content/70 md:col-span-2">{m.backup_s3_credentials_help()}</p>
+                <label class="flex w-fit cursor-pointer items-center gap-3 text-sm md:col-span-2">
+                    <input
+                        type="checkbox"
+                        name="use_path_style"
+                        class="checkbox checkbox-sm checkbox-primary"
+                        checked={s3Settings?.use_path_style ?? false}
+                    />
+                    <span>{m.backup_s3_path_style()}</span>
+                </label>
+            </div>
+
+            <div role="group" aria-labelledby="s3-credentials" class="grid grid-cols-1 gap-5 border-t border-base-300 pt-5 md:col-span-2 md:grid-cols-2">
+                <div class="md:col-span-2">
+                    <h3 id="s3-credentials" class="text-sm font-medium text-base-content/70">{m.backup_s3_credentials()}</h3>
+                    <p class="mt-1 text-xs text-base-content/70">{m.backup_s3_credentials_help()}</p>
+                </div>
+
                 <label class="flex flex-col gap-1.5">
                     <span class="text-sm font-medium">{m.backup_s3_access_key()}</span>
                     <input
                         type="text"
                         name="access_key_id"
-                        class="input w-full font-mono"
+                        class="input w-full"
                         autocomplete="off"
                         value={s3Settings?.access_key_id ?? ''}
                     />
                 </label>
+
                 <label class="flex flex-col gap-1.5">
                     <span class="text-sm font-medium">{m.backup_s3_secret_key()}</span>
                     <input
@@ -411,10 +422,13 @@
                         placeholder={s3Settings?.secret_configured ? m.settings_keep_key() : m.common_optional()}
                     />
                 </label>
-            </fieldset>
+            </div>
 
-            <fieldset class="grid grid-cols-1 gap-5 md:col-span-2 md:grid-cols-3">
-                <legend class="mb-1 text-sm font-medium md:col-span-3">{m.backup_retention_schedule()}</legend>
+            <div role="group" aria-labelledby="s3-schedule" class="grid grid-cols-1 gap-5 border-t border-base-300 pt-5 md:col-span-2 md:grid-cols-3">
+                <h3 id="s3-schedule" class="text-sm font-medium text-base-content/70 md:col-span-3">
+                    {m.backup_retention_schedule()}
+                </h3>
+
                 <label class="flex flex-col gap-1.5">
                     <span class="text-sm font-medium">{m.backup_schedule()}</span>
                     <select name="interval" class="select w-full" value={s3Settings?.interval ?? '24h0m0s'}>
@@ -423,6 +437,7 @@
                         {/each}
                     </select>
                 </label>
+
                 <label class="flex flex-col gap-1.5">
                     <span class="text-sm font-medium">{m.backup_s3_retention_max()}</span>
                     <input
@@ -435,6 +450,7 @@
                     />
                     <span class="text-xs text-base-content/70">{m.backup_s3_retention_max_help()}</span>
                 </label>
+
                 <label class="flex flex-col gap-1.5">
                     <span class="text-sm font-medium">{m.backup_s3_retention_days()}</span>
                     <input
@@ -447,7 +463,7 @@
                     />
                     <span class="text-xs text-base-content/70">{m.backup_s3_retention_days_help()}</span>
                 </label>
-            </fieldset>
+            </div>
 
             <div
                 class="flex flex-col-reverse gap-3 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between md:col-span-2"
@@ -596,7 +612,7 @@
                     <input
                         type="text"
                         name="confirmation"
-                        class="input w-full font-mono"
+                        class="input w-full"
                         placeholder="APPLY BACKUP"
                         autocomplete="off"
                         bind:value={applyConfirmation}

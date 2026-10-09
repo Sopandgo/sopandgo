@@ -545,6 +545,7 @@
   "backup_s3_title": "Backup S3 automatici",
   "backup_s3_help": "Carica a intervalli regolari lo stesso .zip dell’esportazione in un bucket S3 o in uno storage compatibile S3. La chiave di accesso segreta viene salvata cifrata con SECRET_ENCRYPTION_KEY.",
   "backup_s3_key_missing": "SECRET_ENCRYPTION_KEY non è impostata, quindi non è possibile salvare una chiave di accesso segreta. Le credenziali AWS del server, come un ruolo IAM, funzionano comunque.",
+  "backup_s3_destination": "Destinazione",
   "backup_s3_enable": "Attiva i backup pianificati",
   "backup_s3_region": "Regione",
   "backup_s3_prefix_help": "Gli archivi finiscono in una cartella automated/ sotto questo prefisso. Lascia vuoto per la radice del bucket.",

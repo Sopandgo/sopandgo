@@ -87,4 +87,15 @@
         background-color: var(--color-base-200);
         box-shadow: none;
     }
+
+    /*
+      A default btn fills with base-200, the colour of these cards, and with --depth 0
+      its border is that fill too, so Save would read as plain text. Give default
+      buttons paper and a hairline here; ghost, primary and error keep their own look.
+    */
+    .settings-tab-panel
+        :global(> .flex > .card:not(:first-child) .btn:not(.btn-ghost, .btn-primary, .btn-error, .btn-link)) {
+        --btn-color: var(--color-base-100);
+        --btn-border: var(--color-base-300);
+    }
 </style>

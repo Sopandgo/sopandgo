@@ -545,6 +545,7 @@
   "backup_s3_title": "自動 S3 バックアップ",
   "backup_s3_help": "エクスポートと同じ .zip をスケジュールに従って S3 バケットまたは S3 互換ストレージにアップロードします。シークレットアクセスキーは SECRET_ENCRYPTION_KEY で暗号化して保存されます。",
   "backup_s3_key_missing": "SECRET_ENCRYPTION_KEY が設定されていないため、シークレットアクセスキーを保存できません。IAM ロールなど、サーバー自身の AWS 認証情報は引き続き使えます。",
+  "backup_s3_destination": "保存先",
   "backup_s3_enable": "スケジュールバックアップをオンにする",
   "backup_s3_region": "リージョン",
   "backup_s3_prefix_help": "アーカイブはこのプレフィックスの下の automated/ フォルダーに保存されます。バケットのルートにする場合は空欄にします。",
