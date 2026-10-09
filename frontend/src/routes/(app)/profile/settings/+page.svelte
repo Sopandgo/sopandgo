@@ -52,7 +52,7 @@
     {#snippet passwordCard()}
         <Card>
             <div class="card-body">
-                <h2 class="card-title mb-4 text-xs font-bold tracking-widest uppercase opacity-60">
+                <h2 class="text-lg font-semibold mb-4">
                     <KeyRoundIcon class="h-4 w-4" />
                     {m.profile_change_password()}
                 </h2>
@@ -62,14 +62,14 @@
     {/snippet}
 
     {#if mustChange}
-        <Alert variant="warning" message={m.profile_bootstrap_warning()} />
+        <Alert type="warning" message={m.profile_bootstrap_warning()} />
     {/if}
 
     <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <div class="flex flex-col gap-6 {mustChange ? 'order-2 lg:order-1' : ''}">
     <Card>
         <div class="card-body gap-4">
-            <h2 class="card-title text-xs font-bold tracking-widest uppercase opacity-60">
+            <h2 class="text-lg font-semibold">
                 <LanguagesIcon class="h-4 w-4" />
                 {m.profile_language()}
             </h2>
@@ -79,7 +79,7 @@
                 </label>
                 <LocaleSelect id="profile-locale" value={user.locale} />
                 {#if localeError}
-                    <Alert variant="error" message={m.locale_failed()} />
+                    <Alert type="error" message={m.locale_failed()} />
                 {/if}
                 <button type="submit" class="btn btn-primary w-full sm:w-auto">{m.locale_save()}</button>
             </form>
@@ -88,7 +88,7 @@
 
     <Card>
         <div class="card-body gap-4">
-            <h2 class="card-title text-xs font-bold tracking-widest uppercase opacity-60">
+            <h2 class="text-lg font-semibold">
                 <SunMoonIcon class="h-4 w-4" />
                 {m.theme_label()}
             </h2>
@@ -126,7 +126,7 @@
                     {/each}
                 </fieldset>
                 {#if themeError}
-                    <Alert variant="error" message={m.theme_failed()} />
+                    <Alert type="error" message={m.theme_failed()} />
                 {/if}
             </form>
         </div>

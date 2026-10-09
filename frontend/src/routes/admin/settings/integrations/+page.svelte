@@ -53,7 +53,7 @@
             </p>
             {#if integrations && !integrations.encryption_key_set}
                 <Alert
-                    variant="error"
+                    type="error"
                     message={m.settings_integrations_key_missing()}
                 />
             {/if}
@@ -64,16 +64,16 @@
         <div class="card-body space-y-4">
             <h2 class="card-title">{m.settings_slack()}</h2>
             {#if saveSlackResult?.error}
-                <Alert variant="error" message={saveSlackResult.error} />
+                <Alert type="error" message={saveSlackResult.error} />
             {/if}
             {#if saveSlackResult?.ok}
-                <Alert variant="success" message={m.settings_slack_saved()} />
+                <Alert type="success" message={m.settings_slack_saved()} />
             {/if}
             {#if testSlackResult?.error}
-                <Alert variant="error" message={testSlackResult.error} />
+                <Alert type="error" message={testSlackResult.error} />
             {/if}
             {#if testSlackResult?.ok}
-                <Alert variant="success" message={m.settings_slack_test_sent()} />
+                <Alert type="success" message={m.settings_slack_test_sent()} />
             {/if}
 
             <form method="POST" action="?/saveSlack" use:enhance class="grid grid-cols-1 gap-4">
@@ -92,7 +92,7 @@
                     <input
                         type="password"
                         name="webhook_url"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         autocomplete="off"
                         placeholder={integrations?.slack?.secret_configured
                             ? m.settings_keep_webhook()
@@ -117,11 +117,11 @@
                 </fieldset>
 
                 <div class="card-actions w-full flex-col sm:flex-row sm:justify-end gap-2">
-                    <button type="submit" class="btn btn-primary w-full sm:w-auto">{m.settings_save_slack()}</button>
+                    <button type="submit" class="btn w-full sm:w-auto">{m.settings_save_slack()}</button>
                 </div>
             </form>
             <form method="POST" action="?/testSlack" use:enhance>
-                <button type="submit" class="btn btn-secondary btn-sm">{m.common_send_test()}</button>
+                <button type="submit" class="btn btn-sm">{m.common_send_test()}</button>
             </form>
         </div>
     </Card>
@@ -130,16 +130,16 @@
         <div class="card-body space-y-4">
             <h2 class="card-title">{m.settings_gotify()}</h2>
             {#if saveGotifyResult?.error}
-                <Alert variant="error" message={saveGotifyResult.error} />
+                <Alert type="error" message={saveGotifyResult.error} />
             {/if}
             {#if saveGotifyResult?.ok}
-                <Alert variant="success" message={m.settings_gotify_saved()} />
+                <Alert type="success" message={m.settings_gotify_saved()} />
             {/if}
             {#if testGotifyResult?.error}
-                <Alert variant="error" message={testGotifyResult.error} />
+                <Alert type="error" message={testGotifyResult.error} />
             {/if}
             {#if testGotifyResult?.ok}
-                <Alert variant="success" message={m.settings_gotify_test_sent()} />
+                <Alert type="success" message={m.settings_gotify_test_sent()} />
             {/if}
 
             <form method="POST" action="?/saveGotify" use:enhance class="grid grid-cols-1 gap-4">
@@ -158,7 +158,7 @@
                     <input
                         type="url"
                         name="url"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         autocomplete="off"
                         placeholder="https://gotify.example.com"
                         value={integrations?.gotify?.url ?? ''}
@@ -170,7 +170,7 @@
                     <input
                         type="password"
                         name="token"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         autocomplete="off"
                         placeholder={integrations?.gotify?.secret_configured
                             ? m.settings_keep_token()
@@ -195,11 +195,11 @@
                 </fieldset>
 
                 <div class="card-actions w-full flex-col sm:flex-row sm:justify-end">
-                    <button type="submit" class="btn btn-primary w-full sm:w-auto">{m.settings_save_gotify()}</button>
+                    <button type="submit" class="btn w-full sm:w-auto">{m.settings_save_gotify()}</button>
                 </div>
             </form>
             <form method="POST" action="?/testGotify" use:enhance>
-                <button type="submit" class="btn btn-secondary btn-sm">{m.common_send_test()}</button>
+                <button type="submit" class="btn btn-sm">{m.common_send_test()}</button>
             </form>
         </div>
     </Card>
@@ -213,16 +213,16 @@
                 <code class="text-xs">message</code>{m.settings_webhook_mid()} <code class="text-xs">-</code> {m.settings_webhook_tail()}
             </p>
             {#if saveWebhookResult?.error}
-                <Alert variant="error" message={saveWebhookResult.error} />
+                <Alert type="error" message={saveWebhookResult.error} />
             {/if}
             {#if saveWebhookResult?.ok}
-                <Alert variant="success" message={m.settings_webhook_saved()} />
+                <Alert type="success" message={m.settings_webhook_saved()} />
             {/if}
             {#if testWebhookResult?.error}
-                <Alert variant="error" message={testWebhookResult.error} />
+                <Alert type="error" message={testWebhookResult.error} />
             {/if}
             {#if testWebhookResult?.ok}
-                <Alert variant="success" message={m.settings_webhook_test_sent()} />
+                <Alert type="success" message={m.settings_webhook_test_sent()} />
             {/if}
 
             <form method="POST" action="?/saveWebhook" use:enhance class="grid grid-cols-1 gap-4">
@@ -241,7 +241,7 @@
                     <input
                         type="url"
                         name="url"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         autocomplete="off"
                         placeholder="https://example.com/hooks/sopandgo"
                         value={integrations?.webhook?.url ?? ''}
@@ -253,7 +253,7 @@
                     <input
                         type="password"
                         name="bearer_token"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         autocomplete="off"
                         placeholder={integrations?.webhook?.secret_configured
                             ? m.settings_keep_or_clear()
@@ -278,11 +278,11 @@
                 </fieldset>
 
                 <div class="card-actions w-full flex-col sm:flex-row sm:justify-end">
-                    <button type="submit" class="btn btn-primary w-full sm:w-auto">{m.settings_save_webhook()}</button>
+                    <button type="submit" class="btn w-full sm:w-auto">{m.settings_save_webhook()}</button>
                 </div>
             </form>
             <form method="POST" action="?/testWebhook" use:enhance>
-                <button type="submit" class="btn btn-secondary btn-sm">{m.common_send_test()}</button>
+                <button type="submit" class="btn btn-sm">{m.common_send_test()}</button>
             </form>
         </div>
     </Card>

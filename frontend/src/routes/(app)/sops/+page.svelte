@@ -93,7 +93,7 @@
         </span>
       </div>
 
-      <div class="card-actions justify-end pt-4 border-t border-base-200">
+      <div class="card-actions justify-end pt-4 border-t border-base-300">
         {#if ['admin', 'approver', 'editor'].includes(data.user!.role)}
           <a href="/sops/new" class="btn btn-primary ml-2">
             <PlusIcon class="w-5 h-5" />
@@ -106,22 +106,22 @@
 
   <Card>
     <div class="card-body">
-      <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
+      <span class="text-sm font-medium text-base-content/70">
         {m.sops_search_filters()}
       </span>
 
-      <div class="flex flex-col gap-3 pt-4 border-t border-base-200">
+      <div class="flex flex-col gap-3 pt-4 border-t border-base-300">
         <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
           <div class="join w-full md:w-auto">
             <input
               type="text"
               placeholder={m.sops_search_placeholder()}
-              class="input input-bordered join-item flex-1 md:w-80"
+              class="input join-item flex-1 md:w-80"
               bind:value={searchTerm}
               onkeydown={(e) => e.key === 'Enter' && handleSearch()}
             />
             <button
-              class="btn btn-primary join-item"
+              class="btn join-item"
               onclick={handleSearch}
               aria-label={m.sops_submit_search()}
             >
@@ -141,8 +141,8 @@
           {/if}
         </div>
 
-          <div class="flex flex-col gap-2 pt-2 border-t border-base-200/80">
-            <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
+          <div class="flex flex-col gap-2 pt-2 border-t border-base-300">
+            <span class="text-sm font-medium text-base-content/70">
               {m.common_favorites()}
             </span>
             <div class="flex flex-wrap gap-3">
@@ -171,7 +171,7 @@
 
           <div class="flex flex-col gap-2">
           <div class="flex items-center justify-between">
-            <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
+            <span class="text-sm font-medium text-base-content/70">
               {m.common_tags()}
             </span>
 
@@ -192,9 +192,7 @@
               <button
                 type="button"
                 onclick={() => toggleTag(t.id)}
-                class="badge badge-sm cursor-pointer hover:badge-outline transition-all {activeTagId === t.id
-                  ? 'badge-primary'
-                  : 'badge-ghost opacity-70'}"
+                class="badge badge-sm cursor-pointer {activeTagId === t.id ? 'badge-soft badge-primary' : 'badge-outline'}"
                 aria-pressed={activeTagId === t.id}
                 aria-label={m.sops_filter_tag({ title: t.title })}
                 title={activeTagId === t.id ? m.sops_click_remove() : m.sops_click_filter()}
@@ -202,7 +200,7 @@
                 {t.title}
               </button>
             {:else}
-              <span class="text-sm opacity-60">{m.sops_no_tags()}</span>
+              <span class="text-sm text-base-content/70">{m.sops_no_tags()}</span>
             {/each}
           </div>
         </div>

@@ -65,7 +65,7 @@
             </CardPageHeading>
 
             <p class="text-sm text-base-content/70">{m.integrity_admin_intro()}</p>
-            <p class="text-xs text-base-content/50">{m.integrity_admin_note()}</p>
+            <p class="text-xs text-base-content/70">{m.integrity_admin_note()}</p>
 
             <form
                 method="POST"
@@ -93,19 +93,19 @@
     </Card>
 
     {#if form?.error}
-        <Alert variant="warning" message={form.error} />
+        <Alert type="warning" message={form.error} />
     {/if}
 
     {#if report}
         <div aria-live="polite" class="flex flex-col gap-6">
             <Alert
-                variant={report.ok ? 'success' : 'error'}
+                type={report.ok ? 'success' : 'error'}
                 message={`${report.ok ? m.integrity_admin_ok() : m.integrity_admin_failed()} ${m.integrity_admin_checked_at({
                     when: new Date(report.checked_at).toLocaleString(getLocale())
                 })}`}
             />
 
-            <div class="stats stats-vertical sm:stats-horizontal shadow-sm border border-base-300 bg-base-100 w-full">
+            <div class="stats stats-vertical sm:stats-horizontal border border-base-300 bg-base-100 w-full">
                 {#each sections as section (section.label)}
                     <div class="stat">
                         <div class="stat-title">{section.label}</div>
@@ -120,10 +120,7 @@
             </div>
 
             {#if failures.length > 0}
-                <Card>
-                    <div class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold border-b border-base-200/50">
-                        {m.integrity_admin_failures()}
-                    </div>
+                <Card title={m.integrity_admin_failures()}>
                     <div class="overflow-x-auto">
                         <table class="table table-sm">
                             <thead>

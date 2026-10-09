@@ -24,10 +24,10 @@ export function themeCookieAssignment(theme: 'light' | 'dark', secure: boolean):
 	return `${themeCookieName}=${theme}; Path=/; Max-Age=${themeCookieMaxAge}; SameSite=Lax${secureAttr}`;
 }
 
-/** DaisyUI theme name. Null follows the system color scheme. */
-export function daisyTheme(theme: string): 'corporate' | 'business' | null {
-	if (theme === 'light') return 'corporate';
-	if (theme === 'dark') return 'business';
+/** DaisyUI theme name (see layout.css). Null follows the system color scheme. */
+export function daisyTheme(theme: string): 'sop-light' | 'sop-dark' | null {
+	if (theme === 'light') return 'sop-light';
+	if (theme === 'dark') return 'sop-dark';
 	return null;
 }
 

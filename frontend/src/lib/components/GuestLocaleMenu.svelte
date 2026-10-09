@@ -30,7 +30,7 @@
         <span class="max-w-32 truncate">{languageName(current)}</span>
     </div>
     <ul
-        class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 max-h-80 w-52 overflow-y-auto p-2 shadow"
+        class="menu dropdown-content bg-base-100 rounded-box z-10 mt-3 max-h-80 w-52 overflow-y-auto p-2 shadow-overlay"
         role="menu"
     >
         {#each locales as tag (tag)}

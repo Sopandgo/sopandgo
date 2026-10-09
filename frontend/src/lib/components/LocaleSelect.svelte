@@ -38,7 +38,7 @@
 <select
     {id}
     name={mode === 'field' ? name : undefined}
-    class="select select-bordered w-full"
+    class="select w-full"
     {disabled}
     onchange={onChange}
 >

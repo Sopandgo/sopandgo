@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ChevronRightIcon,
-    NotebookIcon,
+    FileTextIcon,
     ChevronLeftIcon,
     StarIcon
   } from 'lucide-svelte';
@@ -56,31 +56,27 @@
   }
 </script>
 
-<Card>
+<Card title={m.sops_results({ shown: String(sops.length), total: String(total) })}>
   <ul class="list">
-    <li class="p-4 pb-2 flex justify-between items-center border-b border-base-200">
-      <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
-        {m.sops_results({ shown: String(sops.length), total: String(total) })}
-      </span>
-    </li>
 
     {#each sops as sop (sop.id)}
       <ListRow
         href={rowHref(sop.id)}
         title={sop.title}
         linkLabel={m.sops_view_latest({ title: sop.title })}
-        meta={m.sops_id_date({ id: sop.id, date: new Date(sop.created_at).toLocaleDateString(getLocale()) })}
-        icon={NotebookIcon}
-        iconTone="secondary"
+        icon={FileTextIcon}
       >
+        {#snippet meta()}
+          <span class="font-mono" title={sop.id}>{sop.id.slice(0, 8)}</span>
+          · {new Date(sop.created_at).toLocaleDateString(getLocale())}
+        {/snippet}
         {#snippet metaExtra()}
           {#each sop.tags as tag (tag.id)}
             <button
               type="button"
               onclick={() => onTagClick(tag.id)}
-              class="badge badge-sm relative z-10 cursor-pointer hover:badge-outline transition-all {activeFilters.tag_id === tag.id
-                ? 'badge-primary'
-                : 'badge-ghost opacity-70'}"
+              class="badge badge-sm relative z-10 cursor-pointer {activeFilters.tag_id === tag.id ? 'badge-soft badge-primary' : 'badge-outline'}"
+              aria-pressed={activeFilters.tag_id === tag.id}
               aria-label={m.sops_filter_tag({ title: tag.title })}
             >
               {tag.title}
@@ -94,10 +90,11 @@
               <input type="hidden" name="sop_id" value={sop.id} />
               <button
                 type="submit"
-                class="btn btn-square btn-ghost btn-sm lg:btn-md text-warning"
+                class="btn btn-square btn-ghost btn-sm"
                 aria-label={m.aria_remove_favorite({ title: sop.title })}
+                title={m.aria_remove_favorite({ title: sop.title })}
               >
-                <StarIcon size={20} class="fill-current" />
+                <StarIcon class="size-4 fill-accent" aria-hidden="true" />
               </button>
             </form>
           {:else}
@@ -105,32 +102,23 @@
               <input type="hidden" name="sop_id" value={sop.id} />
               <button
                 type="submit"
-                class="btn btn-square btn-ghost btn-sm lg:btn-md opacity-70 hover:opacity-100"
+                class="btn btn-square btn-ghost btn-sm"
                 aria-label={m.aria_add_favorite({ title: sop.title })}
+                title={m.aria_add_favorite({ title: sop.title })}
               >
-                <StarIcon size={20} />
+                <StarIcon class="size-4" aria-hidden="true" />
               </button>
             </form>
           {/if}
-
-          <a
-            href={rowHref(sop.id)}
-            class="btn btn-square btn-ghost btn-sm lg:btn-md"
-            aria-label={m.sops_open({ title: sop.title })}
-          >
-            <ChevronRightIcon />
-          </a>
         {/snippet}
       </ListRow>
     {:else}
-      <li class="p-12 text-center">
-        <div class="text-sm opacity-40">{m.sops_empty()}</div>
-      </li>
+      <li class="p-6 text-sm text-base-content/70">{m.sops_empty()}</li>
     {/each}
   </ul>
 
   {#if totalPages > 1}
-    <nav class="p-4 flex justify-center border-t border-base-200 bg-base-100/50" aria-label={m.sops_pagination()}>
+    <nav class="flex justify-center border-t border-base-300 p-4" aria-label={m.sops_pagination()}>
       <div class="join">
         <button
           class="join-item btn btn-sm"

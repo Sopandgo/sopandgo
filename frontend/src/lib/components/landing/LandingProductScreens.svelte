@@ -26,14 +26,14 @@
 
 <section class="space-y-6" aria-labelledby="landing-previews-heading">
 	<div class="max-w-2xl space-y-2">
-		<h2 id="landing-previews-heading" class="text-2xl font-bold">{m.landing_inside()}</h2>
+		<h2 id="landing-previews-heading" class="text-2xl font-semibold">{m.landing_inside()}</h2>
 		<p class="text-base-content/70 text-sm md:text-base">
 			{m.landing_inside_body()}
 		</p>
 	</div>
 	<div class="grid gap-8 lg:grid-cols-3">
 		{#each shots as item, i (item.src)}
-			<Card as="figure" variant="flat" bordered={false}>
+			<Card as="figure">
 				<div class="bg-base-200/80 border-base-300 border-b p-2">
 					<img
 						src={item.src}

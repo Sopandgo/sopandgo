@@ -2,4 +2,4 @@
     let { id }: { id: string } = $props();
 </script>
 
-<div class="badge badge-ghost">{id}</div>
+<span class="font-mono text-xs text-base-content/70">{id}</span>

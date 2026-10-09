@@ -10,24 +10,17 @@
 
     let { user, rail = false } = $props();
 
-    function roleBadge(role: UserRole): { label: string; tone: string } {
-        switch (role) {
-            case 'admin':
-                return { label: m.role_admin(), tone: 'badge-error' };
-            case 'auditor':
-                return { label: m.role_auditor(), tone: 'badge-info' };
-            case 'editor':
-                return { label: m.role_editor(), tone: 'badge-ghost' };
-            case 'approver':
-                return { label: m.role_approver(), tone: 'badge-ghost' };
-            case 'viewer':
-                return { label: m.role_viewer(), tone: 'badge-ghost' };
-        }
-    }
+    const roleLabels: Record<UserRole, () => string> = {
+        admin: m.role_admin,
+        auditor: m.role_auditor,
+        editor: m.role_editor,
+        approver: m.role_approver,
+        viewer: m.role_viewer
+    };
 </script>
 
 <div
-    class="navbar sticky top-0 z-30 bg-base-100 shadow-sm"
+    class="navbar sticky top-0 z-30 border-b border-base-300 bg-base-100"
     class:navbar-guest={!user}
     class:navbar-app={!!user}
 >
@@ -55,21 +48,18 @@
             {#if user}
                 {@render roleChip(user.role)}
                 <div class="dropdown dropdown-end">
-                    <div
-                        tabindex="0"
-                        role="button"
-                        class="btn btn-ghost btn-circle avatar avatar-placeholder"
+                    <!-- Plain button around the avatar; it keeps the global focus ring. -->
+                    <button
+                        type="button"
+                        class="flex cursor-pointer rounded-full"
+                        aria-label={user.display_name}
+                        title={user.display_name}
                     >
-                        {#if user.role === 'admin'}
-                            <Avatar displayName={user.display_name} color="error" size="md" />
-                        {:else}
-                            <Avatar displayName={user.display_name} color="secondary" size="md" />
-
-                        {/if}
-                    </div>
+                        <Avatar displayName={user.display_name} size="md" />
+                    </button>
 
                     <ul
-                        class="menu menu-sm dropdown-content bg-base-100 rounded-box z-10 mt-3 w-52 p-2 shadow"
+                        class="menu menu-sm dropdown-content z-10 mt-3 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-overlay"
                     >
                         <li>
                             <a href={resolve('/profile')} class="w-full text-left flex gap-4 items-center">
@@ -90,9 +80,9 @@
                             <form action="/logout" method="POST" use:enhance class="w-full">
                                 <button 
                                     type="submit" 
-                                    class="text-error w-full font-bold text-left flex gap-4 items-center"
+                                    class="flex w-full items-center gap-4 text-left"
                                 >
-                                    <LogOutIcon size={16} strokeWidth={3}/>
+                                    <LogOutIcon size={16} />
                                     {m.nav_logout()}
                                 </button>
                             </form>
@@ -102,7 +92,7 @@
             {:else}
                 <GuestThemeToggle />
                 <GuestLocaleMenu />
-                <a href={resolve('/login')} class="btn btn-primary shrink-0">
+                <a href={resolve('/login')} class="btn shrink-0">
                     {m.nav_login()}
                 </a>
             {/if}
@@ -112,13 +102,7 @@
 
 {#snippet logo()}
     <a href={resolve('/')} class="flex min-w-0 flex-1 items-center gap-4">
-        <div
-            tabindex="0"
-            role="button"
-            class="btn btn-ghost btn-circle avatar avatar-placeholder shrink-0"
-        >
-            <img src="/favicon.svg" alt={m.page_home()} />
-        </div>
+        <img src="/favicon.svg" alt={m.page_home()} class="size-8 shrink-0" />
         <span class="min-w-0 truncate font-semibold">
             SOP and GO
         </span>
@@ -156,6 +140,5 @@
 </style>
 
 {#snippet roleChip(role: UserRole)}
-    {@const badge = roleBadge(role)}
-    <div class="badge badge-sm shrink-0 {badge.tone}">{badge.label}</div>
+    <span class="badge badge-outline badge-sm shrink-0">{roleLabels[role]()}</span>
 {/snippet}

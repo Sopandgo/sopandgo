@@ -14,18 +14,14 @@
     let assets = $derived(items ?? []);
 </script>
 
-<Card>
+<Card title={m.assets_count({ count: String(assets.length) })}>
     <ul class="list">
-        <li class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold border-b border-base-200/50">
-            {m.assets_count({ count: String(assets.length) })}
-        </li>
 
         {#each assets as asset (asset.id)}
             <ListRow
                 title={asset.file_name}
                 meta={m.assets_uploaded({ when: new Date(asset.created_at).toLocaleString(getLocale()) })}
                 icon={PaperclipIcon}
-                iconTone="plain"
             >
                 {#snippet trailing()}
                     <IntegrityCheck kind="asset" id={asset.id} />
@@ -37,14 +33,12 @@
                         title={m.assets_open_title()}
                         aria-label={m.assets_open_aria()}
                     >
-                        <ExternalLinkIcon size={18} class="opacity-70"/>
+                        <ExternalLinkIcon class="size-4" aria-hidden="true" />
                     </a>
                 {/snippet}
             </ListRow>
         {:else}
-            <li class="p-12 text-center">
-                <div class="text-sm opacity-40">{m.assets_empty()}</div>
-            </li>
+            <li class="p-6 text-sm text-base-content/70">{m.assets_empty()}</li>
         {/each}
     </ul>
 </Card>

@@ -2,6 +2,7 @@
     import { enhance } from '$app/forms';
     import type { User } from '$lib/sdk/types';
     import Alert from '$lib/components/Alert.svelte';
+    import Card from '$lib/components/Card.svelte';
     import { BanIcon } from 'lucide-svelte';
     import * as m from '$lib/paraglide/messages.js';
 
@@ -23,13 +24,9 @@
     let loading = $state(false);
 </script>
 
-<div class="bg-base-100 rounded-box shadow-md border border-error w-full">
-
-    <div class="p-4 pb-2 text-xs tracking-widest uppercase font-bold text-error">
-        {m.ack_reject_title()}
-    </div>
+<Card title={m.ack_reject_title()} class="w-full">
     <div class="card-body">
-        <p class="text-sm opacity-70">
+        <p class="text-sm text-base-content/70">
             {m.ack_reject_body()}
         </p>
 
@@ -45,7 +42,7 @@
             }}
         >
             {#if form?.error}
-                <Alert variant="error" message={form.error} />
+                <Alert type="error" message={form.error} />
             {/if}
 
             <div class="form-control w-full my-4">
@@ -56,7 +53,7 @@
                     id="reason"
                     name="reason"
                     type="text"
-                    class="input input-bordered w-full mt-4 {form?.error ? 'input-error' : ''}"
+                    class="input w-full mt-4 {form?.error ? 'input-error' : ''}"
                     placeholder={m.ack_reject_placeholder()}
                     value={form?.inputName ?? ''} 
                     required
@@ -65,16 +62,16 @@
             </div>
 
             <div class="card-actions justify-end">
-                <button class="btn btn-error" disabled={loading}>
+                <button class="btn text-error" disabled={loading}>
                     {#if loading}
                         <span class="loading loading-spinner loading-xs"></span>
                         {m.ack_rejecting()}
                     {:else}
-                        <BanIcon class="w-4 h-4" />
+                        <BanIcon class="size-4" />
                         {m.ack_reject_button()}
                     {/if}
                 </button>
             </div>
         </form>
     </div>
-</div>
+</Card>

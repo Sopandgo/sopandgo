@@ -2,6 +2,8 @@
     export interface ComboboxOption {
         value: string;
         label: string;
+        /** Secondary text shown after the label, e.g. a role. */
+        hint?: string;
         /** Extra text to match against (ids, emails, raw keys). */
         keywords?: string[];
     }
@@ -63,7 +65,7 @@
         const q = searching ? query.trim().toLowerCase() : '';
         const found = q
             ? options.filter((o) =>
-                  [o.label, o.value, ...(o.keywords ?? [])].some((text) => text.toLowerCase().includes(q))
+                  [o.label, o.value, o.hint ?? '', ...(o.keywords ?? [])].some((text) => text.toLowerCase().includes(q))
               )
             : options;
         return found.slice(0, limit);
@@ -114,9 +116,13 @@
                 }
                 break;
             case 'Escape':
+                // First Escape closes the list; a second one clears the selection.
                 if (open) {
                     event.preventDefault();
                     close();
+                } else if (value) {
+                    event.preventDefault();
+                    choose('');
                 }
                 break;
         }
@@ -142,7 +148,7 @@
     <div class="relative">
         <input
             {id}
-            class="input input-bordered w-full {value ? 'pr-16' : ''}"
+            class="input w-full {value ? 'pr-16' : ''}"
             role="combobox"
             autocomplete="off"
             aria-autocomplete="list"
@@ -173,7 +179,7 @@
             id={listId}
             role="listbox"
             aria-label={label}
-            class="menu absolute z-20 mt-1 max-h-72 w-full flex-nowrap overflow-y-auto rounded-box border border-base-300 bg-base-100 shadow-lg"
+            class="menu absolute z-20 mt-1 max-h-72 w-full flex-nowrap overflow-y-auto rounded-box border border-base-300 bg-base-100 shadow-overlay"
             hidden={!open}
         >
             {#each entries as entry, index (entry.value)}
@@ -189,14 +195,19 @@
                     onmousedown={(e) => e.preventDefault()}
                     onclick={() => choose(entry.value)}
                 >
-                    <span class="block w-full truncate {index === activeIndex ? 'menu-active' : ''} {index === 0 ? '' : 'font-medium'}">
-                        {entry.label}
+                    <span
+                        class="flex w-full items-center gap-2 rounded-field text-sm {entry.value === value ? 'bg-primary/10' : ''} {index === activeIndex ? 'outline-2 -outline-offset-2 outline-primary' : ''}"
+                    >
+                        <span class="truncate">{entry.label}</span>
+                        {#if 'hint' in entry && entry.hint}
+                            <span class="ml-auto shrink-0 text-xs text-base-content/70">{entry.hint}</span>
+                        {/if}
                     </span>
                 </li>
             {/each}
             {#if matches.length === 0}
                 <li role="option" aria-disabled="true" aria-selected="false">
-                    <span class="pointer-events-none text-xs opacity-60">{emptyLabel}</span>
+                    <span class="pointer-events-none text-sm text-base-content/70">{emptyLabel}</span>
                 </li>
             {/if}
         </ul>

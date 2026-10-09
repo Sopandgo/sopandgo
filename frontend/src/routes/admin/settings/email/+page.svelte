@@ -38,17 +38,17 @@
             </p>
 
             {#if saveModeResult?.error}
-                <Alert variant='error' message={saveModeResult.error}/>
+                <Alert type='error' message={saveModeResult.error}/>
             {/if}
             {#if saveModeResult?.ok}
-                <Alert variant='success' message={m.settings_mail_mode_saved()}/>
+                <Alert type='success' message={m.settings_mail_mode_saved()}/>
             {/if}
 
             {#if saveTransportResult?.error}
-                <Alert variant='error' message={saveTransportResult.error}/>
+                <Alert type='error' message={saveTransportResult.error}/>
             {/if}
             {#if saveTransportResult?.ok}
-                <Alert variant='success' message={m.settings_transport_saved()}/>
+                <Alert type='success' message={m.settings_transport_saved()}/>
             {/if}
 
             <form method="POST" action="?/saveTransport" use:enhance class="">
@@ -56,7 +56,7 @@
                     <span class="label-text">{m.settings_transport()}</span>
                     <select
                         name="mail_transport"
-                        class="select select-bordered w-full"
+                        class="select w-full"
                         value={saveTransportResult?.transport ?? smtp?.mail_transport ?? 'smtp'}
                     >
                         <option value="smtp">{m.settings_transport_smtp()}</option>
@@ -64,7 +64,7 @@
                     </select>
                 </label>
                 <div class="card-actions mt-4 w-full flex-col sm:flex-row sm:justify-end">
-                    <button type="submit" class="btn btn-primary w-full sm:w-auto">{m.settings_save_transport()}</button>
+                    <button type="submit" class="btn w-full sm:w-auto">{m.settings_save_transport()}</button>
                 </div>
             </form>
 
@@ -73,7 +73,7 @@
                     <span class="label-text">{m.settings_mail_mode()}</span>
                     <select
                         name="mail_mode"
-                        class="select select-bordered w-full"
+                        class="select w-full"
                         value={saveModeResult?.mode ?? smtp?.mail_mode ?? 'smtp'}
                     >
                         <option value="smtp">{m.settings_mode_smtp()}</option>
@@ -81,7 +81,7 @@
                     </select>
                 </label>
                 <div class="card-actions mt-4 w-full flex-col sm:flex-row sm:justify-end">
-                    <button type="submit" class="btn btn-primary w-full sm:w-auto">{m.settings_save_mode()}</button>
+                    <button type="submit" class="btn w-full sm:w-auto">{m.settings_save_mode()}</button>
                 </div>
             </form>
         </div>
@@ -95,10 +95,10 @@
             </p>
 
             {#if saveResendResult?.error}
-                <Alert variant='error' message={saveResendResult.error}/>
+                <Alert type='error' message={saveResendResult.error}/>
             {/if}
             {#if saveResendResult?.ok}
-                <Alert variant='success' message={m.settings_resend_saved()}/>
+                <Alert type='success' message={m.settings_resend_saved()}/>
             {/if}
 
             <form method="POST" action="?/saveResend" use:enhance class="grid grid-cols-1 gap-4">
@@ -107,7 +107,7 @@
                     <input
                         type="text"
                         name="resend_from_address"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         required
                         autocomplete="off"
                         placeholder="onboarding@resend.dev"
@@ -120,14 +120,14 @@
                     <input
                         type="password"
                         name="resend_api_key"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         autocomplete="new-password"
                         placeholder={smtp?.resend_api_key_configured ? m.settings_keep_key() : m.common_required()}
                     />
                 </label>
 
                 <div class="card-actions w-full flex-col sm:flex-row sm:justify-end">
-                    <button type="submit" class="btn btn-primary w-full sm:w-auto">{m.settings_save_resend()}</button>
+                    <button type="submit" class="btn w-full sm:w-auto">{m.settings_save_resend()}</button>
                 </div>
             </form>
         </div>
@@ -138,18 +138,18 @@
             <h2 class="card-title">{m.settings_smtp()}</h2>
 
             {#if smtp && !smtp.encryption_key_set}
-                <Alert variant='error' message={m.settings_encryption_missing()}/>
+                <Alert type='error' message={m.settings_encryption_missing()}/>
             {/if}
 
             {#if smtp?.mail_mode === 'manual_links'}
-                <Alert variant='info' message={m.settings_manual_active()}/>
+                <Alert type='info' message={m.settings_manual_active()}/>
             {/if}
 
             {#if saveResult?.error}
-                <Alert variant='error' message={saveResult.error}/>
+                <Alert type='error' message={saveResult.error}/>
             {/if}
             {#if saveResult?.ok}
-                <Alert variant='success' message={m.settings_smtp_saved()}/>
+                <Alert type='success' message={m.settings_smtp_saved()}/>
             {/if}
 
             <form
@@ -163,7 +163,7 @@
                     <input
                         type="text"
                         name="host"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         required
                         autocomplete="off"
                         value={form?.values?.host ?? smtp?.host ?? ''}
@@ -175,7 +175,7 @@
                     <input
                         type="text"
                         name="port"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         required
                         placeholder="587"
                         value={form?.values?.port ?? smtp?.port ?? '587'}
@@ -187,7 +187,7 @@
                     <input
                         type="text"
                         name="from_address"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         required
                         autocomplete="off"
                         placeholder="no-reply@yourcompany.com"
@@ -200,7 +200,7 @@
                     <input
                         type="text"
                         name="username"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         required
                         autocomplete="username"
                         value={form?.values?.username ?? smtp?.username ?? ''}
@@ -212,14 +212,14 @@
                     <input
                         type="password"
                         name="password"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         autocomplete="new-password"
                         placeholder={smtp?.password_configured ? m.settings_keep_password() : m.common_required()}
                     />
                 </label>
 
                 <div class="card-actions col-span-2 w-full flex-col sm:flex-row sm:justify-end">
-                    <button type="submit" class="btn btn-primary w-full sm:w-auto">{m.common_save()}</button>
+                    <button type="submit" class="btn w-full sm:w-auto">{m.common_save()}</button>
                 </div>
             </form>
 
@@ -231,10 +231,10 @@
             <h2 class="card-title">{m.settings_test_delivery()}</h2>
 
             {#if testResult?.error}
-                <Alert variant='error' message={testResult.error}/>
+                <Alert type='error' message={testResult.error}/>
             {/if}
             {#if testResult?.ok}
-                <Alert variant='success' message={m.settings_test_sent()}/>
+                <Alert type='success' message={m.settings_test_sent()}/>
             {/if}
 
             <form method="POST" action="?/test" use:enhance class="flex flex-col sm:flex-row gap-4 sm:items-end">
@@ -243,11 +243,11 @@
                     <input
                         type="email"
                         name="test_to"
-                        class="input input-bordered w-full"
+                        class="input w-full"
                         placeholder="you@example.com"
                     />
                 </label>
-                <button type="submit" class="btn btn-secondary w-full shrink-0 sm:w-auto">{m.common_send_test()}</button>
+                <button type="submit" class="btn w-full shrink-0 sm:w-auto">{m.common_send_test()}</button>
             </form>
         </div>
     </Card>

@@ -4,14 +4,14 @@
 </script>
 
 <section class="space-y-4" aria-labelledby="landing-fit-heading">
-	<h2 id="landing-fit-heading" class="text-2xl font-bold">{m.landing_fit()}</h2>
+	<h2 id="landing-fit-heading" class="text-2xl font-semibold">{m.landing_fit()}</h2>
 	<p class="text-base-content/80 max-w-3xl text-sm leading-relaxed md:text-base">
 		{m.landing_fit_body()}
 	</p>
 </section>
 
 <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-4" aria-label={m.landing_pillars()}>
-	<Card variant="flat" class="border-base-300">
+	<Card>
 		<div class="card-body">
 			<h3 class="card-title text-base">{m.landing_simple()}</h3>
 			<p class="text-base-content/70 text-sm">
@@ -19,7 +19,7 @@
 			</p>
 		</div>
 	</Card>
-	<Card variant="flat" class="border-base-300">
+	<Card>
 		<div class="card-body">
 			<h3 class="card-title text-base">{m.landing_control()}</h3>
 			<p class="text-base-content/70 text-sm">
@@ -27,7 +27,7 @@
 			</p>
 		</div>
 	</Card>
-	<Card variant="flat" class="border-base-300">
+	<Card>
 		<div class="card-body">
 			<h3 class="card-title text-base">{m.landing_trace()}</h3>
 			<p class="text-base-content/70 text-sm">
@@ -35,7 +35,7 @@
 			</p>
 		</div>
 	</Card>
-	<Card variant="flat" class="border-base-300">
+	<Card>
 		<div class="card-body">
 			<h3 class="card-title text-base">{m.landing_deploy()}</h3>
 			<p class="text-base-content/70 text-sm">
@@ -45,7 +45,7 @@
 	</Card>
 </section>
 
-<Card as="section" variant="flat" class="border-base-300" aria-labelledby="landing-security-heading">
+<Card as="section" aria-labelledby="landing-security-heading">
 	<div class="card-body gap-4">
 		<h2 id="landing-security-heading" class="card-title text-xl">{m.landing_security()}</h2>
 		<p class="text-base-content/80 text-sm md:text-base">
@@ -69,7 +69,7 @@
 	</div>
 </Card>
 
-<Card as="section" variant="inset" class="border-base-300" aria-labelledby="landing-data-heading">
+<Card as="section" aria-labelledby="landing-data-heading">
 	<div class="card-body gap-3">
 		<h2 id="landing-data-heading" class="card-title text-xl">{m.landing_data()}</h2>
 		<p class="text-base-content/80 text-sm md:text-base">
@@ -88,7 +88,7 @@
 </Card>
 
 <section class="space-y-4" aria-labelledby="landing-features-heading">
-	<h2 id="landing-features-heading" class="text-2xl font-bold">{m.landing_capabilities()}</h2>
+	<h2 id="landing-features-heading" class="text-2xl font-semibold">{m.landing_capabilities()}</h2>
 	<p class="text-base-content/70 max-w-3xl text-sm md:text-base">
 			{m.landing_capabilities_body()}
 		</p>
@@ -112,7 +112,7 @@
 </section>
 
 <section
-	class="rounded-box border-base-300 bg-base-100 flex flex-col gap-3 border p-6 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+	class="rounded-box border-base-300 bg-base-100 flex flex-col gap-3 border p-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
 	aria-label={m.landing_docs_aria()}
 >
 	<p class="text-base-content/80 m-0 max-w-xl text-sm">
@@ -120,28 +120,28 @@
 	</p>
 	<div class="flex flex-wrap gap-2">
 		<a
-			class="btn btn-sm btn-outline"
+			class="btn btn-sm"
 			href="https://github.com/Sopandgo/sopandgo/blob/main/docs/ops/evaluating.md"
 			rel="noreferrer"
 			target="_blank"
 			>{m.landing_docs_evaluating()}</a
 		>
 		<a
-			class="btn btn-sm btn-outline"
+			class="btn btn-sm"
 			href="https://github.com/Sopandgo/sopandgo/blob/main/docs/dev/architecture.md"
 			rel="noreferrer"
 			target="_blank"
 			>{m.landing_docs_architecture()}</a
 		>
 		<a
-			class="btn btn-sm btn-outline"
+			class="btn btn-sm"
 			href="https://github.com/Sopandgo/sopandgo/blob/main/docs/ops/deployment.md"
 			rel="noreferrer"
 			target="_blank"
 			>{m.landing_docs_deployment()}</a
 		>
 		<a
-			class="btn btn-sm btn-outline"
+			class="btn btn-sm"
 			href="https://github.com/Sopandgo/sopandgo/blob/main/README.md"
 			rel="noreferrer"
 			target="_blank"

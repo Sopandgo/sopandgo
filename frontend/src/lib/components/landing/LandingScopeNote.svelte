@@ -3,7 +3,7 @@
 	import * as m from '$lib/paraglide/messages.js';
 </script>
 
-<Alert variant="info" role="note" class="shadow-sm">
+<Alert type="info" role="note">
 	<div class="text-sm">
 		<strong class="font-semibold">{m.landing_scope_strong()}</strong>
 		{m.landing_scope_body()}

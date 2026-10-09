@@ -25,10 +25,10 @@
             </CardPageHeading>
             <p class="text-sm text-base-content/70">{m.locale_organization_help()}</p>
             {#if form?.saveDefaultLocale?.error}
-                <Alert variant="error" message={form.saveDefaultLocale.error} />
+                <Alert type="error" message={form.saveDefaultLocale.error} />
             {/if}
             {#if form?.saveDefaultLocale?.ok}
-                <Alert variant="success" message={m.locale_saved()} />
+                <Alert type="success" message={m.locale_saved()} />
             {/if}
             <form method="POST" action="?/saveDefaultLocale" use:enhance>
                 <label class="form-control w-full mb-4" for="org-locale">

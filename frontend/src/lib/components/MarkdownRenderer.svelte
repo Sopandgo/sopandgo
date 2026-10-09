@@ -34,9 +34,9 @@
                                 src="/api/assets/download?id=${asset.id}" 
                                 alt="${text || asset.file_name}" 
                                 title="${title || ''}"
-                                class="rounded-xl border border-base-300 shadow-lg" 
+                                class="rounded-box border border-base-300" 
                             />
-                            ${text ? `<figcaption class="mt-4 text-sm opacity-60 italic">${m.figure_caption({ text })}</figcaption>` : ''}
+                            ${text ? `<figcaption class="mt-4 text-sm text-base-content/70 italic">${m.figure_caption({ text })}</figcaption>` : ''}
                         </figure>
                     `;
                 }
@@ -51,6 +51,6 @@
     });
 </script>
 
-<div class="prose prose-slate max-w-none">
+<div class="prose max-w-none prose-headings:font-semibold">
     {@html html}
 </div>

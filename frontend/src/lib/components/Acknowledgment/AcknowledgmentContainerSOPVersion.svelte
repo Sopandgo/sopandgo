@@ -52,7 +52,7 @@
 
         {#if hasSigned}
             <div class="mt-8">    
-                <Alert variant="info" message={m.ack_you_signed()} />
+                <Alert type="info" message={m.ack_you_signed()} />
             </div>
         {/if}
     {/if}

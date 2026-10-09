@@ -7,8 +7,8 @@ describe('resolveIntegrityStatus', () => {
         expect(await resolveIntegrityStatus(async () => ({ hash_valid: true }))).toBe('verified');
     });
 
-    it('maps a hash mismatch to corrupt', async () => {
-        expect(await resolveIntegrityStatus(async () => ({ hash_valid: false }))).toBe('corrupt');
+    it('maps a hash mismatch to mismatch', async () => {
+        expect(await resolveIntegrityStatus(async () => ({ hash_valid: false }))).toBe('mismatch');
     });
 
     it('maps file_missing to missing', async () => {

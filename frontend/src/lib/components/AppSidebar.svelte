@@ -31,7 +31,7 @@
 </script>
 
 <div
-    class="rail flex min-h-dvh flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64"
+    class="rail flex min-h-dvh flex-col items-start border-r border-base-300 bg-base-100 is-drawer-close:w-14 is-drawer-open:w-64"
 >
     <a
         href={resolve('/dashboard')}
@@ -107,11 +107,10 @@
     <li>
         <a
             href={resolve(href)}
-            class="is-drawer-close:tooltip is-drawer-close:tooltip-right"
+            class="is-drawer-close:tooltip is-drawer-close:tooltip-right {current ? 'bg-primary/10 font-medium text-primary' : ''}"
             data-tip={label}
             aria-label={label}
             aria-current={current ? 'page' : undefined}
-            class:menu-active={current}
         >
             <Icon size={16} aria-hidden="true" />
             <span class="is-drawer-close:hidden">{label}</span>
@@ -122,10 +121,10 @@
 {#snippet rule(label = '')}
     <li class="pointer-events-none">
         <div class="menu-title flex h-9 items-center gap-2">
-            <span class="h-px min-w-2 flex-1 bg-base-content/10"></span>
+            <span class="h-px min-w-2 flex-1 bg-base-300"></span>
             {#if label}
                 <span class="is-drawer-close:hidden shrink-0 text-xs font-semibold">{label}</span>
-                <span class="is-drawer-close:hidden h-px min-w-2 flex-1 bg-base-content/10"></span>
+                <span class="is-drawer-close:hidden h-px min-w-2 flex-1 bg-base-300"></span>
             {/if}
         </div>
     </li>

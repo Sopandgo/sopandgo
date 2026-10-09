@@ -96,10 +96,10 @@
                 >
                     <button
                         type="submit"
-                        class="btn btn-outline btn-warning btn-sm gap-1"
+                        class="btn btn-sm gap-1"
                         aria-label={m.version_remove_favorite()}
                     >
-                        <StarIcon class="w-4 h-4 fill-current" />
+                        <StarIcon class="size-4 fill-accent" aria-hidden="true" />
                         {m.sops_favorited()}
                     </button>
                 </form>
@@ -117,21 +117,21 @@
                         class="btn btn-ghost btn-sm gap-1"
                         aria-label={m.version_add_favorite()}
                     >
-                        <StarIcon class="w-4 h-4" />
+                        <StarIcon class="size-4" aria-hidden="true" />
                         {m.sops_add_to_favorites()}
                     </button>
                 </form>
             {/if}
         </div>
 
-        <div class="card-actions justify-end pt-4 border-t border-base-200 mt-2">
+        <div class="card-actions justify-end pt-4 border-t border-base-300 mt-2">
             {#if data.pdf.enabled}
-                <button type="button" class="btn btn-secondary " onclick={downloadGeneratedPdf}>
-                    <DownloadIcon class="w-5 h-5" />
+                <button type="button" class="btn" onclick={downloadGeneratedPdf}>
+                    <DownloadIcon class="size-4" />
                     {m.version_download_pdf()}
                 </button>
             {:else}
-                <button type="button" class="btn btn-outline btn-disabled" disabled>
+                <button type="button" class="btn" disabled>
                     {m.version_pdf_disabled()}
                 </button>
             {/if}
@@ -139,15 +139,15 @@
             {#if data.versionSummary.status === 'draft' && (data.user.role === 'editor' || data.user.role === 'admin')}
                 <form method="POST" action="?/promote" use:enhance>
                     <button class="btn btn-primary">
-                        <ArrowUpRightIcon class="w-5 h-5" />
+                        <ArrowUpRightIcon class="size-4" />
                         {m.version_promote()}
                     </button>
                 </form>
             {/if}
 
             {#if (data.user.role === 'admin' || data.user.role === 'editor')}
-                <a href={`/sops/${data.sop.id}/new`} class="btn btn-secondary">
-                    <PlusIcon class="w-5 h-5" />
+                <a href={`/sops/${data.sop.id}/new`} class="btn">
+                    <PlusIcon class="size-4" />
                     {m.common_new_version()}
                 </a>
             {/if}
@@ -155,7 +155,7 @@
         </div>
         {#if pdfError}
             <div class="mt-2">
-                <Alert variant="warning" message={pdfError} />
+                <Alert type="warning" message={pdfError} />
             </div>
         {/if}
     </div>
@@ -174,13 +174,10 @@
     />
 
     {#if data.versionSummary.status != 'published'}
-        <Alert variant='warning' message={m.version_inactive_warning()}/>
+        <Alert type='warning' message={m.version_inactive_warning()}/>
     {/if}
     
-    <Card>
-        <div class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold">
-            {m.version_document()}
-        </div>
+    <Card title={m.version_document()}>
         <div class="card-body">
             <MarkdownRenderer 
                 content={data.versionSummary.content}
@@ -190,7 +187,7 @@
     </Card>
 
     {#if data.versionSummary.status != 'published'}
-        <Alert variant='warning' message={m.version_inactive()}/>
+        <Alert type='warning' message={m.version_inactive()}/>
     {/if}
 
     <ListAssociatedAssets items={data.versionSummary.assets ?? []} />

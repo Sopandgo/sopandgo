@@ -22,7 +22,7 @@
 {#if data.user && !data.user.must_change_password}
 	<div class="app-shell drawer lg:drawer-open">
 		<input id="app-drawer" type="checkbox" class="drawer-toggle inline" />
-		<div class="drawer-content app-layout bg-base-300">
+		<div class="drawer-content app-layout bg-base-200">
 			{@render frame()}
 		</div>
 		<div class="drawer-side is-drawer-close:overflow-visible">
@@ -31,7 +31,7 @@
 		</div>
 	</div>
 {:else}
-	<div class="app-layout bg-base-300">
+	<div class="app-layout bg-base-200">
 		{@render frame()}
 	</div>
 {/if}
@@ -40,9 +40,7 @@
 	<Navbar user={data.user} rail={showRail} />
 
 	<main
-		class="app-content flex-grow {guestRoute
-			? 'flex min-h-0 flex-1 flex-col px-4 py-0 sm:px-6 lg:px-8'
-			: 'mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8'}"
+		class="app-content flex-grow {guestRoute ? 'flex min-h-0 flex-1 flex-col px-4 py-0 sm:px-6 lg:px-8' : 'mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8'}"
 	>
 		{@render children()}
 	</main>

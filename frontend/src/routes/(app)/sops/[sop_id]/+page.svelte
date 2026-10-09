@@ -56,10 +56,10 @@
                 >
                   <button
                     type="submit"
-                    class="btn btn-outline btn-warning btn-sm gap-1"
+                    class="btn btn-sm gap-1"
                     aria-label={m.sops_remove_favorites_aria()}
                   >
-                    <StarIcon class="w-4 h-4 fill-current" />
+                    <StarIcon class="size-4 fill-accent" aria-hidden="true" />
                     {m.sops_favorited()}
                   </button>
                 </form>
@@ -73,7 +73,7 @@
                     }}
                 >
                   <button type="submit" class="btn btn-ghost btn-sm gap-1" aria-label={m.sops_add_favorites_aria()}>
-                    <StarIcon class="w-4 h-4" />
+                    <StarIcon class="size-4" aria-hidden="true" />
                     {m.sops_add_to_favorites()}
                   </button>
                 </form>
@@ -81,7 +81,7 @@
             </div>
 
             {#if data.user!.role === 'admin' || data.user!.role === 'approver' || data.user!.role === 'editor'}
-                <div class="card-actions justify-end pt-4 border-t border-base-200">
+                <div class="card-actions justify-end pt-4 border-t border-base-300">
                     <a href={`/sops/${data.sop.id}/new`}  class="btn btn-primary">
                         <PlusIcon class="w-5 h-5" />
                         {m.common_new_version()}
@@ -93,22 +93,22 @@
 
 <Card>
   <div class="card-body">
-    <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
+    <span class="text-sm font-medium text-base-content/70">
       {m.common_tags()}
     </span>
 
-    <div class="pt-4 border-t border-base-200 flex flex-col gap-4">
+    <div class="pt-4 border-t border-base-300 flex flex-col gap-4">
       <!-- current tags -->
       <div class="flex flex-wrap gap-2">
         {#if (data.sop.tags ?? []).length === 0}
-          <span class="text-sm opacity-60">{m.sops_no_tags_assigned()}</span>
+          <span class="text-sm text-base-content/70">{m.sops_no_tags_assigned()}</span>
         {:else}
           {#each data.sop.tags as tag (tag.id)}
             <form method="POST" action="?/detach_tag">
               <input type="hidden" name="tag_id" value={tag.id} />
               <button
                 type="submit"
-                class="badge badge-primary gap-1 cursor-pointer"
+                class="badge badge-soft badge-primary gap-1 cursor-pointer"
                 aria-label={m.sops_remove_tag({ title: tag.title })}
                 title={m.sops_remove_tag_title()}
               >
@@ -123,12 +123,12 @@
 
       <!-- attach existing -->
       <form method="POST" action="?/attach_tag" class="flex flex-col md:flex-row gap-2 md:items-center">
-        <select class="select select-bordered flex-1" name="tag_id" aria-label={m.sops_select_tag()}>
+        <select class="select flex-1" name="tag_id" aria-label={m.sops_select_tag()}>
           {#each addableTags as t (t.id)}
             <option value={t.id}>{t.title}</option>
           {/each}
         </select>
-        <button class="btn btn-primary" type="submit" aria-label={m.sops_attach_tag()}>
+        <button class="btn" type="submit" aria-label={m.sops_attach_tag()} title={m.sops_attach_tag()}>
           <PlusCircleIcon class="w-5 h-5" />
           {m.common_add()}
         </button>
@@ -137,12 +137,12 @@
       <!-- create + attach -->
       <form method="POST" action="?/create_and_attach_tag" class="flex flex-col md:flex-row gap-2 md:items-center">
         <input
-          class="input input-bordered flex-1"
+          class="input flex-1"
           name="title"
           placeholder={m.sops_new_tag_placeholder()}
           bind:value={newTagTitle}
         />
-        <button class="btn btn-accent" type="submit" aria-label={m.sops_create_add_aria()}>
+        <button class="btn" type="submit" aria-label={m.sops_create_add_aria()}>
           <PlusIcon class="w-5 h-5" />
           {m.sops_create_add()}
         </button>
@@ -152,13 +152,7 @@
 </Card>
 
     {#if data.user?.role === 'admin' || data.user?.role === 'approver'}
-      <Card>
-        <div class="border-b border-base-200 p-4 sm:p-5">
-          <h2 class="text-lg font-semibold">{m.dashboard_training_title()}</h2>
-          <p class="mt-1 text-sm text-base-content/70">
-            {m.sops_training_help()}
-          </p>
-        </div>
+      <Card title={m.dashboard_training_title()} description={m.sops_training_help()}>
         <SopTrainingCoverage items={data.trainingCoverage ?? []} />
       </Card>
     {/if}

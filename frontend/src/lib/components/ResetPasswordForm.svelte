@@ -22,14 +22,14 @@
                 name="password" 
                 id="password"
                 placeholder="••••••••" 
-                class="input input-bordered" 
+                class="input" 
                 class:input-error={form?.message}
                 required 
             />
         </div>
 
         {#if form?.message}
-            <Alert variant="error" message={form.message} class="mt-4 py-2 text-sm" />
+            <Alert type="error" message={form.message} class="mt-4 py-2 text-sm" />
         {/if}
 
         <div class="form-control mt-6">

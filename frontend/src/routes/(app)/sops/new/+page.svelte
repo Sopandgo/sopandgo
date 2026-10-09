@@ -26,7 +26,7 @@
 
     <Card>
         <div class="card-body">
-            <CardPageHeading color="accent">
+            <CardPageHeading>
                 <NotebookPenIcon class="w-8 h-8" />
                 {m.sops_heading()}
             </CardPageHeading>
@@ -38,7 +38,7 @@
             </div>
 
             {#if form?.message}
-                <Alert variant="error" message={form.message} class="my-4 shadow-sm" />
+                <Alert type="error" message={form.message} class="my-4" />
             {/if}
 
             <form 
@@ -67,7 +67,7 @@
                         name="title" 
                         type="text" 
                         placeholder={m.sops_title_placeholder()} 
-                        class="input input-bordered w-full {form?.message ? 'input-error' : ''}" 
+                        class="input w-full {form?.message ? 'input-error' : ''}" 
                         value={form?.title ?? ''}
                         required 
                     />
@@ -75,7 +75,7 @@
 
                 <div class="card-actions justify-end mt-4 flex items-center gap-4">
                     <a href="/sops" class="btn btn-ghost">{m.common_cancel()}</a>
-                    <button type="submit" class="btn btn-accent min-w-[120px]" disabled={loading}>
+                    <button type="submit" class="btn min-w-[120px]" disabled={loading}>
                         {#if loading}
                             <span class="loading loading-spinner"></span>
                         {/if}

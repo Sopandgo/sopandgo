@@ -10,10 +10,10 @@ import {
 
 describe('theme preference', () => {
 	it('maps light and dark onto the DaisyUI themes and leaves system unset', () => {
-		expect(daisyTheme('light')).toBe('corporate');
-		expect(daisyTheme('dark')).toBe('business');
+		expect(daisyTheme('light')).toBe('sop-light');
+		expect(daisyTheme('dark')).toBe('sop-dark');
 		expect(daisyTheme('system')).toBeNull();
-		expect(themeAttribute('dark')).toBe(' data-theme="business"');
+		expect(themeAttribute('dark')).toBe(' data-theme="sop-dark"');
 		expect(themeAttribute('system')).toBe('');
 		expect(isThemePreference('sepia')).toBe(false);
 	});

@@ -3,44 +3,54 @@
     import type { HTMLAttributes } from 'svelte/elements';
 
     /*
-     * Variants own background, shadow and border so that `class` only adds
-     * layout (width, margin, height) and never fights over the same property.
-     * - raised: default page card
-     * - flat: secondary panels and marketing blocks
-     * - inset: recessed panel on a base-200 surface
-     * - subtle: tile inside another card
+     * The bordered base-100 section that holds every block of content
+     * (docs/design/style-guide.md → Card). Flat: border, no shadow.
+     * daisyUI's card-border draws in base-200, which vanishes on the base-200
+     * page, so the border is set here. `class` is for layout only.
      */
-    type Variant = 'raised' | 'flat' | 'inset' | 'subtle';
-
     interface Props extends HTMLAttributes<HTMLElement> {
-        as?: 'div' | 'section' | 'article' | 'figure' | 'li' | 'form';
-        variant?: Variant;
-        bordered?: boolean;
+        as?: 'div' | 'section' | 'article' | 'figure' | 'li';
+        /** Optional header: section-title heading. */
+        title?: string;
+        /** One line under the title, in muted text. */
+        description?: string;
+        /** Header id, so a wrapping region can use aria-labelledby. */
+        headingId?: string;
+        /** Header actions, aligned right. */
+        actions?: Snippet;
         class?: string;
         children: Snippet;
     }
 
     let {
         as = 'div',
-        variant = 'raised',
-        bordered = true,
+        title,
+        description,
+        headingId,
+        actions,
         class: extraClass = '',
         children,
         ...rest
     }: Props = $props();
-
-    const variantClasses: Record<Variant, string> = {
-        raised: 'bg-base-100 shadow-md',
-        flat: 'bg-base-100 shadow-sm',
-        inset: 'bg-base-200 shadow-inner',
-        subtle: 'bg-base-200/30 shadow-none transition-colors hover:bg-base-200/50'
-    };
 </script>
 
-<svelte:element
-    this={as}
-    class="card {bordered ? 'card-border' : ''} {variantClasses[variant]} {extraClass}"
-    {...rest}
->
+<svelte:element this={as} class="card border border-base-300 bg-base-100 {extraClass}" {...rest}>
+    {#if title || actions}
+        <div
+            class="flex flex-col gap-3 border-b border-base-300 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-6"
+        >
+            <div class="min-w-0">
+                {#if title}
+                    <h2 id={headingId} class="text-lg font-semibold">{title}</h2>
+                {/if}
+                {#if description}
+                    <p class="mt-1 text-sm text-base-content/70">{description}</p>
+                {/if}
+            </div>
+            {#if actions}
+                <div class="flex shrink-0 flex-wrap gap-2">{@render actions()}</div>
+            {/if}
+        </div>
+    {/if}
     {@render children()}
 </svelte:element>

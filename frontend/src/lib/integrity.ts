@@ -4,13 +4,13 @@ import type { Integrity } from '$lib/sdk/types';
 /**
  * Outcome of a single file integrity check.
  * - verified: file on disk matches the stored hash
- * - corrupt: file exists but its hash differs
+ * - mismatch: file exists but its hash differs
  * - missing: record exists but the file is gone from disk
  * - unavailable: the check itself could not run (network, auth, unknown record)
  */
-export type IntegrityStatus = 'verified' | 'corrupt' | 'missing' | 'unavailable';
+export type IntegrityStatus = 'verified' | 'mismatch' | 'missing' | 'unavailable';
 
-export const INTEGRITY_STATUSES: readonly IntegrityStatus[] = ['verified', 'corrupt', 'missing', 'unavailable'];
+export const INTEGRITY_STATUSES: readonly IntegrityStatus[] = ['verified', 'mismatch', 'missing', 'unavailable'];
 
 export function isIntegrityStatus(value: unknown): value is IntegrityStatus {
     return typeof value === 'string' && (INTEGRITY_STATUSES as readonly string[]).includes(value);
@@ -35,7 +35,7 @@ export function integrityResultFromForm(
 export async function resolveIntegrityStatus(check: () => Promise<Integrity>): Promise<IntegrityStatus> {
     try {
         const { hash_valid } = await check();
-        return hash_valid ? 'verified' : 'corrupt';
+        return hash_valid ? 'verified' : 'mismatch';
     } catch (err) {
         if (err instanceof SdkHttpError && err.status === 404 && err.apiError === 'file_missing') {
             return 'missing';

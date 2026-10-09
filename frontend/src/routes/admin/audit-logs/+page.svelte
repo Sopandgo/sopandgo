@@ -13,6 +13,14 @@
 
     let { data } = $props();
 
+    const roleLabels: Record<string, () => string> = {
+        admin: m.role_admin,
+        approver: m.role_approver,
+        auditor: m.role_auditor,
+        editor: m.role_editor,
+        viewer: m.role_viewer
+    };
+
     let auditEvents = $derived(data.auditEvents);
     let currentPage = $derived(data.page);
     let filterType = $state('');
@@ -41,7 +49,12 @@
         data.auditFilterOptions.entity_types.map((type) => ({ value: type, label: entityTitle(type) }))
     );
     const actorOptions = $derived<ComboboxOption[]>(
-        data.users.map((user) => ({ value: user.id, label: user.display_name, keywords: [user.email] }))
+        data.users.map((user) => ({
+            value: user.id,
+            label: user.display_name,
+            hint: roleLabels[user.role]?.(),
+            keywords: [user.email]
+        }))
     );
     const sopOptions = $derived<ComboboxOption[]>(
         data.sops.map((sop) => ({ value: sop.id, label: sop.title }))
@@ -104,7 +117,7 @@
                 <span class="text-sm font-medium text-base-content/70">
                     {m.audit_monitor()}
                 </span> 
-                <div class="flex items-center gap-1.5 text-xs text-base-content/50 select-none">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/70 select-none">
                     <Link class="size-3.5" />
                     <span>{m.audit_chained()}</span>
                 </div>

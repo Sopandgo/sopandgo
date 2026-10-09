@@ -31,11 +31,11 @@
 
 <div class="flex w-full flex-col gap-4">
   {#if result?.error}
-    <Alert variant="error" message={result.error} class="w-xs shadow-lg" />
+    <Alert type="error" message={result.error} class="w-xs" />
   {/if}
 
   {#if isOk}
-    <Alert variant="success" message={m.password_updated()} class="w-xs shadow-lg" />
+    <Alert type="success" message={m.password_updated()} class="w-xs" />
   {/if}
 
   <form
@@ -92,7 +92,7 @@
         {m.password_update()}
       </button>
       {#if showLogoutWarning}
-        <Alert variant="warning" message={m.password_logout_warning()}/>
+        <Alert type="warning" message={m.password_logout_warning()}/>
       {/if}
     </fieldset>
   </form>

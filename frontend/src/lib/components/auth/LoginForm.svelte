@@ -10,7 +10,7 @@
 
 <Card class="mx-auto"> 
     <div class="card-body"> {#if form?.message}
-            <Alert variant="error" message={form.message} class="mb-4 shadow-sm" />
+            <Alert type="error" message={form.message} class="mb-4" />
         {/if}
 
         <form 
@@ -24,7 +24,7 @@
             }}
         >
             <fieldset class="fieldset w-full">
-                <legend class="fieldset-legend text-lg font-bold">{m.login_heading()}</legend>
+                <legend class="fieldset-legend text-lg font-semibold">{m.login_heading()}</legend>
 
                 <div class="w-full">
                     <label class="label mb-1" for="email">{m.common_email()}</label>

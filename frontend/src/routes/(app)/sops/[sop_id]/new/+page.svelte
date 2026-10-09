@@ -29,7 +29,7 @@
 
     <Card>
         <div class="card-body">
-            <CardPageHeading color="accent">
+            <CardPageHeading>
                 <NotebookPenIcon class="w-8 h-8" />
                 {data.sop.title}
             </CardPageHeading>
