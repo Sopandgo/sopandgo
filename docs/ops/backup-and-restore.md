@@ -52,7 +52,7 @@ Export is also available via the API: `GET /api/admin/backups/export` (admin aut
 ### Apply (staged restore)
 
 - Destructive: stages replacement of live data from the uploaded archive.
-- Requires typing **`APPLY BACKUP`** exactly as confirmation.
+- After you choose the archive, a confirmation dialog repeats the warning and requires typing **`APPLY BACKUP`** exactly.
 - Before staging, the server writes a **pre-apply** snapshot zip under:
   - `data/_backup_snapshots/` (filename prefix `pre-apply-`)
 - Staged payload is written to:

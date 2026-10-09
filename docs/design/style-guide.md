@@ -252,6 +252,20 @@ A toggle switches something on or off (a notification channel, a user account); 
 - Don't add `@tailwindcss/forms`: its base styles draw a second checkmark into daisyUI checkboxes and toggles.
 - Don't use `toggle-primary` or `toggle-secondary`; neither says "on".
 
+### ConfirmDialog
+
+The modal that confirms a destructive action, such as applying a backup (`$lib/components/ConfirmDialog.svelte`).
+
+**Markup**: a native `<dialog class="modal">` opened with `showModal()`, so focus moves into it and Escape closes it. The box is `modal-box` on `base-100` with a `base-300` border, `radius-box` and `shadow-overlay`.
+
+**Anatomy**: `section-title` heading (a question: "Apply this backup?"), the consequence as a `warning` `Alert`, any typed confirmation, then Cancel (default `btn`) and the confirm button (`btn btn-error`) on the right.
+
+**Behaviour**: the button that opens it is a default `btn` with `text-error`, and checks the form first (`reportValidity()`). Put the dialog inside the `<form>` it confirms, so its fields are submitted and the confirm button submits. While the action runs, the confirm button shows its spinner and Cancel and Escape do nothing. The dialog closes when the result arrives; the result shows as an `Alert` in the card.
+
+**Consumer provides**: `title`, `open` (bindable), `busy`, the body as `children` and the confirm button as the `confirm` snippet.
+
+**Don't**: put `btn-error` anywhere but inside this dialog, or use it for actions that are easy to undo.
+
 ### Combobox
 
 A searchable single-select field for long lists — the audit-log filters for event type, actor and SOP, and later the tag picker — built on Bits UI's headless Combobox and styled with this theme.

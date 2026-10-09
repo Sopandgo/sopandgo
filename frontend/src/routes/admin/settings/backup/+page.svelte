@@ -6,6 +6,7 @@
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
     import CollapsibleCard from '$lib/components/CollapsibleCard.svelte';
+    import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
     import { ArchiveIcon, CalendarClock, History } from 'lucide-svelte';
     import * as m from '$lib/paraglide/messages.js';
     import { getLocale } from '$lib/paraglide/runtime';
@@ -74,6 +75,22 @@
             };
         };
     }
+
+    // Apply: the file is chosen in the card, the typed confirmation happens in the dialog.
+    let applyDialogOpen = $state(false);
+    let applyFileName = $state('');
+    let applyConfirmation = $state('');
+
+    const applySubmit: SubmitFunction = () => {
+        pending = 'apply';
+        return async ({ update }) => {
+            await update();
+            pending = null;
+            applyDialogOpen = false;
+            applyConfirmation = '';
+            applyFileName = '';
+        };
+    };
 
     // One S3 form, three buttons: Save, Test connection and Back up now (both use the saved settings).
     const s3Submit: SubmitFunction = ({ submitter }) => {
@@ -519,7 +536,7 @@
             {/if}
         {/snippet}
 
-        <Alert type="warning" message={m.backup_apply_warning()} />
+        <p class="text-sm text-base-content/70">{m.backup_apply_help()}</p>
         {#if applyBackupResult?.error}
             <Alert type="error" message={applyBackupResult.error} />
         {/if}
@@ -539,7 +556,7 @@
         <form
             method="POST"
             action="?/applyBackup"
-            use:enhance={submitting('apply')}
+            use:enhance={applySubmit}
             enctype="multipart/form-data"
             class="grid grid-cols-1 gap-5"
         >
@@ -550,25 +567,51 @@
                     name="backup_file"
                     class="file-input w-full"
                     accept=".zip,application/zip"
+                    required
                     disabled={uploadsLocked}
-                />
-            </label>
-            <label class="flex flex-col gap-1.5">
-                <span class="text-sm font-medium">{m.backup_confirm_label()}</span>
-                <input
-                    type="text"
-                    name="confirmation"
-                    class="input w-full font-mono"
-                    placeholder="APPLY BACKUP"
-                    autocomplete="off"
-                    disabled={uploadsLocked}
+                    onchange={(e) => (applyFileName = e.currentTarget.files?.[0]?.name ?? '')}
                 />
             </label>
             <div class="flex flex-col border-t border-base-300 pt-4 sm:flex-row sm:justify-end">
-                <button type="submit" class="btn btn-error w-full sm:w-auto" disabled={uploadsLocked || pending !== null}>
-                    {@render buttonLabel(pending === 'apply', m.backup_stage_button(), m.backup_staging())}
+                <!-- Opens the confirmation; only the dialog's button is the destructive one. -->
+                <button
+                    type="button"
+                    class="btn text-error w-full sm:w-auto"
+                    disabled={uploadsLocked || pending !== null}
+                    onclick={(e) => {
+                        if (e.currentTarget.form?.reportValidity()) applyDialogOpen = true;
+                    }}
+                >
+                    {m.backup_apply_open()}
                 </button>
             </div>
+
+            <ConfirmDialog title={m.backup_apply_dialog_title()} bind:open={applyDialogOpen} busy={pending === 'apply'}>
+                <Alert type="warning" message={m.backup_apply_warning()} />
+                {#if applyFileName}
+                    <p>{m.backup_apply_dialog_file()} <span class="font-mono text-xs">{applyFileName}</span></p>
+                {/if}
+                <label class="flex flex-col gap-1.5">
+                    <span class="font-medium">{m.backup_confirm_label()}</span>
+                    <input
+                        type="text"
+                        name="confirmation"
+                        class="input w-full font-mono"
+                        placeholder="APPLY BACKUP"
+                        autocomplete="off"
+                        bind:value={applyConfirmation}
+                    />
+                </label>
+                {#snippet confirm()}
+                    <button
+                        type="submit"
+                        class="btn btn-error"
+                        disabled={applyConfirmation.trim() !== 'APPLY BACKUP' || pending !== null}
+                    >
+                        {@render buttonLabel(pending === 'apply', m.backup_stage_button(), m.backup_staging())}
+                    </button>
+                {/snippet}
+            </ConfirmDialog>
         </form>
     </CollapsibleCard>
 </div>
