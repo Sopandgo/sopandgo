@@ -7,6 +7,7 @@
         LogsIcon,
         NotebookIcon,
         SettingsIcon,
+        ShieldCheckIcon,
         ShieldUserIcon,
         UsersIcon
     } from 'lucide-svelte';
@@ -65,6 +66,12 @@
                     LogsIcon
                 )}
                 {@render item(
+                    '/admin/integrity',
+                    m.nav_integrity(),
+                    sectionCurrent('/admin/integrity'),
+                    ShieldCheckIcon
+                )}
+                {@render item(
                     '/admin/settings',
                     m.nav_settings(),
                     sectionCurrent('/admin/settings'),
@@ -92,7 +99,7 @@
 </div>
 
 {#snippet item(
-    href: '/dashboard' | '/sops' | '/admin/users' | '/admin/sessions' | '/admin/audit-logs' | '/admin/settings',
+    href: '/dashboard' | '/sops' | '/admin/users' | '/admin/sessions' | '/admin/audit-logs' | '/admin/integrity' | '/admin/settings',
     label: string,
     current: boolean,
     Icon: RailIcon

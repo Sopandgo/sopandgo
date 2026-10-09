@@ -1,5 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages.js';
+import { verifyAsset } from '$lib/server/integrityActions';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
@@ -23,6 +24,8 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 };
 
 export const actions: Actions = {
+  verifyAsset,
+
   attach_tag: async ({ locals, request, params }) => {
     const form = await request.formData();
     const tagId = String(form.get('tag_id') ?? '').trim();

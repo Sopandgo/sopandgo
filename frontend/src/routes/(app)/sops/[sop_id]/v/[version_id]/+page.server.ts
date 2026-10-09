@@ -1,5 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages.js';
+import { verifyAsset, verifyVersion } from '$lib/server/integrityActions';
 import type { PageServerLoad, Actions } from './$types';
 import { env } from '$env/dynamic/private';
 
@@ -49,6 +50,9 @@ export const load: PageServerLoad = async ({ locals, params, parent }) => {
 };
 
 export const actions: Actions = {
+    verifyAsset,
+    verifyVersion,
+
     // --- Existing Reader Acknowledgment ---
     sign: async ({ request, locals, params }) => {
         const formData = await request.formData();

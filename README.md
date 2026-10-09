@@ -56,7 +56,7 @@ If the application is removed, SOP content remains readable on disk as standard 
 - Each version:
   - has structured content (Markdown) that is never rewritten after create
   - may reference local assets (images, diagrams)
-  - has a content hash recorded in the database
+  - has a content hash recorded in the database; any user can re-check a version or asset file against it, and admins can scan everything at **Admin → Integrity** (`/admin/integrity`)
   - moves through a lifecycle: **draft → RC → published** (or rejected); a later publish marks the prior published version **superseded**
 - Users acknowledge specific SOP versions (`author` / `approver` / `reader`)
 - Content files are never modified or deleted; lifecycle state history is recorded separately

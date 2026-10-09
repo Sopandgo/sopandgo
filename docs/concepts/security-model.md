@@ -94,6 +94,8 @@ sopandgo distinguishes between **content** and **metadata**:
 - **Integrity Verification:** For each SOP version, a content hash is recorded. The system can detect if files have been modified outside the application.
 - **Tamper-Evident Audit Logs:** Audit logs are cryptographically linked using a SHA-256 hash chain. Any modification or deletion of a past log entry breaks the chain, making tampering detectable via built-in verification tools.
 - **Proactive Verification of SOPs:** The Service Layer re-verifies SHA-256 hashes during retrieval of full SOP summaries and Audit Logs to ensure that what the user sees is exactly what was originally committed to disk.
+- **On-Demand Checks:** Any signed-in user can re-check a single version or asset file from the SOP pages. The result is one of **verified** (hash matches), **corrupt** (hash differs), **missing** (file gone from disk), or **couldn't check** (the check itself failed). The check only answers for the SOP named in the request path; an asset or version from another SOP returns 404.
+- **System Scan:** Admins can run a full scan at **Admin → Integrity** (`/admin/integrity`). It re-hashes every version and asset and verifies the audit hash chain. Each run is written to the audit log, and a failed run sends `integrity_check_failed` to enabled integrations. The scan runs only when an admin starts it; nothing schedules it.
 
 
 ## What sopandgo protects against

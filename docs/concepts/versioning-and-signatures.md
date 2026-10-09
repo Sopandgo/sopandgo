@@ -88,6 +88,8 @@ The system records a content hash for each version. Whenever an SOP is retrieved
 
 This allows sopandgo to proactively identify integrity issues without silently serving corrupted content.
 
+Users can also re-check a version's checksum or an asset file from the version page without reloading it. A failed check distinguishes a **corrupt** file (hash mismatch) from a **missing** file and from a check that **could not run**. Admins can scan all versions, assets, and the audit chain at once from **Admin → Integrity**.
+
 ---
 
 ## Acknowledgments and signatures

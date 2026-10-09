@@ -8,12 +8,16 @@
 
     } from 'lucide-svelte';
   import Card from './Card.svelte';
+    import IntegrityCheck from './IntegrityCheck.svelte';
     import SopVersionStatusBadge from './SopVersionStatusBadge.svelte';
+    import { page } from '$app/state';
+    import { integrityResultFromForm, type IntegrityStatus } from '$lib/integrity';
     import * as m from '$lib/paraglide/messages.js';
     import { getLocale } from '$lib/paraglide/runtime';
 
     interface Props {
         sopId: string;
+        versionId: string;
         contentHash: string;
         createdAt: string;
         hashValid: boolean;
@@ -23,12 +27,27 @@
 
     let { 
         sopId = "", 
+        versionId,
         contentHash = "", 
         createdAt = "", 
         hashValid = false, 
         status = "",
         version 
     }: Props = $props();
+
+    // Load-time result, replaced by any manual re-check.
+    let rechecked = $state<IntegrityStatus | null>(null);
+    const loadStatus = $derived<IntegrityStatus>(hashValid ? 'verified' : 'corrupt');
+    const integrityStatus = $derived(
+        rechecked ?? integrityResultFromForm(page.form, 'verifyVersion', versionId) ?? loadStatus
+    );
+    const integrityOk = $derived(integrityStatus === 'verified');
+    const integrityTone = $derived(
+        integrityOk ? 'bg-success/5' : integrityStatus === 'unavailable' ? 'bg-warning/5' : 'bg-error/5'
+    );
+    const integrityStroke = $derived(
+        integrityOk ? 'stroke-success' : integrityStatus === 'unavailable' ? 'stroke-warning' : 'stroke-error'
+    );
 
     let formattedDate = $derived(
         createdAt ? new Date(createdAt).toLocaleString(getLocale()) : m.common_na()
@@ -90,12 +109,9 @@
             </div>
         </li>
 
-        <li class="list-row items-center {hashValid ? 'bg-success/5' : 'bg-error/5'}">
+        <li class="list-row items-center {integrityTone}">
             <div>
-                <FingerprintPatternIcon 
-                    size={24} 
-                    class="p-1 {hashValid ? 'stroke-success' : 'stroke-error'}"
-                />
+                <FingerprintPatternIcon size={24} class="p-1 {integrityStroke}" />
             </div>
 
             <div class="flex-1 overflow-hidden">
@@ -103,14 +119,14 @@
                 <div class="text-[10px] opacity-60 font-mono truncate" title={contentHash}>
                     {contentHash}
                 </div>
-                
-                <div class="mt-1 flex items-center gap-1">
-                    <span class="inline-block w-2 h-2 rounded-full {hashValid ? 'bg-success' : 'bg-error'}"></span>
-                    <span class="text-[10px] font-bold uppercase tracking-wider {hashValid ? 'text-success' : 'text-error'}">
-                        {hashValid ? m.details_verified() : m.details_violated()}
-                    </span>
-                </div>
             </div>
+
+            <IntegrityCheck
+                kind="version"
+                id={versionId}
+                initial={loadStatus}
+                onresult={(status) => (rechecked = status)}
+            />
         </li>
     </ul>
 </Card>

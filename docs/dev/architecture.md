@@ -98,6 +98,8 @@ Integrity is verified via SHA-256 cryptographic hashes in two distinct ways:
 
 2. **Audit Integrity:** Audit logs are formed into a Hash Chain. The backend verifies the chain continuity on read to detect if logs have been deleted or altered.
 
+3. **On-Demand Checks:** `GET /api/sops/{sopID}/versions/{versionID}/integrity` and `GET /api/sops/{sopID}/assets/{assetID}/integrity` re-hash one file. They return `{"hash_valid": bool}`, or a JSON error: 404 `version_not_found` / `asset_not_found` when the record does not exist or belongs to another SOP, 404 `file_missing` when the file is gone from disk, and 500 `integrity_check_failed` otherwise. `GET /api/admin/integrity` scans everything, audits the run, and notifies on failure.
+
 ## Audit Logging
 
 All state-changing events (logins, password updates, role changes) are recorded.
@@ -180,6 +182,7 @@ Draft markdown is **`bindable`** from the page into **both** components so Word 
 The SDK provides direct access to the system's **Integrity Model**:
 
 * **Automatic**: The `sops.getVersionSummary` method (and admin audit list responses) return `hash_valid` as verified by the Go backend.
-* **On-Demand**: The `assets.checkIntegrity` and `admin.checkIntegrity` methods allow for manual or global verification of binary assets on the physical filesystem.
+* **On-Demand**: `sops.checkIntegrity(sopId, versionId)` and `assets.checkIntegrity(sopId, assetId)` re-check one file and throw `SdkHttpError` on failure; `admin.checkIntegrity()` runs the system scan.
+* **UI**: Pages call these through SvelteKit form actions, not a JSON proxy. `$lib/server/integrityActions` provides `verifyAsset` and `verifyVersion` for the `/sops/[sop_id]` pages, and `$lib/integrity` maps results to `verified` / `corrupt` / `missing` / `unavailable`. `IntegrityCheck.svelte` posts to those actions with `use:enhance` and also works without JavaScript. `/admin/integrity` runs the system scan through its own `?/run` action.
 
 ---

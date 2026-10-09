@@ -1,6 +1,6 @@
 <script lang="ts">
     import { ExternalLinkIcon, PaperclipIcon } from 'lucide-svelte';
-    import IntegrityButtonAssets from './IntegrityButtonAssets.svelte';
+    import IntegrityCheck from './IntegrityCheck.svelte';
     import type { SOPAsset } from '$lib/sdk/types';
   import Card from './Card.svelte';
   import * as m from '$lib/paraglide/messages.js';
@@ -33,9 +33,7 @@
                 </div>
 
                 <div class="flex gap-2 items-center">
-                    <IntegrityButtonAssets 
-                        assetId={asset.id} 
-                    />
+                    <IntegrityCheck kind="asset" id={asset.id} />
                     
                     <a
                         href={`/api/assets/download?id=${encodeURIComponent(asset.id)}`}

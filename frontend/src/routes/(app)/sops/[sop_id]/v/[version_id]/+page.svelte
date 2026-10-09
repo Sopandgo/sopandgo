@@ -165,6 +165,7 @@
 
     <SopDetails 
         sopId={data.sop.id} 
+        versionId={data.versionSummary.id}
         contentHash={data.versionSummary.content_hash} 
         createdAt={data.versionSummary.created_at} 
         hashValid={data.versionSummary.hash_valid} 

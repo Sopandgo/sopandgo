@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/sopandgo/sopandgo/backend/internal/markdown"
@@ -178,7 +179,6 @@ func (s *Server) handleGetSOPVersionSummaryLatest(w http.ResponseWriter, r *http
 }
 
 func (s *Server) handleCheckVersionIntegrity(w http.ResponseWriter, r *http.Request) {
-	// Currently ignored, could be reused to add more granular access
 	sopId := r.PathValue("sopID")
 	if sopId == "" {
 		http.Error(w, "missing id", http.StatusBadRequest)
@@ -191,15 +191,23 @@ func (s *Server) handleCheckVersionIntegrity(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	version, err := s.sopService.GetSOPVersionByID(sopVersionId)
+	if err != nil || version.SOPID != sopId {
+		writeJSONError(w, http.StatusNotFound, "version_not_found", "Version not found for this SOP.")
+		return
+	}
+
 	valid, err := s.sopService.VerifyVersionIntegrity(sopVersionId)
 	if err != nil {
-		// Log the error internally
-		http.Error(w, "Integrity check failed", http.StatusInternalServerError)
+		if os.IsNotExist(err) {
+			writeJSONError(w, http.StatusNotFound, "file_missing", "File missing on disk.")
+			return
+		}
+		writeJSONError(w, http.StatusInternalServerError, "integrity_check_failed", "Integrity check failed.")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	// Return a simple boolean JSON
 	json.NewEncoder(w).Encode(map[string]bool{"hash_valid": valid})
 }
 

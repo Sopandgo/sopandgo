@@ -127,7 +127,9 @@ func (s *Server) handleDownloadAsset(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, absPath)
 }
 
-// handleCheckAssetIntegrity: Verify file hash matches DB record
+// handleCheckAssetIntegrity: Verify file hash matches DB record.
+// 404 asset_not_found when the asset does not exist or belongs to another SOP;
+// 404 file_missing when the record exists but the file is gone from disk.
 func (s *Server) handleCheckAssetIntegrity(w http.ResponseWriter, r *http.Request) {
 	sopID := r.PathValue("sopID")
 	if sopID == "" {
@@ -141,14 +143,19 @@ func (s *Server) handleCheckAssetIntegrity(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	asset, err := s.sopService.GetAssetByID(assetID)
+	if err != nil || asset.SOPID != sopID {
+		writeJSONError(w, http.StatusNotFound, "asset_not_found", "Asset not found for this SOP.")
+		return
+	}
+
 	valid, err := s.sopService.VerifyAssetIntegrity(assetID)
 	if err != nil {
-		// If file missing or DB error
 		if os.IsNotExist(err) {
-			http.Error(w, "File missing on disk", http.StatusNotFound)
+			writeJSONError(w, http.StatusNotFound, "file_missing", "File missing on disk.")
 			return
 		}
-		http.Error(w, "Integrity check failed", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "integrity_check_failed", "Integrity check failed.")
 		return
 	}
 

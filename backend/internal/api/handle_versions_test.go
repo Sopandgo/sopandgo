@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
@@ -213,6 +214,64 @@ func TestAPI_SOPVersions(t *testing.T) {
 		}
 		if policyResp.Code != "raw_html" {
 			t.Errorf("Expected raw_html code, got %+v", policyResp)
+		}
+	})
+
+	t.Run("Version Integrity", func(t *testing.T) {
+		sopID, err := env.SOPService.RegisterSOP("Integrity Test SOP", &editorID)
+		if err != nil {
+			t.Fatalf("Failed to create base SOP: %v", err)
+		}
+		otherSOPID, err := env.SOPService.RegisterSOP("Other SOP", &editorID)
+		if err != nil {
+			t.Fatalf("Failed to create other SOP: %v", err)
+		}
+
+		rec := doJSONRequest(http.MethodPost, fmt.Sprintf("/api/sops/%s", sopID), editorToken, map[string]string{
+			"content":        "# Integrity\nBody.",
+			"change_summary": "Integrity test",
+		})
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Draft creation failed: %d - %s", rec.Code, rec.Body.String())
+		}
+		var vResp struct {
+			ID string `json:"id"`
+		}
+		json.NewDecoder(rec.Body).Decode(&vResp)
+
+		decodeErr := func(rec *httptest.ResponseRecorder) string {
+			var body struct {
+				Error string `json:"error"`
+			}
+			json.NewDecoder(rec.Body).Decode(&body)
+			return body.Error
+		}
+
+		rec = doJSONRequest(http.MethodGet, fmt.Sprintf("/api/sops/%s/versions/%s/integrity", sopID, vResp.ID), editorToken, nil)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200, got %d - %s", rec.Code, rec.Body.String())
+		}
+		var ok map[string]bool
+		json.NewDecoder(rec.Body).Decode(&ok)
+		if !ok["hash_valid"] {
+			t.Error("Expected hash_valid=true")
+		}
+
+		rec = doJSONRequest(http.MethodGet, fmt.Sprintf("/api/sops/%s/versions/%s/integrity", otherSOPID, vResp.ID), editorToken, nil)
+		if rec.Code != http.StatusNotFound || decodeErr(rec) != "version_not_found" {
+			t.Errorf("Expected 404 version_not_found for SOP mismatch, got %d", rec.Code)
+		}
+
+		path, err := env.SOPService.GetVersionPath(vResp.ID)
+		if err != nil {
+			t.Fatalf("GetVersionPath: %v", err)
+		}
+		if err := os.Remove(path); err != nil {
+			t.Fatalf("remove version file: %v", err)
+		}
+		rec = doJSONRequest(http.MethodGet, fmt.Sprintf("/api/sops/%s/versions/%s/integrity", sopID, vResp.ID), editorToken, nil)
+		if rec.Code != http.StatusNotFound || decodeErr(rec) != "file_missing" {
+			t.Errorf("Expected 404 file_missing, got %d", rec.Code)
 		}
 	})
 }
