@@ -1,17 +1,16 @@
 <script lang="ts">
 	import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import ListRow from '$lib/components/ListRow.svelte';
 	import {
 		greetingPeriodForDate,
 		partitionSignatureStatus,
 		pendingSignatureCount
 	} from '$lib/signatureBuckets';
-	import type { UserSignatureStatus } from '$lib/sdk/types';
 	import { enhance } from '$app/forms';
 	import SopTrainingCoverage from '$lib/components/SopTrainingCoverage.svelte';
 	import {
 		AlertTriangleIcon,
-		ChevronRightIcon,
 		FileQuestionIcon,
 		HouseIcon,
 		MegaphoneIcon,
@@ -46,15 +45,6 @@
 
 	function sopLatestHref(sopId: string) {
 		return `/sops/${sopId}/v/latest`;
-	}
-
-	function rowForSignature(s: UserSignatureStatus) {
-		return {
-			href: sopLatestHref(s.sop_id),
-			title: s.title,
-			versionLabel: m.common_version({ version: String(s.latest_version) }),
-			versionPublished: m.common_version_published({ version: String(s.latest_version) })
-		};
 	}
 </script>
 
@@ -122,35 +112,17 @@
 								{m.dashboard_new_unsigned()}
 							</li>
 							{#each notStarted as sop (sop.sop_id)}
-								{@const row = rowForSignature(sop)}
-								<li class="border-b border-base-200/80 last:border-b-0">
-									<a
-										href={row.href}
-										class="list-row hover:bg-base-200/40 flex items-center gap-3 transition-colors group"
-									>
-										<div class="avatar avatar-placeholder shrink-0" aria-hidden="true">
-											<div
-												class="bg-base-300 text-base-content flex h-10 w-10 items-center justify-center rounded-field sm:h-12 sm:w-12"
-											>
-												<FileQuestionIcon class="h-5 w-5" />
-											</div>
-										</div>
-										<div class="min-w-0 flex-1">
-											<div
-												class="truncate text-sm font-bold group-hover:text-primary sm:text-base"
-											>
-												{row.title}
-											</div>
-											<div
-												class="mt-0.5 font-mono text-[10px] uppercase tracking-tighter opacity-50"
-											>
-												{row.versionLabel}
-											</div>
-										</div>
+								<ListRow
+									href={sopLatestHref(sop.sop_id)}
+									title={sop.title}
+									meta={m.common_version({ version: String(sop.latest_version) })}
+									icon={FileQuestionIcon}
+									chevron
+								>
+									{#snippet trailing()}
 										<span class="badge badge-ghost badge-sm hidden sm:inline-flex">{m.dashboard_review()}</span>
-										<ChevronRightIcon class="h-5 w-5 shrink-0 opacity-40" aria-hidden="true" />
-									</a>
-								</li>
+									{/snippet}
+								</ListRow>
 							{/each}
 						{/if}
 
@@ -161,35 +133,19 @@
 								{m.dashboard_outdated()}
 							</li>
 							{#each actionRequired as sop (sop.sop_id)}
-								{@const row = rowForSignature(sop)}
-								<li class="border-b border-base-200/80 last:border-b-0">
-									<a
-										href={row.href}
-										class="list-row hover:bg-warning/5 flex items-center gap-3 transition-colors group bg-warning/5"
-									>
-										<div class="avatar avatar-placeholder shrink-0" aria-hidden="true">
-											<div
-												class="flex h-10 w-10 items-center justify-center rounded-field bg-warning/20 text-warning sm:h-12 sm:w-12"
-											>
-												<AlertTriangleIcon class="h-5 w-5" />
-											</div>
-										</div>
-										<div class="min-w-0 flex-1">
-											<div
-												class="truncate text-sm font-bold group-hover:text-primary sm:text-base"
-											>
-												{row.title}
-											</div>
-											<div
-												class="mt-0.5 font-mono text-[10px] uppercase tracking-tighter opacity-60"
-											>
-												{row.versionPublished}
-											</div>
-										</div>
+								<ListRow
+									href={sopLatestHref(sop.sop_id)}
+									title={sop.title}
+									meta={m.common_version_published({ version: String(sop.latest_version) })}
+									icon={AlertTriangleIcon}
+									iconTone="warning"
+									tone="warning"
+									chevron
+								>
+									{#snippet trailing()}
 										<span class="badge badge-warning badge-sm hidden sm:inline-flex">{m.dashboard_update()}</span>
-										<ChevronRightIcon class="h-5 w-5 shrink-0 opacity-40" aria-hidden="true" />
-									</a>
-								</li>
+									{/snippet}
+								</ListRow>
 							{/each}
 						{/if}
 					</ul>
@@ -215,29 +171,20 @@
 				{:else}
 					<ul class="list">
 						{#each recentPublishes as item (item.version_id)}
-							<li class="border-b border-base-200/80 last:border-b-0">
-								<a
-									href={`/sops/${item.sop_id}/v/latest`}
-									class="list-row hover:bg-base-200/40 flex items-center gap-3 transition-colors group"
-								>
-									<div class="min-w-0 flex-1">
-										<div class="truncate text-sm font-bold group-hover:text-primary sm:text-base">
-											{item.title}
-										</div>
-										{#if item.change_summary}
-											<div class="mt-0.5 text-sm text-base-content/80">{item.change_summary}</div>
-										{/if}
-										<div class="mt-0.5 font-mono text-[10px] uppercase tracking-tighter opacity-50">
-											{m.common_version({ version: String(item.version) })}
-											{#if item.published_by}
-												· {item.published_by}
-											{/if}
-											· {new Date(item.published_at).toLocaleDateString(getLocale())}
-										</div>
-									</div>
-									<ChevronRightIcon class="h-5 w-5 shrink-0 opacity-40" aria-hidden="true" />
-								</a>
-							</li>
+							<ListRow
+								href={sopLatestHref(item.sop_id)}
+								title={item.title}
+								meta={[
+									m.common_version({ version: String(item.version) }),
+									item.published_by,
+									new Date(item.published_at).toLocaleDateString(getLocale())
+								]
+									.filter(Boolean)
+									.join(' · ')}
+								chevron
+							>
+								{#if item.change_summary}{item.change_summary}{/if}
+							</ListRow>
 						{/each}
 					</ul>
 				{/if}
@@ -285,9 +232,7 @@
 						class="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3"
 					>
 						{#each favoriteSops as sop (sop.id)}
-							<li
-								class="card card-border bg-base-200/30 border-base-200/80 shadow-none transition-colors hover:bg-base-200/50"
-							>
+							<Card as="li" variant="subtle" class="border-base-200/80">
 								<div class="card-body flex flex-row items-start gap-3 p-4">
 									<div class="avatar avatar-placeholder shrink-0" aria-hidden="true">
 										<div
@@ -320,7 +265,7 @@
 										</button>
 									</form>
 								</div>
-							</li>
+							</Card>
 						{/each}
 					</ul>
 				{/if}

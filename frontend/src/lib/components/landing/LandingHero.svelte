@@ -1,4 +1,5 @@
-<script>
+<script lang="ts">
+	import Card from '$lib/components/Card.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 </script>
 
@@ -40,7 +41,7 @@
 				>{m.landing_eval_after()}
 			</p>
 		</div>
-		<div class="card bg-base-200 max-w-md shadow-inner">
+		<Card variant="inset" bordered={false} class="max-w-md">
 			<div class="card-body gap-4 text-left">
 				<h2 class="card-title text-lg">{m.landing_glance()}</h2>
 				<ul class="space-y-3 text-sm">
@@ -58,7 +59,7 @@
 					</li>
 				</ul>
 			</div>
-		</div>
+		</Card>
 	</div>
 </section>
 

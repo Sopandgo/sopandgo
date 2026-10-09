@@ -1,16 +1,24 @@
-<script>
+<script lang="ts">
     import { getInitials } from '$lib/utils/getInitials';
 
-    /** @type {{ displayName?: string, color?: 'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'error' | 'warning' , size?: 'sm' | 'md' | 'lg' }} */
-    let { displayName = '', color = 'neutral', size = 'md' } = $props();
+    type Color = 'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'error' | 'warning';
+    type Size = 'sm' | 'md' | 'lg';
 
-    const sizeClasses = {
+    interface Props {
+        displayName?: string;
+        color?: Color;
+        size?: Size;
+    }
+
+    let { displayName = '', color = 'neutral', size = 'md' }: Props = $props();
+
+    const sizeClasses: Record<Size, string> = {
         sm: 'w-8',
         md: 'w-10',
         lg: 'w-12'
     };
 
-    const colorClasses = {
+    const colorClasses: Record<Color, string> = {
         neutral: 'bg-neutral text-neutral-content',
         primary: 'bg-primary text-primary-content',
         secondary: 'bg-secondary text-secondary-content',
@@ -20,8 +28,8 @@
         warning: 'bg-warning text-warning-content'
     };
     
-    const selectedColorClass = $derived(colorClasses[color] || colorClasses.neutral);
-    const selectedSizeClass = $derived(sizeClasses[size] || sizeClasses.md);
+    const selectedColorClass = $derived(colorClasses[color]);
+    const selectedSizeClass = $derived(sizeClasses[size]);
 </script>
 
 <div class="avatar avatar-placeholder">

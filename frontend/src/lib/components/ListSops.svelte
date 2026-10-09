@@ -7,6 +7,7 @@
   } from 'lucide-svelte';
   import type { SOPListResponse } from '$lib/sdk/types';
   import Card from './Card.svelte';
+  import ListRow from './ListRow.svelte';
   import { goto } from '$app/navigation';
   import { enhance } from '$app/forms';
   import * as m from '$lib/paraglide/messages.js';
@@ -64,55 +65,30 @@
     </li>
 
     {#each sops as sop (sop.id)}
-      <li
-        class="list-row items-center hover:bg-base-200/50 transition-colors group relative flex flex-nowrap gap-2"
+      <ListRow
+        href={rowHref(sop.id)}
+        title={sop.title}
+        linkLabel={m.sops_view_latest({ title: sop.title })}
+        meta={m.sops_id_date({ id: sop.id, date: new Date(sop.created_at).toLocaleDateString(getLocale()) })}
+        icon={NotebookIcon}
+        iconTone="secondary"
       >
-        <a
-          href={rowHref(sop.id)}
-          class="flex flex-1 items-center gap-3 lg:gap-4 min-w-0"
-          aria-label={m.sops_view_latest({ title: sop.title })}
-        >
-          <div class="z-10 pointer-events-none shrink-0" aria-hidden="true">
-            <div class="avatar avatar-placeholder">
-              <div
-                class="bg-secondary text-secondary-content w-12 lg:w-16 rounded-field flex items-center justify-center"
-              >
-                <NotebookIcon size={24} />
-              </div>
-            </div>
-          </div>
+        {#snippet metaExtra()}
+          {#each sop.tags as tag (tag.id)}
+            <button
+              type="button"
+              onclick={() => onTagClick(tag.id)}
+              class="badge badge-sm relative z-10 cursor-pointer hover:badge-outline transition-all {activeFilters.tag_id === tag.id
+                ? 'badge-primary'
+                : 'badge-ghost opacity-70'}"
+              aria-label={m.sops_filter_tag({ title: tag.title })}
+            >
+              {tag.title}
+            </button>
+          {/each}
+        {/snippet}
 
-          <div class="flex-1 z-10 min-w-0">
-            <div class="font-bold text-sm lg:text-base group-hover:text-primary transition-colors">
-              {sop.title}
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2 mt-1">
-              <div class="text-[10px] opacity-50 font-mono uppercase tracking-tighter">
-                {m.sops_id_date({ id: sop.id, date: new Date(sop.created_at).toLocaleDateString(getLocale()) })}
-              </div>
-
-              {#each sop.tags as tag (tag.id)}
-                <button
-                  type="button"
-                  onclick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onTagClick(tag.id);
-                  }}
-                  class="badge badge-sm cursor-pointer hover:badge-outline transition-all {activeFilters.tag_id === tag.id
-                    ? 'badge-primary'
-                    : 'badge-ghost opacity-70'}"
-                  aria-label={m.sops_filter_tag({ title: tag.title })}
-                >
-                  {tag.title}
-                </button>
-              {/each}
-            </div>
-          </div>
-        </a>
-
-        <div class="flex gap-1 z-10 shrink-0 items-center">
+        {#snippet trailing()}
           {#if sop.is_favorite}
             <form method="POST" action="?/unfavorite" use:enhance>
               <input type="hidden" name="sop_id" value={sop.id} />
@@ -144,8 +120,8 @@
           >
             <ChevronRightIcon />
           </a>
-        </div>
-      </li>
+        {/snippet}
+      </ListRow>
     {:else}
       <li class="p-12 text-center">
         <div class="text-sm opacity-40">{m.sops_empty()}</div>

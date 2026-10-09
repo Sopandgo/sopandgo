@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import * as m from '$lib/paraglide/messages.js';
 
   const raw = String(__APP_VERSION__ || 'dev').replace(/^v/, '');

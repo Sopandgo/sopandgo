@@ -1,4 +1,6 @@
 <script lang="ts">
+    import Alert from '$lib/components/Alert.svelte';
+    import Card from '$lib/components/Card.svelte';
     import { enhance } from '$app/forms';
     import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
     import type { SOPAsset } from '$lib/sdk/types';
@@ -47,15 +49,14 @@
 
 <div class="h-full">
     {#if form?.message}
-        <div role="alert" class="alert alert-error mb-6 shadow-sm">
-            <span class="whitespace-pre-wrap text-sm">{form.message}</span>
-        </div>
+        <Alert variant="error" message={form.message} class="mb-6 shadow-sm text-sm" />
     {/if}
 
+    <Card class="h-full">
     <form 
         method="POST" 
         action="?/publish" 
-        class="card bg-base-100 shadow-md border border-base-200 h-full"
+        class="h-full"
         use:enhance={() => {
             publishing = true;
             return async ({ update }) => {
@@ -174,4 +175,5 @@
             </div>
         </div>
     </form>
+    </Card>
 </div>

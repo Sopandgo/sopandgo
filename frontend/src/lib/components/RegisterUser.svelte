@@ -54,9 +54,9 @@
   {/if}
 
   {#if result?.link}
-    <div class="alert alert-info text-xs break-all">
-      <span>{m.users_invite_link()} <code>{result.link}</code></span>
-    </div>
+    <Alert variant="info" compact class="break-all">
+      {m.users_invite_link()} <code>{result.link}</code>
+    </Alert>
   {/if}
 
   <form

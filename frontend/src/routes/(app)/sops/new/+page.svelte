@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Alert from '$lib/components/Alert.svelte';
     import { enhance } from '$app/forms';
     import { HouseIcon, NotebookIcon, NotebookPenIcon, PlusIcon, RocketIcon } from 'lucide-svelte';
     import type { ActionData } from './$types';
@@ -37,10 +38,7 @@
             </div>
 
             {#if form?.message}
-                <div role="alert" class="alert alert-error my-4 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <span>{form.message}</span>
-                </div>
+                <Alert variant="error" message={form.message} class="my-4 shadow-sm" />
             {/if}
 
             <form 

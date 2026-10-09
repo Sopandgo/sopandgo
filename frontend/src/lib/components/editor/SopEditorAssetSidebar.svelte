@@ -1,4 +1,6 @@
 <script lang="ts">
+    import Alert from '$lib/components/Alert.svelte';
+    import Card from '$lib/components/Card.svelte';
     import { enhance } from '$app/forms';
     import {
         PaperclipIcon,
@@ -66,7 +68,7 @@
 </script>
 
 <div class="flex flex-col gap-6">
-    <div class="card bg-base-100 shadow-sm border border-base-200">
+    <Card variant="flat">
         <div class="card-body p-4 gap-3">
             <h3 class="card-title text-sm uppercase tracking-wider opacity-70 flex items-center gap-2">
                 <FileUpIcon class="w-4 h-4" />
@@ -104,14 +106,12 @@
                 </p>
             {/if}
             {#if importError}
-                <div role="alert" class="alert alert-warning text-xs py-2">
-                    <span class="whitespace-pre-wrap">{importError}</span>
-                </div>
+                <Alert variant="warning" message={importError} compact />
             {/if}
         </div>
-    </div>
+    </Card>
 
-    <div class="card bg-base-100 shadow-sm border border-base-200">
+    <Card variant="flat">
         <div class="card-body p-4">
             <h3 class="card-title text-sm uppercase tracking-wider opacity-70 flex items-center gap-2">
                 <PaperclipIcon class="w-4 h-4" />
@@ -121,9 +121,7 @@
             <div class="divider my-1"></div>
 
             {#if form?.uploadError}
-                <div class="alert alert-error text-xs p-2 mb-2 rounded-md">
-                    <span class="whitespace-pre-wrap">{form.uploadError}</span>
-                </div>
+                <Alert variant="error" message={form.uploadError} compact class="mb-2" />
             {/if}
 
             {#if safeAssets.length > 0}
@@ -179,7 +177,7 @@
                 {m.editor_upload()}
             </button>
         </div>
-    </div>
+    </Card>
     
     <form 
         method="POST" 
@@ -208,9 +206,7 @@
         />
     </form>
     
-    <div class="alert shadow-sm text-sm">
-        <span>
-            <strong>{m.editor_tip()}</strong> {m.editor_tip_body()}
-        </span>
-    </div>
+    <Alert variant="neutral" role="note" class="shadow-sm text-sm">
+        <strong>{m.editor_tip()}</strong> {m.editor_tip_body()}
+    </Alert>
 </div>

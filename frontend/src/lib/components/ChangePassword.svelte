@@ -1,37 +1,30 @@
-<script>
+<script lang="ts">
   import { enhance } from '$app/forms';
   import * as m from '$lib/paraglide/messages.js';
   import Alert from './Alert.svelte';
 
-  /**
-   * @typedef {{
-   *   ok?: boolean,
-   *   error?: string
-   * }} PasswordResult
-   */
+  type PasswordResult = { ok?: boolean; error?: string };
 
-  /** @type {{
-   *   form: any,
-   *   actionName?: string,
-   *   resultKey?: string,
-   *   userId?: string | null,
-   *   legend?: string | null,
-   *   showLogoutWarning?: boolean,
-   *   onSuccess?: (() => void) | null
-   * }} */
+  interface Props {
+    /** Page ActionData; the result is read from `form[resultKey]`. */
+    form: Record<string, unknown> | null | undefined;
+    actionName?: string;
+    resultKey?: string;
+    userId?: string | null;
+    showLogoutWarning?: boolean;
+  }
+
   let {
     form,
     actionName = 'changePassword',
     resultKey = 'changePassword',
     userId = null,
-    showLogoutWarning = true,
-    onSuccess = null
-  } = $props();
+    showLogoutWarning = true
+  }: Props = $props();
 
   let loading = $state(false);
 
-  /** @type {PasswordResult | undefined} */
-  const result = $derived(form?.[resultKey]);
+  const result = $derived(form?.[resultKey] as PasswordResult | undefined);
   const hasError = $derived(!!result?.error);
   const isOk = $derived(!!result?.ok);
 </script>

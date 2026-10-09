@@ -1,44 +1,64 @@
-<script>
-  /**
-   * @typedef {'warning' | 'info' | 'success' | 'error'} AlertVariant
-   */
+<script lang="ts">
+    import type { Snippet } from 'svelte';
+    import { CircleCheckIcon, CircleXIcon, InfoIcon, TriangleAlertIcon } from 'lucide-svelte';
 
-  /** @type {{ variant?: AlertVariant, message: string, class?: string }} */
-  let { variant = 'info', message, class: extraClass = '' } = $props();
+    type Variant = 'info' | 'success' | 'warning' | 'error' | 'neutral';
 
-  const variantClass = $derived(
-    variant === 'warning'
-      ? 'alert-warning'
-      : variant === 'success'
-        ? 'alert-success'
-        : variant === 'error'
-          ? 'alert-error'
-          : 'alert-info'
-  );
+    interface Props {
+        variant?: Variant;
+        /** Plain text body; use `children` for markup (links, code). */
+        message?: string;
+        children?: Snippet;
+        /** Defaults to `alert` for errors and warnings, `status` otherwise. */
+        role?: 'alert' | 'status' | 'note';
+        /** Tinted background instead of solid. */
+        soft?: boolean;
+        /** Smaller text and icon for alerts inside sidebars and lists. */
+        compact?: boolean;
+        class?: string;
+    }
+
+    let {
+        variant = 'info',
+        message,
+        children,
+        role,
+        soft = false,
+        compact = false,
+        class: extraClass = ''
+    }: Props = $props();
+
+    const variantClasses: Record<Variant, string> = {
+        info: 'alert-info',
+        success: 'alert-success',
+        warning: 'alert-warning',
+        error: 'alert-error',
+        neutral: ''
+    };
+
+    const icons = {
+        info: InfoIcon,
+        success: CircleCheckIcon,
+        warning: TriangleAlertIcon,
+        error: CircleXIcon,
+        neutral: null
+    };
+
+    const Icon = $derived(icons[variant]);
+    const resolvedRole = $derived(role ?? (variant === 'error' || variant === 'warning' ? 'alert' : 'status'));
 </script>
 
-<div role="alert" class={`alert ${variantClass} ${extraClass}`.trim()}>
-  {#if variant === 'warning'}
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
-  {:else if variant === 'info'}
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-6 w-6 shrink-0 stroke-current">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  {:else if variant === 'success'}
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  {:else}
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  {/if}
+<div
+    role={resolvedRole}
+    class="alert {variantClasses[variant]} {soft ? 'alert-soft' : ''} {compact ? 'py-2 text-xs' : ''} {extraClass}"
+>
+    {#if Icon}
+        <Icon class="{compact ? 'h-4 w-4' : 'h-6 w-6'} shrink-0" aria-hidden="true" />
+    {/if}
 
-  <span>{message}</span>
+    {#if children}
+        <div class="min-w-0">{@render children()}</div>
+    {:else}
+        <span class="whitespace-pre-wrap">{message}</span>
+    {/if}
 </div>

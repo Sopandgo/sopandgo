@@ -230,19 +230,17 @@
                     </div>
 
                     {#if s3.last_error}
-                        <div role="alert" class="alert alert-error alert-soft flex-col items-start gap-1 text-start sm:flex-row sm:items-center">
-                            <span class="font-semibold">{m.backup_last_error()}</span>
-                            <span class="text-sm">{s3.last_error}</span>
-                        </div>
+                        <Alert variant="error" soft>
+                            <div class="font-semibold">{m.backup_last_error()}</div>
+                            <div class="text-sm">{s3.last_error}</div>
+                        </Alert>
                     {/if}
                 {:else}
-                    <div role="alert" class="alert alert-info alert-soft">
-                        <span>
-                            {m.backup_s3_off_before()}
-                            <code class="mx-0.5 rounded bg-base-200 px-1 py-0.5 text-xs">BACKUP_S3_ENABLED</code>
-                            {m.backup_s3_off_after()}
-                        </span>
-                    </div>
+                    <Alert variant="info" soft>
+                        {m.backup_s3_off_before()}
+                        <code class="mx-0.5 rounded bg-base-200 px-1 py-0.5 text-xs">BACKUP_S3_ENABLED</code>
+                        {m.backup_s3_off_after()}
+                    </Alert>
                 {/if}
             </div>
         </Card>

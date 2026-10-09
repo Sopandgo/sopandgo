@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Card from '$lib/components/Card.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
 	const shots = $derived([
@@ -32,7 +33,7 @@
 	</div>
 	<div class="grid gap-8 lg:grid-cols-3">
 		{#each shots as item, i (item.src)}
-			<figure class="card bg-base-100 shadow-sm">
+			<Card as="figure" variant="flat" bordered={false}>
 				<div class="bg-base-200/80 border-base-300 border-b p-2">
 					<img
 						src={item.src}
@@ -45,11 +46,13 @@
 						decoding="async"
 					/>
 				</div>
+				<!-- Card renders a <figure> here (as="figure"); the checker cannot see through the component. -->
+				<!-- svelte-ignore a11y_figcaption_parent -->
 				<figcaption class="card-body gap-2 pt-4">
 					<h3 class="card-title text-base">{item.title}</h3>
 					<p class="text-base-content/70 text-sm">{item.caption}</p>
 				</figcaption>
-			</figure>
+			</Card>
 		{/each}
 	</div>
 </section>

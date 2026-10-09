@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Card from './Card.svelte';
 	import type { VersionDiff } from '$lib/sdk/types';
 	import * as m from '$lib/paraglide/messages.js';
 
@@ -9,7 +10,7 @@
 
 {#if diff?.comparable}
 	<section aria-labelledby="version-diff-heading">
-		<div class="card bg-base-100 border border-base-200 shadow-sm">
+		<Card variant="flat">
 			<div class="border-b border-base-200 p-4 sm:p-5">
 				<h2 id="version-diff-heading" class="text-lg font-semibold">{m.editor_what_changed()}</h2>
 				<p class="mt-1 text-sm text-base-content/70">
@@ -38,6 +39,6 @@
 					{/each}
 				</div>
 			{/if}
-		</div>
+		</Card>
 	</section>
 {/if}

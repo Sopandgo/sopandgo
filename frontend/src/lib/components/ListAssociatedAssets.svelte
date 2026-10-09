@@ -1,13 +1,14 @@
 <script lang="ts">
     import { ExternalLinkIcon, PaperclipIcon } from 'lucide-svelte';
     import IntegrityCheck from './IntegrityCheck.svelte';
+    import ListRow from './ListRow.svelte';
     import type { SOPAsset } from '$lib/sdk/types';
   import Card from './Card.svelte';
   import * as m from '$lib/paraglide/messages.js';
   import { getLocale } from '$lib/paraglide/runtime';
 
     // Define props with Svelte 5 runes
-    let { items = [] } = $props<{ items?: SOPAsset[] | null }>();
+    let { items = [] }: { items?: SOPAsset[] | null } = $props();
     
     // Safely derive assets
     let assets = $derived(items ?? []);
@@ -20,21 +21,14 @@
         </li>
 
         {#each assets as asset (asset.id)}
-            <li class="list-row items-center hover:bg-base-200/50 transition-colors">
-                <div>
-                    <PaperclipIcon class="p-1 opacity-40 " size={20}/>
-                </div>
-
-                <div class="flex-1">
-                    <div class="font-bold text-sm lg:text-base">{asset.file_name}</div>
-                    <div class="text-[10px] opacity-40 font-mono uppercase tracking-tighter">
-                        {m.assets_uploaded({ when: new Date(asset.created_at).toLocaleString(getLocale()) })}
-                    </div>
-                </div>
-
-                <div class="flex gap-2 items-center">
+            <ListRow
+                title={asset.file_name}
+                meta={m.assets_uploaded({ when: new Date(asset.created_at).toLocaleString(getLocale()) })}
+                icon={PaperclipIcon}
+                iconTone="plain"
+            >
+                {#snippet trailing()}
                     <IntegrityCheck kind="asset" id={asset.id} />
-                    
                     <a
                         href={`/api/assets/download?id=${encodeURIComponent(asset.id)}`}
                         target="_blank"
@@ -45,8 +39,8 @@
                     >
                         <ExternalLinkIcon size={18} class="opacity-70"/>
                     </a>
-                </div>
-            </li>
+                {/snippet}
+            </ListRow>
         {:else}
             <li class="p-12 text-center">
                 <div class="text-sm opacity-40">{m.assets_empty()}</div>

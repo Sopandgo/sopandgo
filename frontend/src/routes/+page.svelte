@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import LandingHero from '$lib/components/landing/LandingHero.svelte';
 	import LandingMarketing from '$lib/components/landing/LandingMarketing.svelte';
 	import LandingProductScreens from '$lib/components/landing/LandingProductScreens.svelte';

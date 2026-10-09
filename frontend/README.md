@@ -51,6 +51,12 @@ Sidebar lists SOP assets and **Upload Asset** (separate POST `?/upload`). Markdo
 | `src/lib/components/editor/` | New-version editor and asset sidebar |
 | `src/lib/components/MarkdownRenderer.svelte` | Markdown → HTML for SOP bodies (viewer + editor preview) |
 | `src/lib/security/sanitizeSopHtml.ts` | DOMPurify profile for `{@html}` SOP output |
+| `src/lib/components/Card.svelte` | Every card surface; `variant` (`raised`, `flat`, `inset`, `subtle`) sets background and shadow, `class` only adds layout |
+| `src/lib/components/Alert.svelte` | Every alert; `message` for text or children for markup, plus `soft`, `compact`, and `role` |
+| `src/lib/components/ListRow.svelte` | Row in a `<ul class="list">`; with `href` the title is a stretched link and `trailing` actions stay clickable |
+| `src/lib/components/Combobox.svelte` | Accessible searchable select (WAI-ARIA combobox), used by the audit-log filters |
+
+Use these instead of writing `card` or `alert` classes by hand. All components use `<script lang="ts">`.
 
 ## Icons
 

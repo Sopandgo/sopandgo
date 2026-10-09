@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Alert from '$lib/components/Alert.svelte';
     import { enhance } from '$app/forms';
     import Avatar from '$lib/components/Avatar.svelte';
     import ToggleUserStatus from './ToggleUserStatus.svelte';
@@ -37,19 +38,21 @@
         <ul class="list">
             {#if form?.triggerPasswordReset?.error}
                 <li class="px-4 pt-4">
-                    <div class="alert alert-error text-sm">{form.triggerPasswordReset.error}</div>
+                    <Alert variant="error" message={form.triggerPasswordReset.error} class="text-sm" />
                 </li>
             {/if}
             {#if form?.triggerPasswordReset?.ok}
                 <li class="px-4 pt-4 space-y-2">
-                    <div class="alert alert-success text-sm">
-                        {form.triggerPasswordReset.message ??
+                    <Alert
+                        variant="success"
+                        class="text-sm"
+                        message={form.triggerPasswordReset.message ??
                             (mailMode === 'manual_links' ? m.users_reset_generated() : m.users_reset_sent())}
-                    </div>
+                    />
                     {#if form?.triggerPasswordReset?.link}
-                        <div class="alert alert-info text-xs break-all">
-                            <span>{m.users_reset_link()} <code>{form.triggerPasswordReset.link}</code></span>
-                        </div>
+                        <Alert variant="info" compact class="break-all">
+                            {m.users_reset_link()} <code>{form.triggerPasswordReset.link}</code>
+                        </Alert>
                     {/if}
                 </li>
             {/if}

@@ -1,19 +1,17 @@
-<script>
+<script lang="ts">
     import * as m from '$lib/paraglide/messages.js';
 
-    let { status } = $props();
+    let { status }: { status: string | null | undefined } = $props();
+
+    const badges: Record<string, { tone: string; label: () => string }> = {
+        draft: { tone: 'badge-secondary', label: m.status_draft },
+        rc: { tone: 'badge-warning', label: m.status_rc },
+        published: { tone: 'badge-primary', label: m.status_published },
+        rejected: { tone: 'badge-error', label: m.status_rejected },
+        superseded: { tone: 'badge-ghost', label: m.status_superseded }
+    };
+
+    const badge = $derived(badges[status ?? ''] ?? { tone: 'badge-ghost', label: m.status_unclear });
 </script>
 
-{#if status == "draft"}
-    <div class="badge badge-secondary">{m.status_draft()}</div>
-{:else if status == "rc"}
-    <div class="badge badge-warning">{m.status_rc()}</div>
-{:else if status == "published"}
-    <div class="badge badge-primary">{m.status_published()}</div>
-{:else if status == "rejected"}
-    <div class="badge badge-error">{m.status_rejected()}</div>
-{:else if status == "superseded"}
-    <div class="badge badge-ghost">{m.status_superseded()}</div>
-{:else}
-    <div class="badge badge-ghost">{m.status_unclear()}</div>
-{/if}
+<div class="badge {badge.tone}">{badge.label()}</div>
