@@ -28,7 +28,7 @@ var (
 	ErrInvalidBackupArchive    = errors.New("invalid backup archive")
 	ErrUnsupportedBackupFormat = errors.New("unsupported backup format version")
 	ErrSchemaTooNew            = errors.New("backup schema is newer than this app supports")
-	ErrApplyConfirmation       = errors.New(`confirmation must equal "APPLY BACKUP"`)
+	ErrApplyConfirmation       = errors.New(`confirmation must equal "RESTORE BACKUP"`)
 	ErrPendingRestore          = errors.New("a backup restore is already staged and waiting for restart")
 )
 
@@ -148,7 +148,7 @@ func (s *Service) ValidateImportArchive(file multipart.File) (ImportResult, erro
 }
 
 func (s *Service) StageImportApply(file multipart.File, confirmation string) (ApplyResult, error) {
-	if strings.TrimSpace(confirmation) != "APPLY BACKUP" {
+	if strings.TrimSpace(confirmation) != "RESTORE BACKUP" {
 		return ApplyResult{}, ErrApplyConfirmation
 	}
 	if s.HasPendingRestore() {

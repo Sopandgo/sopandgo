@@ -594,7 +594,7 @@
                         type="text"
                         name="confirmation"
                         class="input w-full"
-                        placeholder="APPLY BACKUP"
+                        placeholder="RESTORE BACKUP"
                         autocomplete="off"
                         bind:value={applyConfirmation}
                     />
@@ -603,7 +603,7 @@
                     <button
                         type="submit"
                         class="btn btn-error"
-                        disabled={applyConfirmation.trim() !== 'APPLY BACKUP' || pending !== null}
+                        disabled={applyConfirmation.trim() !== 'RESTORE BACKUP' || pending !== null}
                     >
                         {@render buttonLabel(pending === 'apply', m.backup_stage_button(), m.backup_staging())}
                     </button>

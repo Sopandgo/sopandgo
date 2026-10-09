@@ -16,6 +16,6 @@ Operator-facing docs: `docs/ops/backup-and-restore.md`. HTTP surface: `/api/admi
 
 1. **Export** — consistent SQLite snapshot + `sops/` + `manifest.json` into a `.zip`.
 2. **Validate** — check archive and schema compatibility without touching live data (`422` on failure via API).
-3. **Apply** — requires confirmation string `APPLY BACKUP`; stages under `_restore_pending/` and writes a pre-apply snapshot; swap happens on **next process start**. The live S3 settings are written next to the staged database and put back by `ApplyCarriedS3Settings` after migrations, so the archive's S3 settings are never used.
+3. **Restore** (`StageImportApply`) — requires confirmation string `RESTORE BACKUP`; stages under `_restore_pending/` and writes a pre-apply snapshot; swap happens on **next process start**. The live S3 settings are written next to the staged database and put back by `ApplyCarriedS3Settings` after migrations, so the archive's S3 settings are never used.
 
 Mutating APIs may return `503` while the maintenance lock is held during export/apply.

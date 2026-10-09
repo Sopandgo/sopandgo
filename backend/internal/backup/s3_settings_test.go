@@ -182,7 +182,7 @@ func TestRestore_KeepsCurrentS3Settings(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			_, err = svc.StageImportApply(f, "APPLY BACKUP")
+			_, err = svc.StageImportApply(f, "RESTORE BACKUP")
 			_ = f.Close()
 			if err != nil {
 				t.Fatal(err)

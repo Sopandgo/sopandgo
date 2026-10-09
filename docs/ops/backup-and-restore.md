@@ -49,10 +49,10 @@ Export is also available via the API: `GET /api/admin/backups/export` (admin aut
 - Upload a `.zip` to check structure and compatibility **without** changing live data.
 - Rejects backups whose **database schema is newer** than the running app (older-or-equal schema is allowed; migrations run on startup after restore).
 
-### Apply (staged restore)
+### Restore (staged)
 
 - Destructive: stages replacement of live data from the uploaded archive.
-- After you choose the archive, a confirmation dialog repeats the warning and requires typing **`APPLY BACKUP`** exactly.
+- After you choose the archive, a confirmation dialog repeats the warning and requires typing **`RESTORE BACKUP`** exactly.
 - Before staging, the server writes a **pre-apply** snapshot zip under:
   - `data/_backup_snapshots/` (filename prefix `pre-apply-`)
 - Staged payload is written to:
@@ -60,7 +60,7 @@ Export is also available via the API: `GET /api/admin/backups/export` (admin aut
 - **The restore is not active until the next backend process start.** Restart the
   container or process (e.g. `docker compose restart`) so startup can apply
   `_restore_pending` and then run normal migrations.
-- While a restore is pending (`_restore_pending` present), further validate/apply
+- While a restore is pending (`_restore_pending` present), further validate/restore
   uploads are blocked until after restart clears it.
 - Automatic S3 backup settings are **not** taken from the archive: the running
   instance keeps its own (see [Automatic S3 backups](#automatic-s3-backups-optional)).
@@ -112,7 +112,7 @@ than the limit, the **oldest** extras are deleted until the count is at most the
 limit. The connection-test probe never matches the pattern.
 
 **Restores keep this instance's S3 settings.** The settings live in `app.db`,
-which an archive contains, but a staged apply keeps the running instance's
+which an archive contains, but a staged restore keeps the running instance's
 settings (including the encrypted secret) instead of the archive's: a restore
 brings back data, not where backups go. It also means a restore onto a server
 with a different `SECRET_ENCRYPTION_KEY` never leaves an S3 secret it cannot decrypt.
@@ -191,9 +191,9 @@ The appropriate frequency depends on how often SOPs are updated.
 
 ## Restore procedure
 
-### From admin staged apply
+### From an admin staged restore
 
-1. Use **Apply** on `/admin/settings/backup` with confirmation `APPLY BACKUP`.
+1. Use **Restore backup** on `/admin/settings/backup` and confirm with `RESTORE BACKUP`.
 2. **Restart** the backend/container so pending files in `_restore_pending` are applied.
 3. Verify in the web UI (SOPs, acknowledgments, audit as expected).
 
@@ -233,7 +233,7 @@ Because SOP content is stored as plain files:
 
 **Schema compatibility:** Restoring an **older** backup into a **newer** app version
 is supported (migrations upgrade the database on startup). Restoring a backup
-whose schema is **newer** than the app supports is rejected by validate/apply.
+whose schema is **newer** than the app supports is rejected by validate and restore.
 
 ---
 

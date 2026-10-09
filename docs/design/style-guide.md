@@ -103,7 +103,7 @@ The bordered `base-100` section that holds every block of content on a page; alw
 
 **Consumer provides**: `title` (optional), `description` (optional), an `actions` snippet (optional) and `children`.
 
-**Collapsible**: when a page lists sections that are configured once and then left alone (the channels on Settings → Integrations, the SMTP and Resend transports on Settings → Email, S3, validate and apply on Settings → Backup), render them through `$lib/components/CollapsibleCard.svelte`. Its header row is a disclosure: a 20px chevron that turns when open, the `section-title` as a `<button aria-expanded aria-controls>` stretched over the row, and a `meta` line. The section's state stays visible on the collapsed row, as the control itself when it can be changed there (the channel's on/off toggle, raised above the stretched button) or as a badge when it cannot ("Not configured"). Don't use `<details>` for this: a toggle inside `<summary>` is a control nested in a button. Collapsed by default; open the section by itself when a form inside it returns a result, so the message is never hidden. The row hovers to `base-200` and keeps the focus ring inset.
+**Collapsible**: when a page lists sections that are configured once and then left alone (the channels on Settings → Integrations, the SMTP and Resend transports on Settings → Email, S3, validate and restore on Settings → Backup), render them through `$lib/components/CollapsibleCard.svelte`. Its header row is a disclosure: a 20px chevron that turns when open, the `section-title` as a `<button aria-expanded aria-controls>` stretched over the row, and a `meta` line. The section's state stays visible on the collapsed row, as the control itself when it can be changed there (the channel's on/off toggle, raised above the stretched button) or as a badge when it cannot ("Not configured"). Don't use `<details>` for this: a toggle inside `<summary>` is a control nested in a button. Collapsed by default; open the section by itself when a form inside it returns a result, so the message is never hidden. The row hovers to `base-200` and keeps the focus ring inset.
 
 **Don't**
 - Don't write `class="card …"` by hand in pages. Today 16 places do; route them through `Card`.
@@ -254,11 +254,11 @@ A toggle switches something on or off (a notification channel, a user account); 
 
 ### ConfirmDialog
 
-The modal that confirms a destructive action, such as applying a backup (`$lib/components/ConfirmDialog.svelte`).
+The modal that confirms a destructive action, such as restoring a backup (`$lib/components/ConfirmDialog.svelte`).
 
 **Markup**: a native `<dialog class="modal">` opened with `showModal()`, so focus moves into it and Escape closes it. The box is `modal-box` on `base-100` with a `base-300` border, `radius-box` and `shadow-overlay`.
 
-**Anatomy**: `section-title` heading (a question: "Apply this backup?"), the consequence as a `warning` `Alert`, any typed confirmation, then Cancel (default `btn`) and the confirm button (`btn btn-error`) on the right.
+**Anatomy**: `section-title` heading (a question: "Restore this backup?"), the consequence as a `warning` `Alert`, any typed confirmation, then Cancel (default `btn`) and the confirm button (`btn btn-error`) on the right.
 
 **Behaviour**: the button that opens it is a default `btn` with `text-error`, and checks the form first (`reportValidity()`). Put the dialog inside the `<form>` it confirms, so its fields are submitted and the confirm button submits. While the action runs, the confirm button shows its spinner and Cancel and Escape do nothing. The dialog closes when the result arrives; the result shows as an `Alert` in the card.
 
