@@ -35,26 +35,23 @@ func TestOpen_WrongKey(t *testing.T) {
 	}
 }
 
-func TestKeyFromEnv_NameAndLegacyFallback(t *testing.T) {
-	newKey := strings.Repeat("a", 32)
-	oldKey := strings.Repeat("b", 32)
+func TestKeyFromEnv(t *testing.T) {
+	raw := strings.Repeat("a", 32)
 
 	cases := []struct {
-		name, current, legacy string
-		wantSource            string
-		wantKey               string
+		name, env string
+		wantSet   bool
+		wantKey   string
 	}{
-		{"unset", "", "", "", ""},
-		{"new name", newKey, "", KeyEnv, newKey},
-		{"legacy name only", "", oldKey, LegacyKeyEnv, oldKey},
-		{"new name wins", newKey, oldKey, KeyEnv, newKey},
+		{"unset", "", false, ""},
+		{"valid", raw, true, raw},
+		{"wrong length", "too-short", true, ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv(KeyEnv, tc.current)
-			t.Setenv(LegacyKeyEnv, tc.legacy)
-			if got := KeyEnvSource(); got != tc.wantSource {
-				t.Fatalf("KeyEnvSource() = %q, want %q", got, tc.wantSource)
+			t.Setenv(KeyEnv, tc.env)
+			if got := KeySet(); got != tc.wantSet {
+				t.Fatalf("KeySet() = %v, want %v", got, tc.wantSet)
 			}
 			key, ok := KeyFromEnv()
 			if ok != (tc.wantKey != "") || string(key) != tc.wantKey {

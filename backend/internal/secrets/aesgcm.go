@@ -64,30 +64,18 @@ func Open(key, blob []byte) ([]byte, error) {
 // KeyEnv names the environment variable that holds the key.
 const KeyEnv = "SECRET_ENCRYPTION_KEY"
 
-// LegacyKeyEnv is the key's former name, still read when KeyEnv is unset so
-// existing deployments keep decrypting their stored secrets.
-const LegacyKeyEnv = "SMTP_SECRET_ENCRYPTION_KEY"
-
-// KeyEnvSource reports which variable KeyFromEnv reads: KeyEnv when set,
-// else LegacyKeyEnv when set, else "".
-func KeyEnvSource() string {
-	if strings.TrimSpace(os.Getenv(KeyEnv)) != "" {
-		return KeyEnv
-	}
-	if strings.TrimSpace(os.Getenv(LegacyKeyEnv)) != "" {
-		return LegacyKeyEnv
-	}
-	return ""
+// KeySet reports whether KeyEnv is set at all, valid or not.
+func KeySet() bool {
+	return strings.TrimSpace(os.Getenv(KeyEnv)) != ""
 }
 
-// KeyFromEnv reads SECRET_ENCRYPTION_KEY (or the legacy SMTP_SECRET_ENCRYPTION_KEY):
-// base64 or hex-encoded 32 bytes. Returns (nil, false) when unset or invalid.
+// KeyFromEnv reads SECRET_ENCRYPTION_KEY: base64 or hex-encoded 32 bytes.
+// Returns (nil, false) when unset or invalid.
 func KeyFromEnv() ([]byte, bool) {
-	name := KeyEnvSource()
-	if name == "" {
+	s := strings.TrimSpace(os.Getenv(KeyEnv))
+	if s == "" {
 		return nil, false
 	}
-	s := strings.TrimSpace(os.Getenv(name))
 	if b, err := base64.StdEncoding.DecodeString(s); err == nil && len(b) == 32 {
 		return b, true
 	}

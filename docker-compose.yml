@@ -21,8 +21,6 @@ services:
       # Set in `.env` (openssl rand -base64 32). Encrypts stored SMTP and integration secrets.
       # Empty = those secrets cannot be saved until configured.
       - SECRET_ENCRYPTION_KEY=${SECRET_ENCRYPTION_KEY:-}
-      # Former name, still read when SECRET_ENCRYPTION_KEY is empty, so older `.env` files keep working.
-      - SMTP_SECRET_ENCRYPTION_KEY=${SMTP_SECRET_ENCRYPTION_KEY:-}
       - PDF_EXPORT_ENABLED=${PDF_EXPORT_ENABLED:-true}
       - PDF_RENDERER=${PDF_RENDERER:-gotenberg}
       - GOTENBERG_URL=${GOTENBERG_URL:-http://gotenberg:3000}

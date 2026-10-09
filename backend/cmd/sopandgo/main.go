@@ -139,12 +139,10 @@ func main() {
 	// Mail and integration secrets live in SQLite (admin UI), encrypted with SECRET_ENCRYPTION_KEY.
 	encKey, ok := secrets.KeyFromEnv()
 	switch {
-	case !ok && secrets.KeyEnvSource() != "":
-		log.Printf("WARNING: %s is set but does not decode to 32 bytes (base64, hex, or 32 raw bytes); stored secrets cannot be saved or read", secrets.KeyEnvSource())
+	case !ok && secrets.KeySet():
+		log.Println("WARNING: SECRET_ENCRYPTION_KEY does not decode to 32 bytes (base64, hex, or 32 raw bytes); stored secrets cannot be saved or read")
 	case !ok:
 		log.Println("WARNING: SECRET_ENCRYPTION_KEY not set; set a 32-byte key (e.g. openssl rand -base64 32) to save SMTP and integration secrets and to send mail")
-	case secrets.KeyEnvSource() == secrets.LegacyKeyEnv:
-		log.Println("WARNING: SMTP_SECRET_ENCRYPTION_KEY is deprecated; rename it to SECRET_ENCRYPTION_KEY (same value)")
 	}
 
 	smtpSettingsStore := mail.NewSMTPSettingsStore(store.DB, encKey)
