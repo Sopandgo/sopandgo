@@ -6,8 +6,8 @@ var (
 	// ErrSMTPNotConfigured is returned when no SMTP row exists or required fields are missing.
 	ErrSMTPNotConfigured = errors.New("smtp is not configured")
 
-	// ErrSMTPKeyMissing is returned when saving or sending requires SMTP_SECRET_ENCRYPTION_KEY but it is unset.
-	ErrSMTPKeyMissing = errors.New("SMTP_SECRET_ENCRYPTION_KEY is not set or invalid")
+	// ErrSMTPKeyMissing is returned when saving or sending requires SECRET_ENCRYPTION_KEY but it is unset.
+	ErrSMTPKeyMissing = errors.New("SECRET_ENCRYPTION_KEY is not set or invalid")
 
 	// ErrSMTPPasswordRequired is returned on first save without a password.
 	ErrSMTPPasswordRequired = errors.New("smtp password is required on first setup")

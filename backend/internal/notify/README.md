@@ -2,7 +2,7 @@
 
 Outbound instance-level notifications for Slack Incoming Webhooks, Gotify, and generic HTTP webhooks.
 
-Credentials and event subscriptions live in SQLite (`integration_settings`), encrypted with the same `SMTP_SECRET_ENCRYPTION_KEY` used for mail secrets. There are no per-channel env enable flags — unconfigured or disabled channels simply do not send.
+Credentials and event subscriptions live in SQLite (`integration_settings`), encrypted with the same `SECRET_ENCRYPTION_KEY` used for mail secrets. There are no per-channel env enable flags — unconfigured or disabled channels simply do not send.
 
 ## Channels
 

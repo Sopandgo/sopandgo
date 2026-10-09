@@ -23,7 +23,7 @@ The data directory contains:
 - SOP content — Markdown version files and assets under `sops/`
 
 The SMTP password and integration secrets are stored encrypted; recovery still requires the same
-`SMTP_SECRET_ENCRYPTION_KEY` (or re-entered secrets after key rotation) when
+`SECRET_ENCRYPTION_KEY` (or re-entered secrets after key rotation) when
 `mail_mode` is `smtp` or outbound integrations are enabled.
 If `mail_mode` is `manual_links`, invites/resets do not require SMTP delivery.
 
@@ -215,7 +215,7 @@ whose schema is **newer** than the app supports is rejected by validate/apply.
 Unless **S3 automatic backups** are enabled, sopandgo does not upload archives by
 itself. In all cases, operators must still preserve:
 
-- configuration **outside** the data directory (e.g. `docker-compose.yml`, `ORIGIN`, `SMTP_SECRET_ENCRYPTION_KEY`)
+- configuration **outside** the data directory (e.g. `docker-compose.yml`, `ORIGIN`, `SECRET_ENCRYPTION_KEY`)
 - container images
 - host system settings
 

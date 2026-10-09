@@ -25,7 +25,7 @@ cp .env.example .env
 Edit `.env` and set at least:
 
 - **`ORIGIN`** — must match the URL you open in the browser (default `http://localhost:8087`)
-- **`SMTP_SECRET_ENCRYPTION_KEY`** — 32-byte AES key as base64 or hex (`openssl rand -base64 32`)
+- **`SECRET_ENCRYPTION_KEY`** — 32-byte AES key as base64 or hex (`openssl rand -base64 32`)
 - Leave **`SEED_DEMO_DATA=true`** (the default) so the first boot inserts demo users and a sample SOP
 
 3. Start the stack. This pulls the published image. You do not set a version, check out a tag, or build from source.

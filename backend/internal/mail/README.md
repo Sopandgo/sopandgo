@@ -2,7 +2,7 @@
 
 This package sends operational email (invites, password resets, publish notices, test mail) and persists encrypted SMTP / Resend settings.
 
-Delivery mode and transport are chosen in the admin UI (stored in SQLite), not via `SMTP_HOST`-style env vars. Secrets are encrypted with `SMTP_SECRET_ENCRYPTION_KEY`.
+Delivery mode and transport are chosen in the admin UI (stored in SQLite), not via `SMTP_HOST`-style env vars. Secrets are encrypted with `SECRET_ENCRYPTION_KEY`.
 
 ## Modes and transports
 

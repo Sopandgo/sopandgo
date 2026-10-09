@@ -4,7 +4,7 @@ Thanks for helping improve sopandgo. This project targets small labs that need v
 
 ## Development setup
 
-1. Copy `.env.example` → `.env` and set at least `ORIGIN` and `SMTP_SECRET_ENCRYPTION_KEY` for full mail testing.
+1. Copy `.env.example` → `.env` and set at least `ORIGIN` and `SECRET_ENCRYPTION_KEY` for full mail testing.
 2. Build the app from this checkout (labs pull the published image instead; see [docs/ops/releasing.md](docs/ops/releasing.md)):
 
 ```bash
@@ -14,7 +14,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 That local image is tagged `ghcr.io/sopandgo/sopandgo:1` on your machine. Run `docker compose pull` when you want the published image back.
 
 3. Or run components separately:
-    - Backend: `cd backend && go run cmd/sopandgo/main.go`, or `cd backend && air` for live reload (seeds demo data on a fresh `backend/data`)
+    - Backend: `cd backend && go run cmd/sopandgo/main.go`, or `cd backend && air` for live reload (seeds demo data on a fresh `backend/data`). Air loads `backend/.env`: copy `backend/.env.example` and set `SECRET_ENCRYPTION_KEY` there to test mail and integrations
     - Frontend: `cd frontend && npm install && npm run dev`
 
 New to the product surface? [docs/ops/evaluating.md](docs/ops/evaluating.md) covers demo users and a short local tour.

@@ -50,7 +50,7 @@
             </CardPageHeading>
             <p class="text-sm text-base-content/70">
                 {m.settings_integrations_before()}
-                <code class="text-xs bg-base-200 px-1 rounded">SMTP_SECRET_ENCRYPTION_KEY</code>
+                <code class="text-xs bg-base-200 px-1 rounded">SECRET_ENCRYPTION_KEY</code>
                 {m.settings_integrations_after()}
             </p>
             {#if integrations && !integrations.encryption_key_set}

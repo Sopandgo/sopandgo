@@ -18,7 +18,10 @@ services:
       - BODY_SIZE_LIMIT=${BODY_SIZE_LIMIT:-52428800}
       - AUDIT_STRICT_TYPES=${AUDIT_STRICT_TYPES:-false}
       - AUDIT_BUSY_TIMEOUT=${AUDIT_BUSY_TIMEOUT:-5s}
-      # Set in `.env` for SMTP (openssl rand -base64 32). Empty = SMTP disabled until configured.
+      # Set in `.env` (openssl rand -base64 32). Encrypts stored SMTP and integration secrets.
+      # Empty = those secrets cannot be saved until configured.
+      - SECRET_ENCRYPTION_KEY=${SECRET_ENCRYPTION_KEY:-}
+      # Former name, still read when SECRET_ENCRYPTION_KEY is empty, so older `.env` files keep working.
       - SMTP_SECRET_ENCRYPTION_KEY=${SMTP_SECRET_ENCRYPTION_KEY:-}
       - PDF_EXPORT_ENABLED=${PDF_EXPORT_ENABLED:-true}
       - PDF_RENDERER=${PDF_RENDERER:-gotenberg}

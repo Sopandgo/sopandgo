@@ -63,7 +63,7 @@ Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left o
 | `BODY_SIZE_LIMIT` | `52428800` | Max request size (bytes). Default is ~50MB. |
 | `AUDIT_STRICT_TYPES` | `false` | If `true`, audit writes reject unknown `event_type`/`entity_type` values (recommended once all extensions use canonical types). |
 | `AUDIT_BUSY_TIMEOUT` | `5s` | Maximum SQLite lock wait for standalone audit writes, as a Go duration. A timeout is reported in the application log; increase this only if legitimate write transactions regularly exceed five seconds. |
-| `SMTP_SECRET_ENCRYPTION_KEY` | - | **Required to save outbound secrets in the UI** (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer) **and to send mail or integration notifications that need those secrets.** A 32-byte AES-256 key, provided as **base64** or **hex** (64 hex chars, optional `0x` prefix). Used only to encrypt secrets stored in SQLite—not for signing JWTs. Generate: `openssl rand -base64 32`. If unset, the server starts, but the admin UI cannot persist those credentials until this is set and the process is restarted. |
+| `SECRET_ENCRYPTION_KEY` | - | **Required to save outbound secrets in the UI** (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer) **and to send mail or integration notifications that need those secrets.** A 32-byte AES-256 key, provided as **base64** or **hex** (64 hex chars, optional `0x` prefix). Used only to encrypt secrets stored in SQLite—not for signing JWTs. Generate: `openssl rand -base64 32`. If unset, the server starts, but the admin UI cannot persist those credentials until this is set and the process is restarted. Formerly `SMTP_SECRET_ENCRYPTION_KEY`: that name is still read when `SECRET_ENCRYPTION_KEY` is unset, and the log asks you to rename it. Keep the same value; a different key makes stored secrets undecryptable. |
 | `APP_VERSION` | baked into the image | Label on the public footer, in the signed-in sidebar, and in admin **export** `manifest.json`. Release images set this at build time (for example `1.0.1`). Labs do not set it. Contributor source builds and `go run` use `dev`. Local `npm run dev` ignores this and shows `git describe` instead. The root `package.json` version is not used. |
 | `PDF_EXPORT_ENABLED` | `true` | When `true`, PDF artifact generation/download is enabled (requires a renderer when not `none`). |
 | `PDF_RENDERER` | `gotenberg` | `gotenberg` or `none`. |
@@ -84,7 +84,7 @@ The Go backend does **not** read a `.env` file on its own. With **Docker Compose
 
 ### Email (SMTP, Resend, or manual links)
 
-Outgoing mail (user invites, password resets) is **not** configured via `SMTP_HOST` / `SMTP_USER` style environment variables. Credentials live in SQLite and are encrypted with `SMTP_SECRET_ENCRYPTION_KEY`.
+Outgoing mail (user invites, password resets) is **not** configured via `SMTP_HOST` / `SMTP_USER` style environment variables. Credentials live in SQLite and are encrypted with `SECRET_ENCRYPTION_KEY`.
 
 **Mail delivery mode** (admin UI, **Mail delivery mode** on `/admin/settings/email`):
 
@@ -93,7 +93,7 @@ Outgoing mail (user invites, password resets) is **not** configured via `SMTP_HO
 
 **Outbound transport** (when not in `manual_links`): choose **SMTP** (your own server) or **Resend** ([resend.com](https://resend.com) API). Only the selected transport is used for sends and for **Send test email**.
 
-1. Set `SMTP_SECRET_ENCRYPTION_KEY` as above (required to save any stored secret and to send).
+1. Set `SECRET_ENCRYPTION_KEY` as above (required to save any stored secret and to send).
 2. Sign in as **admin**, open **Settings → Email** (`/admin/settings/email`).
 3. For **SMTP**: enter host, port, username, password, and from-address, then save.
 4. For **Resend**: create an API key in the Resend dashboard, set **Outbound transport** to Resend, enter from-address and API key, then save. Use a verified domain (or Resend’s test sender for trials).
@@ -105,7 +105,7 @@ If you use `manual_links`, SMTP and Resend fields are optional until you switch 
 
 ### Outbound integrations (Slack, Gotify, webhook)
 
-Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTIFY_*` feature flags). Configure them under **Settings → Integrations** (`/admin/settings/integrations`), encrypted with the same `SMTP_SECRET_ENCRYPTION_KEY`.
+Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTIFY_*` feature flags). Configure them under **Settings → Integrations** (`/admin/settings/integrations`), encrypted with the same `SECRET_ENCRYPTION_KEY`.
 
 | Channel | What you configure | Delivery |
 | --- | --- | --- |
@@ -115,7 +115,7 @@ Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTI
 
 **Events:** `sop_published`, `sop_rc`, `sop_rejected`, `backup_s3_failed`, `integrity_check_failed`. Use **Send test** per channel to verify. Delivery failures are audited and never roll back SOP publish/promote/reject.
 
-If you **rotate** `SMTP_SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save.
+If you **rotate** `SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save.
 
 ### Audit Taxonomy Hardening
 

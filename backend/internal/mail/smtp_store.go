@@ -284,7 +284,7 @@ func (s *SMTPSettingsStore) loadResendDecrypted() (apiKey, from string, err erro
 	}
 	raw, err := secrets.Open(s.key, keyEnc)
 	if err != nil {
-		return "", "", fmt.Errorf("decrypt resend api key (wrong SMTP_SECRET_ENCRYPTION_KEY?): %w", err)
+		return "", "", fmt.Errorf("decrypt resend api key (wrong SECRET_ENCRYPTION_KEY?): %w", err)
 	}
 	return string(raw), from, nil
 }
@@ -395,7 +395,7 @@ func (s *SMTPSettingsStore) loadDecrypted() (host, port, user, pass, from string
 	}
 	raw, err := secrets.Open(s.key, pwdEnc)
 	if err != nil {
-		return "", "", "", "", "", fmt.Errorf("decrypt smtp password (wrong SMTP_SECRET_ENCRYPTION_KEY?): %w", err)
+		return "", "", "", "", "", fmt.Errorf("decrypt smtp password (wrong SECRET_ENCRYPTION_KEY?): %w", err)
 	}
 	return host, port, user, string(raw), from, nil
 }

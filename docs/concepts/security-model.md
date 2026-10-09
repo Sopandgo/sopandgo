@@ -77,7 +77,7 @@ This allows for:
 
 Admins may configure instance-level destinations (Slack Incoming Webhooks, Gotify, generic HTTP webhooks) under Settings. Those destinations receive SOP lifecycle and selected ops alerts.
 
-- **Admin-controlled only:** webhook URLs and tokens are stored encrypted in SQLite; the AES key stays in the environment (`SMTP_SECRET_ENCRYPTION_KEY`). APIs never return decrypted secrets.
+- **Admin-controlled only:** webhook URLs and tokens are stored encrypted in SQLite; the AES key stays in the environment (`SECRET_ENCRYPTION_KEY`). APIs never return decrypted secrets.
 - **Trust the destination:** anyone who can administer the instance can point notifications at an arbitrary HTTPS endpoint. Treat that as equivalent to other admin powers (mail settings, user invites).
 - **Best-effort delivery:** failed notification sends are audited (`notification_failed`) and do not undo publish/promote/reject.
 - **Not a bot platform:** Incoming Webhooks / HTTP push only — no OAuth Slack apps, slash commands, or interactive components.

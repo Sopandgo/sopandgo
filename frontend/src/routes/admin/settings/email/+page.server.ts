@@ -24,7 +24,7 @@ export const actions: Actions = {
             return { saveTransport: { ok: true, transport: mail_transport } };
         } catch (err) {
             console.error('Mail transport update failed:', err);
-            return fail(500, { saveTransport: { error: m.error_transport_update() } });
+            return fail(500, { saveTransport: { error: m.error_transport_update(), transport: mail_transport } });
         }
     },
 
