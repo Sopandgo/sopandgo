@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
 /* Themes and tokens: docs/design/style-guide.md and docs/design/tokens.json. */
