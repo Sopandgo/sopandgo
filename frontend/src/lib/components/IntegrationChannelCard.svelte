@@ -147,28 +147,9 @@
             };
         }}
     >
-        {#if configured}
-            <!-- The header toggle owns `enabled`; saving the fields keeps it as it is. -->
-            {#if enabled}
-                <input type="hidden" name="enabled" value="on" />
-            {/if}
-        {:else}
-            <label class="flex w-fit cursor-pointer items-center gap-3 text-sm">
-                <input
-                    type="checkbox"
-                    name="enabled"
-                    class="toggle toggle-success peer"
-                    checked={channel?.enabled ?? false}
-                />
-                <span class="font-medium">{enableLabel}</span>
-                <!-- The word repeats the toggle's state for sighted users; the checkbox conveys it to assistive tech. -->
-                <span class="text-base-content/70 peer-checked:hidden" aria-hidden="true">
-                    {m.settings_integration_off()}
-                </span>
-                <span class="hidden text-base-content/70 peer-checked:inline" aria-hidden="true">
-                    {m.settings_integration_on()}
-                </span>
-            </label>
+        <!-- On/off lives only in the header toggle, shown once this is configured; saving the fields keeps it. -->
+        {#if configured && enabled}
+            <input type="hidden" name="enabled" value="on" />
         {/if}
 
         {@render fields()}

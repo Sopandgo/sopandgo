@@ -87,7 +87,7 @@ Objects are stored under:
 
 | Setting | Meaning |
 |---------|---------|
-| **On/off toggle** | In the card header once a bucket is saved; before that, in the form. |
+| **On/off toggle** | In the card header, once a bucket is saved; until then the header says "Not configured". Save the settings first, then switch it on. |
 | **Bucket** | Target bucket name (required while on). |
 | **Region** | AWS region for the SDK (set it for AWS; for MinIO a placeholder such as `us-east-1` works). |
 | **Key prefix** | Optional, e.g. `prod/myorg`. |
