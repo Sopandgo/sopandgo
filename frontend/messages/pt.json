@@ -381,6 +381,7 @@
   "sops_empty_match_query": "Nada corresponde a \"{query}\". Tente outra palavra ou remova um filtro.",
   "sops_empty_match_filters": "Nenhuma SOP corresponde aos filtros atuais. Tente remover um.",
   "sops_view_latest": "Ver a versão mais recente de {title}",
+  "sops_view_versions": "Versões de {title}",
   "sops_id_date": "ID: {id} • {date}",
   "sops_open": "Abrir {title}",
   "sops_empty": "Nenhuma SOP corresponde aos seus critérios.",

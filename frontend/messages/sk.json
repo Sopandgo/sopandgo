@@ -384,6 +384,7 @@
   "sops_empty_match_query": "Výrazu „{query}“ nič nezodpovedá. Skúste iné slovo alebo odstráňte filter.",
   "sops_empty_match_filters": "Aktuálnym filtrom nezodpovedá žiadne SOP. Skúste jeden odstrániť.",
   "sops_view_latest": "Zobraziť najnovšiu verziu {title}",
+  "sops_view_versions": "Verzie {title}",
   "sops_id_date": "ID: {id} • {date}",
   "sops_open": "Otvoriť {title}",
   "sops_empty": "Vašim kritériám nezodpovedajú žiadne SOP.",

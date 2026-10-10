@@ -381,6 +381,7 @@
   "sops_empty_match_query": "Inget matchar \"{query}\". Prova ett annat ord eller ta bort ett filter.",
   "sops_empty_match_filters": "Ingen SOP matchar de aktuella filtren. Prova att ta bort ett.",
   "sops_view_latest": "Visa senaste versionen av {title}",
+  "sops_view_versions": "Versioner av {title}",
   "sops_id_date": "ID: {id} • {date}",
   "sops_open": "Öppna {title}",
   "sops_empty": "Inga SOPs matchar dina kriterier.",

@@ -381,6 +381,7 @@
   "sops_empty_match_query": "\"{query}\"와(과) 일치하는 항목이 없습니다. 다른 단어를 입력하거나 필터를 제거해 보세요.",
   "sops_empty_match_filters": "현재 필터와 일치하는 SOP가 없습니다. 필터를 하나 제거해 보세요.",
   "sops_view_latest": "{title}의 최신 버전 보기",
+  "sops_view_versions": "{title}의 버전",
   "sops_id_date": "ID: {id} • {date}",
   "sops_open": "{title} 열기",
   "sops_empty": "조건에 맞는 SOP가 없습니다.",

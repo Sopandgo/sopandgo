@@ -2,7 +2,8 @@
   import {
     ChevronRightIcon,
     FileTextIcon,
-    ChevronLeftIcon
+    ChevronLeftIcon,
+    GitBranchIcon
   } from 'lucide-svelte';
   import type { Snippet } from 'svelte';
   import type { SOPListItem, SOPListResponse } from '$lib/sdk/types';
@@ -120,6 +121,15 @@
           {#if pending}
             <SopVersionStatusBadge status={pending} />
           {/if}
+          <!-- The row opens the latest version; this opens the SOP page with all versions -->
+          <a
+            href={`/sops/${sop.id}`}
+            class="btn btn-square btn-ghost btn-sm"
+            aria-label={m.sops_view_versions({ title: sop.title })}
+            title={m.sops_view_versions({ title: sop.title })}
+          >
+            <GitBranchIcon class="size-4" aria-hidden="true" />
+          </a>
           <FavoriteToggle sopId={sop.id} title={sop.title} isFavorite={!!sop.is_favorite} />
         {/snippet}
       </ListRow>
