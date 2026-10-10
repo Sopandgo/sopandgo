@@ -39,7 +39,8 @@ export const actions: Actions = {
             console.error('Theme update failed:', err);
             return fail(400, { setTheme: { error: 'failed' } });
         }
-        throw redirect(303, '/profile/settings');
+        // No redirect: the navbar theme switch posts here from any page.
+        return { setTheme: { ok: true, error: null } };
     },
 
     changePassword: async ({ locals, request }) => {

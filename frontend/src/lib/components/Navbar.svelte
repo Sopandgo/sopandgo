@@ -5,6 +5,7 @@
     import { breadcrumbsFor } from '$lib/breadcrumbs';
     import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
     import { CircleUserIcon, LogOutIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, SettingsIcon } from 'lucide-svelte';
+    import AccountThemeSwitch from '$lib/components/AccountThemeSwitch.svelte';
     import Avatar from '$lib/components/Avatar.svelte';
     import GuestLocaleMenu from '$lib/components/GuestLocaleMenu.svelte';
     import GuestThemeToggle from '$lib/components/GuestThemeToggle.svelte';
@@ -78,6 +79,12 @@
                                 <SettingsIcon size={16}/>
                                 {m.nav_account_settings()}
                             </a>
+                        </li>
+                        <div class="divider my-0"></div>
+
+                        <!-- menu-title keeps the row free of menu-item hover styles. -->
+                        <li class="menu-title p-0 text-xs font-normal text-base-content">
+                            <AccountThemeSwitch theme={user.theme} />
                         </li>
 
                         <div class="divider my-0"></div> 

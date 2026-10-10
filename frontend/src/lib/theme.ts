@@ -36,3 +36,10 @@ export function themeAttribute(theme: string): string {
 	const name = daisyTheme(theme);
 	return name ? ` data-theme="${name}"` : '';
 }
+
+/** Set the theme on `<html>` in the browser, without a reload. */
+export function applyTheme(theme: string): void {
+	const name = daisyTheme(theme);
+	if (name) document.documentElement.setAttribute('data-theme', name);
+	else document.documentElement.removeAttribute('data-theme');
+}

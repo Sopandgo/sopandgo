@@ -7,7 +7,7 @@
     import ChangePassword from '$lib/components/ChangePassword.svelte';
     import LocaleSelect from '$lib/components/LocaleSelect.svelte';
     import * as m from '$lib/paraglide/messages.js';
-    import { daisyTheme } from '$lib/theme';
+    import { applyTheme } from '$lib/theme';
     import {
         KeyRoundIcon,
         LanguagesIcon,
@@ -27,12 +27,6 @@
     const signOutResult = $derived(form?.signOutOthers);
     let signingOut = $state(false);
     let selectedTheme = $derived(data.user.theme);
-
-    function applyTheme(theme: string) {
-        const name = daisyTheme(theme);
-        if (name) document.documentElement.setAttribute('data-theme', name);
-        else document.documentElement.removeAttribute('data-theme');
-    }
 
     function onThemeChange(event: Event) {
         const formEl = event.currentTarget;
