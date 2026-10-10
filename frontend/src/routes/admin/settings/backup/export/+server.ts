@@ -1,4 +1,4 @@
-import { BACKEND_URL } from '$env/static/private';
+import { BACKEND_URL } from '$app/env/private';
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 

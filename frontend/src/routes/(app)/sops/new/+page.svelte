@@ -1,11 +1,11 @@
 <script lang="ts">
-    import Alert from '$lib/components/Alert.svelte';
+    import Alert from '#lib/components/Alert.svelte';
     import { enhance } from '$app/forms';
     import { NotebookPenIcon, RocketIcon } from '@lucide/svelte';
     import type { ActionData } from './$types';
-  import Card from '$lib/components/Card.svelte';
-  import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-  import * as m from '$lib/paraglide/messages.js';
+  import Card from '#lib/components/Card.svelte';
+  import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+  import * as m from '#lib/paraglide/messages.js';
 
     let { form } = $props<{ form: ActionData }>();
     

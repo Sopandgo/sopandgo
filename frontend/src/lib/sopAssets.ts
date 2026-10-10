@@ -1,4 +1,4 @@
-import type { SOPAsset } from '$lib/sdk/types';
+import type { SOPAsset } from '#lib/sdk/types.js';
 
 /*
  * SOP Markdown points at uploaded files as `assets/<file name>`. File names are

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { partitionSignatureStatus, pendingSignatureCount } from './signatureBuckets';
-import type { UserSignatureStatus } from '$lib/sdk/types';
+import type { UserSignatureStatus } from '#lib/sdk/types.js';
 
 const base = (over: Partial<UserSignatureStatus>): UserSignatureStatus => ({
 	sop_id: 's1',

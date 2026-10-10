@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getLocale, locales, setLocale } from '$lib/paraglide/runtime';
+    import { getLocale, locales, setLocale } from '#lib/paraglide/runtime.js';
 
     let {
         name = 'locale',

@@ -1,5 +1,5 @@
-import * as m from '$lib/paraglide/messages.js';
-import { SdkHttpError } from '$lib/sdk/httpError';
+import * as m from '#lib/paraglide/messages.js';
+import { SdkHttpError } from '#lib/sdk/httpError.js';
 
 /** User-facing message when publishing a new SOP version fails. */
 export function messageForPublishFailure(err: unknown): string {

@@ -1,7 +1,7 @@
 <script lang="ts">
-    import Alert from '$lib/components/Alert.svelte';
-    import Card from '$lib/components/Card.svelte';
-    import * as m from '$lib/paraglide/messages.js';
+    import Alert from '#lib/components/Alert.svelte';
+    import Card from '#lib/components/Card.svelte';
+    import * as m from '#lib/paraglide/messages.js';
 
     // Receive 'form' (action result) and 'token' (from URL)
     let { form, token } = $props(); 

@@ -1,9 +1,9 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
-import { favorite, unfavorite } from '$lib/server/favoriteActions';
-import { verifyAsset, verifyVersion } from '$lib/server/integrityActions';
+import * as m from '#lib/paraglide/messages.js';
+import { favorite, unfavorite } from '#lib/server/favoriteActions.js';
+import { verifyAsset, verifyVersion } from '#lib/server/integrityActions.js';
 import type { PageServerLoad, Actions } from './$types';
-import { env } from '$env/dynamic/private';
+import { PDF_EXPORT_ENABLED } from '$app/env/private';
 
 // Same limit as the backend (sop.MaxRejectReasonRunes)
 const MAX_REJECT_REASON = 500;
@@ -50,7 +50,7 @@ export const load: PageServerLoad = async ({ locals, params, parent }) => {
         console.error('Version diff unavailable:', err);
     }
 
-    const pdfExportEnabled = (env.PDF_EXPORT_ENABLED ?? 'true').toLowerCase() !== 'false';
+    const pdfExportEnabled = PDF_EXPORT_ENABLED.toLowerCase() !== 'false';
 
     return {
         sop,

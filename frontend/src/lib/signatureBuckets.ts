@@ -1,4 +1,4 @@
-import type { UserSignatureStatus } from '$lib/sdk/types';
+import type { UserSignatureStatus } from '#lib/sdk/types.js';
 
 export function partitionSignatureStatus(status: UserSignatureStatus[]) {
 	const actionRequired: UserSignatureStatus[] = [];

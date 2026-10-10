@@ -1,9 +1,8 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
-    import { invalidateAll } from '$app/navigation';
     import { MonitorIcon, MoonIcon, SunIcon } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import { applyTheme, isThemePreference, type ThemePreference } from '$lib/theme';
+    import * as m from '#lib/paraglide/messages.js';
+    import { applyTheme, isThemePreference, type ThemePreference } from '#lib/theme.js';
 
     let { theme }: { theme: ThemePreference } = $props();
 
@@ -31,9 +30,10 @@
         const previous = selected;
         selected = next;
         applyTheme(next);
-        return async ({ result }) => {
+        // Cross-page action: stay here (Kit 3 would otherwise navigate to /profile/settings).
+        return async ({ result, update }) => {
             if (result.type === 'success') {
-                await invalidateAll();
+                await update({ navigate: false });
             } else {
                 selected = previous;
                 applyTheme(previous);

@@ -1,7 +1,7 @@
 import { isRedirect } from '@sveltejs/kit';
-import { greetingPeriodForDate, timeZoneCookieName } from '$lib/greeting';
-import { favorite, unfavorite } from '$lib/server/favoriteActions';
-import type { SOPTrainingCoverage } from '$lib/sdk/types';
+import { greetingPeriodForDate, timeZoneCookieName } from '#lib/greeting.js';
+import { favorite, unfavorite } from '#lib/server/favoriteActions.js';
+import type { SOPTrainingCoverage } from '#lib/sdk/types.js';
 import type { Actions, PageServerLoad } from './$types';
 
 /** Each card loads on its own: a failed request leaves its card null, not the page broken. */

@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
-import { isLocale } from '$lib/paraglide/runtime';
-import { isThemePreference } from '$lib/theme';
+import * as m from '#lib/paraglide/messages.js';
+import { isLocale } from '#lib/paraglide/runtime.js';
+import { isThemePreference } from '#lib/theme.js';
 import type { Actions, PageServerLoad } from './$types';
 
 /** Matches the backend limit; the cropper exports far less. */

@@ -1,9 +1,9 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
-    import type { User } from '$lib/sdk/types';
-    import Alert from '$lib/components/Alert.svelte';
+    import type { User } from '#lib/sdk/types.js';
+    import Alert from '#lib/components/Alert.svelte';
     import { BanIcon } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     // 1. Define the shape locally
     interface SignFormResult {

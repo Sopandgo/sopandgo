@@ -2,9 +2,9 @@
     import Avatar from './Avatar.svelte';
     import Card from './Card.svelte';
     import ListRow from './ListRow.svelte';
-    import type { AcknowledgmentWithUser } from '$lib/sdk/types';
-    import * as m from '$lib/paraglide/messages.js';
-    import { getLocale } from '$lib/paraglide/runtime';
+    import type { AcknowledgmentWithUser } from '#lib/sdk/types.js';
+    import * as m from '#lib/paraglide/messages.js';
+    import { getLocale } from '#lib/paraglide/runtime.js';
 
     interface Props {
         items?: AcknowledgmentWithUser[] | null;

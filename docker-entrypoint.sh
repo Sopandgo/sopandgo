@@ -1,6 +1,6 @@
 #!/bin/sh
-# Strip trailing slashes from ORIGIN. If set to e.g. https://app.example.com/, SvelteKit
-# can build URLs whose pathname is //login; enhanced forms POST there and get 404.
+# Strip trailing slashes from ORIGIN (Go API invite/reset absolute URLs). A trailing
+# slash can produce pathnames like //login in generated links.
 if [ -n "${ORIGIN:-}" ]; then
 	while [ "${ORIGIN%/}" != "$ORIGIN" ]; do
 		ORIGIN="${ORIGIN%/}"

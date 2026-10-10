@@ -1,6 +1,6 @@
 <script lang="ts">
-    import type { Tag } from '$lib/sdk/types';
-    import * as m from '$lib/paraglide/messages.js';
+    import type { Tag } from '#lib/sdk/types.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     /*
      * Tags on a ListRow's meta line (docs/design/style-guide.md → ListRow): at most

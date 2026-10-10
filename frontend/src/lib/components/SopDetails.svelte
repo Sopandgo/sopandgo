@@ -4,9 +4,9 @@
     import IntegrityCheck from './IntegrityCheck.svelte';
     import ListRow from './ListRow.svelte';
     import SopVersionStatusBadge from './SopVersionStatusBadge.svelte';
-    import type { IntegrityStatus } from '$lib/integrity';
-    import * as m from '$lib/paraglide/messages.js';
-    import { getLocale } from '$lib/paraglide/runtime';
+    import type { IntegrityStatus } from '#lib/integrity.js';
+    import * as m from '#lib/paraglide/messages.js';
+    import { getLocale } from '#lib/paraglide/runtime.js';
 
     /*
      * The version's facts in the side column. Number and status repeat the page

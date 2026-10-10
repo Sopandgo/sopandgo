@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChevronRightIcon } from '@lucide/svelte';
-  import type { Crumb } from '$lib/breadcrumbs';
-  import * as m from '$lib/paraglide/messages.js';
+  import type { Crumb } from '#lib/breadcrumbs.js';
+  import * as m from '#lib/paraglide/messages.js';
 
   let { items = [] }: { items: Crumb[] } = $props();
 </script>

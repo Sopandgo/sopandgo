@@ -1,7 +1,7 @@
 <script lang="ts">
     import { resolve } from "$app/paths";
-    import type { AuditEvent } from "$lib/sdk/types";
-    import Card from "$lib/components/Card.svelte";
+    import type { AuditEvent } from "#lib/sdk/types.js";
+    import Card from "#lib/components/Card.svelte";
     import {
         actorLabel,
         entityTitle,
@@ -10,8 +10,8 @@
         formatEventTime,
         formatPayload,
         versionSopId,
-    } from "$lib/audit/present";
-    import * as m from "$lib/paraglide/messages.js";
+    } from "#lib/audit/present.js";
+    import * as m from "#lib/paraglide/messages.js";
     import {
         BoxIcon,
         ChevronDownIcon,
@@ -147,19 +147,13 @@
                             {#if entityType === "sop" && auditEvent.entity_id}
                                 <a
                                     class="link font-mono break-all"
-                                    href={resolve(`/sops/${auditEvent.entity_id}`)}
-                                >
-                                    {entityTitle(auditEvent.entity_type)} · {auditEvent.entity_id}
-                                </a>
+                                    href={resolve(`sops/${auditEvent.entity_id}`)}
+                                >{entityTitle(auditEvent.entity_type)} · {auditEvent.entity_id}</a>
                             {:else if entityType === "sop_version" && linkedSopId && auditEvent.entity_id}
                                 <a
                                     class="link font-mono break-all"
-                                    href={resolve(
-                                        `/sops/${linkedSopId}/v/${auditEvent.entity_id}`,
-                                    )}
-                                >
-                                    {entityTitle(auditEvent.entity_type)} · {auditEvent.entity_id}
-                                </a>
+                                    href={resolve(`sops/${linkedSopId}/v/${auditEvent.entity_id}`)}
+                                >{entityTitle(auditEvent.entity_type)} · {auditEvent.entity_id}</a>
                             {:else}
                                 <div class="font-mono break-all">
                                     {entityTitle(auditEvent.entity_type)} · {auditEvent.entity_id}

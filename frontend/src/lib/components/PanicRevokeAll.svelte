@@ -1,8 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { tick } from 'svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import * as m from '$lib/paraglide/messages.js';
+  import Alert from '#lib/components/Alert.svelte';
+  import * as m from '#lib/paraglide/messages.js';
   import Card from './Card.svelte';
 
   interface FormResult {
@@ -52,7 +52,7 @@
         use:enhance={() => {
           loading = true;
           return async ({ update, formElement }) => {
-            await update({ invalidateAll: true });
+            await update({ refreshAll: true });
             loading = false;
 
             await tick();

@@ -187,6 +187,6 @@ The SDK provides direct access to the system's **Integrity Model**:
 
 * **Automatic**: The `sops.getVersionSummary` method (and admin audit list responses) return `hash_valid` as verified by the Go backend.
 * **On-Demand**: `sops.checkIntegrity(sopId, versionId)` and `assets.checkIntegrity(sopId, assetId)` re-check one file and throw `SdkHttpError` on failure; `admin.checkIntegrity()` runs the system scan.
-* **UI**: Pages call these through SvelteKit form actions, not a JSON proxy. `$lib/server/integrityActions` provides `verifyAsset` and `verifyVersion` for the `/sops/[sop_id]` pages, and `$lib/integrity` maps results to `verified` / `mismatch` / `missing` / `unavailable`. `IntegrityCheck.svelte` posts to those actions with `use:enhance` and also works without JavaScript. `/admin/integrity` runs the system scan through its own `?/run` action.
+* **UI**: Pages call these through SvelteKit form actions, not a JSON proxy. `#lib/server/integrityActions` provides `verifyAsset` and `verifyVersion` for the `/sops/[sop_id]` pages, and `#lib/integrity` maps results to `verified` / `mismatch` / `missing` / `unavailable`. `IntegrityCheck.svelte` posts to those actions with `use:enhance` and also works without JavaScript. `/admin/integrity` runs the system scan through its own `?/run` action.
 
 ---

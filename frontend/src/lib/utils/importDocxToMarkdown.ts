@@ -1,7 +1,7 @@
 import mammoth from 'mammoth';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
-import * as m from '$lib/paraglide/messages.js';
+import * as m from '#lib/paraglide/messages.js';
 
 /** Shown in the editor where Word had an embedded image (no upload). */
 function imagePlaceholderHtml(): string {

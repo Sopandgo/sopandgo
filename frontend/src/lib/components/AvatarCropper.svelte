@@ -1,7 +1,7 @@
 <script lang="ts">
-    import * as m from '$lib/paraglide/messages.js';
+    import * as m from '#lib/paraglide/messages.js';
     import { CheckIcon, XIcon } from '@lucide/svelte';
-    import Alert from '$lib/components/Alert.svelte';
+    import Alert from '#lib/components/Alert.svelte';
 
     /*
      * Square crop for a profile picture: drag to pan, slider or +/- to zoom, arrow keys to nudge.

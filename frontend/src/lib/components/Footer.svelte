@@ -1,5 +1,5 @@
 <script lang="ts">
-  import * as m from '$lib/paraglide/messages.js';
+  import * as m from '#lib/paraglide/messages.js';
 
   const raw = String(__APP_VERSION__ || 'dev').replace(/^v/, '');
   const versionLabel = raw === 'dev' ? 'dev' : `v${raw}`;

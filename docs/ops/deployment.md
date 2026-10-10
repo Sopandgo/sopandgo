@@ -56,7 +56,7 @@ Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left o
 | --- | --- | --- |
 | `DATA_DIR` | `/app/data` | The internal path for SQLite and assets. |
 | `SEED_DEMO_DATA` | `true` | When not `false`, the first start with no `app.db` inserts demo users and sample SOPs. Set `false` before first boot for a real deployment. Has no effect once `app.db` exists. |
-| `ORIGIN` | `http://localhost:8087` | **CRITICAL.** The full public URL of your instance. If this does not match the browser URL, login/invites will fail. |
+| `ORIGIN` | `http://localhost:8087` | **CRITICAL for the Go API.** The full public URL of your instance (invite/reset links, CORS-facing URLs). If it does not match the browser URL, login/invites will fail. SvelteKit 3 / adapter-node no longer reads `ORIGIN`; CSRF and request origin use `HOST_HEADER` / `PROTOCOL_HEADER` instead (see below). |
 | `HOST_WEB_PORT` | `8087` | Host port mapped to Caddy `:80` inside the `sopandgo` container (compose). |
 | `BACKEND_URL` | `http://127.0.0.1:8080` | Internal URL the SvelteKit Node server uses to reach the Go API (loopback inside the container). |
 | `HOST_HEADER` | `x-forwarded-host` | Forwarded host header name for SvelteKit behind Caddy. |

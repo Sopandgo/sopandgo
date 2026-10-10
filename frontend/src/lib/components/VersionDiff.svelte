@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { SOPAsset, VersionDiff } from '$lib/sdk/types';
-	import { assetUrl, imagesInLine } from '$lib/sopAssets';
-	import * as m from '$lib/paraglide/messages.js';
+	import type { SOPAsset, VersionDiff } from '#lib/sdk/types.js';
+	import { assetUrl, imagesInLine } from '#lib/sopAssets.js';
+	import * as m from '#lib/paraglide/messages.js';
 
 	/*
 	 * The line diff against the previous version, without a card: the version

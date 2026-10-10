@@ -108,7 +108,7 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
 ```
 2. **Configure environment (critical)** Copy **`.env.example`** to **`.env`** and set at least the values you need for your deployment. The repo already includes **`docker-compose.yml`**; you normally do **not** need to author compose from scratch.
 
-- **ORIGIN:** Must match the URL you use in the browser (default: `http://localhost:8087`). If it does not match, login fails with **403 Forbidden**.
+- **ORIGIN:** Must match the URL you use in the browser (default: `http://localhost:8087`). The Go API uses it for invite/reset links and related absolute URLs. SvelteKit 3 derives request origin from `HOST_HEADER` / `PROTOCOL_HEADER` (set in the image), not from `ORIGIN`.
 - **SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets or send mail/integrations that need them.
 - **SEED_DEMO_DATA:** `true` (default) inserts demo users and sample SOPs on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
 - **Mail:** In **Settings → Email** (`/admin/settings/email`), save **SMTP** (host, port, user, password, from-address) or **Resend** and switch it on in its card header to send invites and resets by email; verify with **Send test email**. Until a transport is on, admins get one-time links to share manually (manual links).

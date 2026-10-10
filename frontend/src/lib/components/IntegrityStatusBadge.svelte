@@ -1,7 +1,7 @@
 <script lang="ts">
     import { FileXIcon, ShieldAlertIcon, ShieldCheckIcon, ShieldXIcon } from '@lucide/svelte';
-    import type { IntegrityStatus } from '$lib/integrity';
-    import * as m from '$lib/paraglide/messages.js';
+    import type { IntegrityStatus } from '#lib/integrity.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     /*
      * docs/design/style-guide.md → IntegrityStatus. Every state has its own word

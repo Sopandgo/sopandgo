@@ -89,8 +89,8 @@ ENV BACKEND_URL=http://127.0.0.1:8080
 ENV HOST_HEADER=x-forwarded-host
 ENV PROTOCOL_HEADER=x-forwarded-proto
 
-# Default Origin (Override this in docker-compose for production/NAS!)
-# This protects against Host Header Injection attacks.
+# Default Origin for the Go API (invite/reset links). Override in compose for production/NAS.
+# SvelteKit 3 derives request origin from HOST_HEADER / PROTOCOL_HEADER above, not ORIGIN.
 ENV ORIGIN=http://localhost:8087
 
 # Body Size Limit

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
-    import { getInitials } from '$lib/utils/getInitials';
+    import { getInitials } from '#lib/utils/getInitials.js';
 
     /*
      * A person's picture, or their initials in a neutral circle when they have none
@@ -36,13 +36,9 @@
     // Stored renditions are sm and md; the largest Avatar uses md.
     const imageSize = $derived(size === 'lg' ? 'md' : 'sm');
 
-    const src = $derived(
-        hasAvatar && userId
-            ? resolve(
-                  `/api/users/avatar?user_id=${encodeURIComponent(userId)}&size=${imageSize}&v=${encodeURIComponent(avatarContentHash)}`
-              )
-            : ''
-    );
+    const src = $derived(hasAvatar && userId
+        ? resolve(`api/users/avatar?user_id=${encodeURIComponent(userId)}&size=${imageSize}&v=${encodeURIComponent(avatarContentHash)}`)
+        : '');
 
     // Remember which URL failed so a new picture (new hash) is tried again.
     let failedSrc = $state('');
@@ -51,9 +47,9 @@
 
 <div class="avatar {showImage ? '' : 'avatar-placeholder'}" aria-hidden="true">
     {#if showImage}
-        <div class="rounded-full border border-base-300 bg-base-200 {sizeClasses[size]}">
-            <img {src} alt="" onerror={() => (failedSrc = src)} />
-        </div>
+        <div
+            class="rounded-full border border-base-300 bg-base-200 {sizeClasses[size]}"
+        ><img src={src} alt="" onerror={() => failedSrc = src} /></div>
     {:else}
         <div class="rounded-full border border-base-300 bg-base-200 text-base-content {sizeClasses[size]}">
             <span>{getInitials(displayName)}</span>

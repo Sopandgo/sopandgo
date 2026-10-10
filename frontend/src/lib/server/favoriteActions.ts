@@ -1,5 +1,5 @@
 import { fail, type RequestEvent } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
+import * as m from '#lib/paraglide/messages.js';
 
 /*
  * `?/favorite` and `?/unfavorite` form actions for every page that renders a

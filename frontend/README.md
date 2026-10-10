@@ -1,6 +1,6 @@
 # sopandgo frontend
 
-SvelteKit 2 + Svelte 5 application (Node adapter in production). UI uses Tailwind CSS v4 and DaisyUI.
+SvelteKit 3 + Svelte 5 application (Node adapter in production). UI uses Tailwind CSS v4 and DaisyUI. Kit config lives in `vite.config.ts` (`sveltekit({...})`); there is no `svelte.config.*`.
 
 ## Scripts
 

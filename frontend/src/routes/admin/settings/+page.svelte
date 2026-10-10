@@ -1,11 +1,11 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
-    import Alert from '$lib/components/Alert.svelte';
-    import Card from '$lib/components/Card.svelte';
-    import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-    import LocaleSelect from '$lib/components/LocaleSelect.svelte';
+    import Alert from '#lib/components/Alert.svelte';
+    import Card from '#lib/components/Card.svelte';
+    import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+    import LocaleSelect from '#lib/components/LocaleSelect.svelte';
     import { LanguagesIcon } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     let { data, form }: { data: any; form: any } = $props();
 

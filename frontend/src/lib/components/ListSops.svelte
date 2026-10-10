@@ -6,15 +6,15 @@
     GitBranchIcon
   } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
-  import type { SOPListItem, SOPListResponse } from '$lib/sdk/types';
+  import type { SOPListItem, SOPListResponse } from '#lib/sdk/types.js';
   import Card from './Card.svelte';
   import ListRow from './ListRow.svelte';
   import FavoriteToggle from './FavoriteToggle.svelte';
   import SopVersionStatusBadge from './SopVersionStatusBadge.svelte';
   import TagList from './TagList.svelte';
   import { goto } from '$app/navigation';
-  import * as m from '$lib/paraglide/messages.js';
-  import { getLocale } from '$lib/paraglide/runtime';
+  import * as m from '#lib/paraglide/messages.js';
+  import { getLocale } from '#lib/paraglide/runtime.js';
 
   interface Props {
     items?: SOPListResponse | null;

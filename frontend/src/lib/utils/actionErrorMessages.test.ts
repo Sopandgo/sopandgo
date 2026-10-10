@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import * as m from '$lib/paraglide/messages.js';
-import { SdkHttpError } from '$lib/sdk/httpError';
+import * as m from '#lib/paraglide/messages.js';
+import { SdkHttpError } from '#lib/sdk/httpError.js';
 import { messageForPublishFailure } from './actionErrorMessages';
 
 describe('publish failure messages', () => {

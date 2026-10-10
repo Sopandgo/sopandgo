@@ -11,8 +11,8 @@
         ShieldUserIcon,
         UsersIcon
     } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import type { User } from '$lib/sdk/types';
+    import * as m from '#lib/paraglide/messages.js';
+    import type { User } from '#lib/sdk/types.js';
 
     let { user }: { user: User } = $props();
 
@@ -34,7 +34,7 @@
     class="rail flex min-h-dvh flex-col items-start border-r border-base-300 bg-base-100 is-drawer-close:w-14 is-drawer-open:w-64"
 >
     <a
-        href={resolve('/dashboard')}
+        href={resolve('dashboard')}
         class="flex h-16 w-full shrink-0 items-center overflow-hidden is-drawer-close:tooltip is-drawer-close:tooltip-right"
         data-tip="SOP and GO"
         aria-label="SOP and GO"
@@ -45,34 +45,34 @@
         <span class="is-drawer-close:hidden min-w-0 truncate pe-3 font-semibold">SOP and GO</span>
     </a>
     <ul class="menu w-full">
-        {@render item('/dashboard', m.page_dashboard(), dashboardCurrent, HouseIcon)}
-        {@render item('/sops', m.page_sops(), sopsCurrent, NotebookIcon)}
+        {@render item('dashboard', m.page_dashboard(), dashboardCurrent, HouseIcon)}
+        {@render item('sops', m.page_sops(), sopsCurrent, NotebookIcon)}
     </ul>
     <div class="mt-auto w-full">
         {#if user.role === 'admin'}
             <ul class="menu w-full">
                 {@render rule(m.page_admin())}
-                {@render item('/admin/users', m.nav_users(), sectionCurrent('/admin/users'), UsersIcon)}
+                {@render item('admin/users', m.nav_users(), sectionCurrent('/admin/users'), UsersIcon)}
                 {@render item(
-                    '/admin/sessions',
+                    'admin/sessions',
                     m.nav_sessions(),
                     sectionCurrent('/admin/sessions'),
                     ShieldUserIcon
                 )}
                 {@render item(
-                    '/admin/audit-logs',
+                    'admin/audit-logs',
                     m.nav_audit_logs(),
                     sectionCurrent('/admin/audit-logs'),
                     LogsIcon
                 )}
                 {@render item(
-                    '/admin/integrity',
+                    'admin/integrity',
                     m.nav_integrity(),
                     sectionCurrent('/admin/integrity'),
                     ShieldCheckIcon
                 )}
                 {@render item(
-                    '/admin/settings',
+                    'admin/settings',
                     m.nav_settings(),
                     sectionCurrent('/admin/settings'),
                     SettingsIcon
@@ -99,7 +99,14 @@
 </div>
 
 {#snippet item(
-    href: '/dashboard' | '/sops' | '/admin/users' | '/admin/sessions' | '/admin/audit-logs' | '/admin/integrity' | '/admin/settings',
+    href:
+        | 'dashboard'
+        | 'sops'
+        | 'admin/users'
+        | 'admin/sessions'
+        | 'admin/audit-logs'
+        | 'admin/integrity'
+        | 'admin/settings',
     label: string,
     current: boolean,
     Icon: RailIcon

@@ -1,5 +1,5 @@
-import type { createSDK } from '$lib/sdk';
-import type { User } from '$lib/sdk/types';
+import type { createSDK } from '#lib/sdk/index.js';
+import type { User } from '#lib/sdk/types.js';
 
 declare global {
     namespace App {

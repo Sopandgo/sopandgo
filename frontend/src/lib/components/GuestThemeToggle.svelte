@@ -1,7 +1,7 @@
 <script lang="ts">
     import { MoonIcon, SunIcon } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import { daisyTheme, themeCookieAssignment } from '$lib/theme';
+    import * as m from '#lib/paraglide/messages.js';
+    import { daisyTheme, themeCookieAssignment } from '#lib/theme.js';
 
     function effectiveTheme(): 'light' | 'dark' {
         const name = document.documentElement.getAttribute('data-theme');

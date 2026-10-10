@@ -1,9 +1,9 @@
-import { createSDK } from '$lib/sdk';
-import { paraglideMiddleware } from '$lib/paraglide/server';
-import { cookieName, getTextDirection, isLocale } from '$lib/paraglide/runtime';
-import { guestThemeFromCookie, themeAttribute, themeCookieName } from '$lib/theme';
-import { sequence } from '@sveltejs/kit/hooks';
-import { redirect, type Handle } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
+import { createSDK } from '#lib/sdk/index.js';
+import { paraglideMiddleware } from '#lib/paraglide/server.js';
+import { cookieName, getTextDirection, isLocale } from '#lib/paraglide/runtime.js';
+import { guestThemeFromCookie, themeAttribute, themeCookieName } from '#lib/theme.js';
+import { sequence, type Handle } from '@sveltejs/kit/hooks';
 
 const handleAuth: Handle = async ({ event, resolve }) => {
     const sdk = createSDK(event);
@@ -36,6 +36,8 @@ const handleAuth: Handle = async ({ event, resolve }) => {
     }
 
     const user = event.locals.user;
+    // Kit 3: event.request is readonly — pass a replaced request into resolve().
+    let request = event.request;
     if (user?.locale && isLocale(user.locale)) {
         event.cookies.set(cookieName, user.locale, {
             path: '/',
@@ -44,7 +46,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
             secure: event.url.protocol === 'https:',
             maxAge: 60 * 60 * 24 * 400
         });
-        event.request = requestWithLocaleCookie(event.request, cookieName, user.locale);
+        request = requestWithLocaleCookie(event.request, cookieName, user.locale);
     }
 
     const routeId = event.route.id ?? '';
@@ -70,26 +72,28 @@ const handleAuth: Handle = async ({ event, resolve }) => {
         throw redirect(303, user.must_change_password ? '/profile/settings' : '/dashboard');
     }
 
-    return resolve(event);
+    return resolve({ ...event, request });
 };
 
 const handleParaglide: Handle = ({ event, resolve }) =>
-    paraglideMiddleware(event.request, ({ request, locale }) => {
-        event.request = request;
-        return resolve(event, {
-            transformPageChunk: ({ html }) =>
-                html
-                    .replace('%paraglide.lang%', locale)
-                    .replace('%paraglide.dir%', getTextDirection(locale))
-                    .replace(
-                        '%theme%',
-                        themeAttribute(
-                            event.locals.user?.theme ??
-                                guestThemeFromCookie(event.cookies.get(themeCookieName))
+    paraglideMiddleware(event.request, ({ request, locale }) =>
+        resolve(
+            { ...event, request },
+            {
+                transformPageChunk: ({ html }) =>
+                    html
+                        .replace('%paraglide.lang%', locale)
+                        .replace('%paraglide.dir%', getTextDirection(locale))
+                        .replace(
+                            '%theme%',
+                            themeAttribute(
+                                event.locals.user?.theme ??
+                                    guestThemeFromCookie(event.cookies.get(themeCookieName))
+                            )
                         )
-                    )
-        });
-    });
+            }
+        )
+    );
 
 export const handle = sequence(handleAuth, handleParaglide);
 

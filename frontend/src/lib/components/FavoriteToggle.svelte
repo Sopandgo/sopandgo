@@ -2,8 +2,8 @@
     import { StarIcon } from '@lucide/svelte';
     import { enhance } from '$app/forms';
     import { page } from '$app/state';
-    import { favoriteErrorFromForm } from '$lib/favorites';
-    import * as m from '$lib/paraglide/messages.js';
+    import { favoriteErrorFromForm } from '#lib/favorites.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     /*
      * Star button that adds or removes an SOP from the reader's favorites

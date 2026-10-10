@@ -3,8 +3,8 @@
     import { page } from '$app/state';
     import { RotateCwIcon, ShieldQuestionMarkIcon } from '@lucide/svelte';
     import IntegrityStatusBadge from './IntegrityStatusBadge.svelte';
-    import { integrityResultFromForm, type IntegrityStatus } from '$lib/integrity';
-    import * as m from '$lib/paraglide/messages.js';
+    import { integrityResultFromForm, type IntegrityStatus } from '#lib/integrity.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     /*
      * Posts to the page's ?/verifyAsset or ?/verifyVersion action

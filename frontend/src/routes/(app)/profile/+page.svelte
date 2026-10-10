@@ -1,13 +1,13 @@
 <script lang="ts">
-    import Avatar from '$lib/components/Avatar.svelte';
-    import Card from '$lib/components/Card.svelte';
-    import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-    import ListRow from '$lib/components/ListRow.svelte';
-    import ListUserSignatures from '$lib/components/ListUserSignatures.svelte';
+    import Avatar from '#lib/components/Avatar.svelte';
+    import Card from '#lib/components/Card.svelte';
+    import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+    import ListRow from '#lib/components/ListRow.svelte';
+    import ListUserSignatures from '#lib/components/ListUserSignatures.svelte';
     import { resolve } from '$app/paths';
-    import * as m from '$lib/paraglide/messages.js';
-    import { getLocale } from '$lib/paraglide/runtime';
-    import type { UserRole } from '$lib/sdk/types';
+    import * as m from '#lib/paraglide/messages.js';
+    import { getLocale } from '#lib/paraglide/runtime.js';
+    import type { UserRole } from '#lib/sdk/types.js';
     import {
         CalendarClockIcon,
         IdCardIcon,
@@ -45,12 +45,12 @@
 
 <Card>
     <div class="card-body">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-            <CardPageHeading>
-                <UserIcon class="w-8 h-8" />
-                {m.profile_heading()}
-            </CardPageHeading>
-            <a href={resolve('/profile/settings')} class="btn">
+        <div
+            class="flex flex-wrap items-start justify-between gap-3"
+        >
+            <CardPageHeading><UserIcon class="w-8 h-8" />{m.profile_heading()}</CardPageHeading>
+
+            <a href={resolve('profile/settings')} class="btn">
                 <SettingsIcon class="size-4" />
                 {m.nav_account_settings()}
             </a>

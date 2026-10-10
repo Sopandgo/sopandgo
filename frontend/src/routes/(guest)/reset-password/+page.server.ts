@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
+import * as m from '#lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
 
 // 1. Load the token from URL so the page can put it in the form

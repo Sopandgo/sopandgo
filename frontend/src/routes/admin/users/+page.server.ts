@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
+import * as m from '#lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
-import type { UserRole } from '$lib/sdk/types';
+import type { UserRole } from '#lib/sdk/types.js';
 
 // Valid roles set for validation
 const ROLES = new Set(['admin', 'editor', 'approver', 'auditor', 'viewer']);

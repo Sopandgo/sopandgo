@@ -1,5 +1,5 @@
-import * as m from '$lib/paraglide/messages.js';
-import { getLocale } from '$lib/paraglide/runtime';
+import * as m from '#lib/paraglide/messages.js';
+import { getLocale } from '#lib/paraglide/runtime.js';
 
 const EVENT_TITLES: Record<string, () => string> = {
     login: () => m.audit_login(),

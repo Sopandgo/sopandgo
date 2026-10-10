@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
+import * as m from '#lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
-import type { BackupS3Settings, BackupS3SettingsInput } from '$lib/sdk/types';
+import type { BackupS3Settings, BackupS3SettingsInput } from '#lib/sdk/types.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
     const [backupStatus, s3Settings] = await Promise.all([
