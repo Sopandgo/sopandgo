@@ -24,6 +24,7 @@ The directory contains:
 
 - `app.db`: The SQLite database.
 - `sops/`: SOP content — versioned Markdown and per-SOP assets (images, attachments) on disk.
+- `users/`: Profile pictures — per-user directories with `avatar-96.jpg`, `avatar-256.jpg`, `avatar-512.jpg`, and `avatar-1024.jpg`.
 
 **Important:** This directory **must** be on persistent storage so data survives image updates and container recreation.
 
@@ -133,9 +134,9 @@ The application does not enforce network-level restrictions. Operators should:
 
 ### Backup
 
-**Recommended:** Sign in as **admin** and use **Settings → Backup** (`/admin/settings/backup`) to **export** a `.zip` (consistent DB snapshot plus `sops/` and `manifest.json`). You can **validate** archives and **stage** a restore; staged restores apply on the **next backend restart**. See `docs/ops/backup-and-restore.md`.
+**Recommended:** Sign in as **admin** and use **Settings → Backup** (`/admin/settings/backup`) to **export** a `.zip` (consistent DB snapshot plus `sops/`, `users/` when present, and `manifest.json`). You can **validate** archives and **stage** a restore; staged restores apply on the **next backend restart**. See `docs/ops/backup-and-restore.md`.
 
-**Manual:** Stop the container and copy the entire mounted data directory, or at minimum `app.db` and the `sops/` tree together (SQLite may use `app.db-wal` / `app.db-shm` while running—stopping the container avoids inconsistent copies).
+**Manual:** Stop the container and copy the entire mounted data directory, or at minimum `app.db`, the `sops/` tree, and `users/` together (SQLite may use `app.db-wal` / `app.db-shm` while running—stopping the container avoids inconsistent copies).
 
 During backup export, mutating API requests may return `503` briefly while a maintenance lock is active; reads generally continue.
 

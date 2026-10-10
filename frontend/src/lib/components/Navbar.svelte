@@ -62,7 +62,13 @@
                         aria-label={user.display_name}
                         title={user.display_name}
                     >
-                        <Avatar displayName={user.display_name} size="md" />
+                        <Avatar
+                            displayName={user.display_name}
+                            size="md"
+                            userId={user.id}
+                            hasAvatar={user.has_avatar}
+                            avatarContentHash={user.avatar_content_hash}
+                        />
                     </button>
 
                     <ul

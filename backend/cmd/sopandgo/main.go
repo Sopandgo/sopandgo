@@ -78,7 +78,7 @@ func main() {
 	}
 
 	// Auth Service: Manages users, roles, and sessions.
-	authService := auth.NewService(store.DB, auditLogger)
+	authService := auth.NewService(store.DB, auditLogger, dataDir)
 
 	// Bootstrap: Ensure at least one admin exists so the system isn't locked out.
 	if err := authService.EnsureAdminUser(); err != nil {

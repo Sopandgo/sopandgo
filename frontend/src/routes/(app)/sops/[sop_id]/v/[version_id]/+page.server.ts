@@ -8,6 +8,17 @@ import { env } from '$env/dynamic/private';
 // Same limit as the backend (sop.MaxRejectReasonRunes)
 const MAX_REJECT_REASON = 500;
 
+/** Route param may be `latest`; API calls need the real version UUID. */
+async function resolveVersionId(
+    locals: App.Locals,
+    sopId: string,
+    versionParam: string
+): Promise<string> {
+    if (versionParam !== 'latest') return versionParam;
+    const summary = await locals.api.sops.getLatestVersionSummary(sopId);
+    return summary.id;
+}
+
 export const load: PageServerLoad = async ({ locals, params, parent }) => {
     const { sop } = await parent();
     const { version_id } = params;
@@ -61,7 +72,6 @@ export const actions: Actions = {
     sign: async ({ request, locals, params }) => {
         const formData = await request.formData();
         const inputName = formData.get('user_display_name')?.toString().trim();
-        const versionId = params.version_id;
 
         if (!locals.user) {
             return fail(401, { action: 'sign', error: m.error_unauthorized(), inputName });
@@ -76,14 +86,17 @@ export const actions: Actions = {
         }
 
         try {
+            const versionId = await resolveVersionId(locals, params.sop_id, params.version_id);
             await locals.api.sops.acknowledgeAsReader(versionId);
             return { success: true };
         } catch (err) {
             console.error('Sign Action Error:', err);
-            return fail(500, {
+            const message = err instanceof Error ? err.message : '';
+            const already = message === 'ALREADY_ACKNOWLEDGED';
+            return fail(already ? 409 : 500, {
                 action: 'sign',
-                error: m.error_sign_failed(),
-                inputName 
+                error: already ? m.error_already_acknowledged() : m.error_sign_failed(),
+                inputName
             });
         }
     },
@@ -94,7 +107,8 @@ export const actions: Actions = {
         if (!locals.user) return fail(401, { action: 'promote', error: m.error_unauthorized() });
 
         try {
-            await locals.api.sops.promoteToRC(params.version_id);
+            const versionId = await resolveVersionId(locals, params.sop_id, params.version_id);
+            await locals.api.sops.promoteToRC(versionId);
             return { success: true };
         } catch (err) {
             console.error('Promote Action Error:', err);
@@ -107,11 +121,6 @@ export const actions: Actions = {
 
         const formData = await request.formData();
         const inputName = formData.get('user_display_name')?.toString().trim();
-        const versionId = params.version_id;
-
-        if (!locals.user) {
-            return fail(401, { action: 'approve', error: m.error_unauthorized(), inputName });
-        }
 
         if (inputName !== locals.user.display_name) {
             return fail(400, {
@@ -122,7 +131,8 @@ export const actions: Actions = {
         }
 
         try {
-            await locals.api.sops.approveVersion(params.version_id);
+            const versionId = await resolveVersionId(locals, params.sop_id, params.version_id);
+            await locals.api.sops.approveVersion(versionId);
             return { success: true };
         } catch (err) {
             console.error('Approve Action Error:', err);
@@ -144,7 +154,8 @@ export const actions: Actions = {
         }
 
         try {
-            await locals.api.sops.rejectRC(params.version_id, reason);
+            const versionId = await resolveVersionId(locals, params.sop_id, params.version_id);
+            await locals.api.sops.rejectRC(versionId, reason);
             return { success: true };
         } catch (err) {
             console.error('Reject Action Error:', err);

@@ -2,10 +2,11 @@ package sop
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
-	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/google/uuid"
+	"github.com/sopandgo/sopandgo/backend/internal/audit"
 )
 
 func (s *Service) AddAcknowledgment(
@@ -50,6 +51,9 @@ func (s *Service) AddAcknowledgment(
 		createdAt,
 	)
 	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "unique") {
+			return "", fmt.Errorf("conflict: already acknowledged")
+		}
 		return "", fmt.Errorf("failed to create acknowledgment record: %w", err)
 	}
 

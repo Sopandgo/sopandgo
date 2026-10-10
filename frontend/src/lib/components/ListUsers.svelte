@@ -62,7 +62,12 @@
                 >
                     <div class="flex min-w-0 flex-1 flex-row items-start gap-3 md:items-center md:gap-4">
                         <div class="shrink-0">
-                            <Avatar displayName={user.display_name} />
+                            <Avatar
+                                displayName={user.display_name}
+                                userId={user.id}
+                                hasAvatar={user.has_avatar}
+                                avatarContentHash={user.avatar_content_hash}
+                            />
                         </div>
 
                         <div class="min-w-0 flex-1 space-y-0.5">

@@ -33,7 +33,12 @@
     <ul class="list" id="{uid}-list">
         {#each shown as ack, i (i)}
             <ListRow title={ack.user.display_name}>
-                {#snippet leading()}<Avatar displayName={ack.user.display_name} />{/snippet}
+                {#snippet leading()}<Avatar
+                        displayName={ack.user.display_name}
+                        userId={ack.user_id}
+                        hasAvatar={ack.user.has_avatar}
+                        avatarContentHash={ack.user.avatar_content_hash}
+                    />{/snippet}
                 {#snippet meta()}
                     <span class="font-mono" title={ack.user_id}>{ack.user_id.slice(0, 8)}</span>
                     · {m.ack_signed({ when: new Date(ack.created_at).toLocaleString(getLocale()) })}

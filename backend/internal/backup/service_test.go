@@ -163,6 +163,13 @@ func TestExportZip_ContainsDBAndManifest(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(sopsDir, "note.txt"), []byte("v1"), 0644); err != nil {
 		t.Fatal(err)
 	}
+	usersDir := filepath.Join(dir, "users", "user-1")
+	if err := os.MkdirAll(usersDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(usersDir, "avatar-96.jpg"), []byte("fake-jpg"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	zipPath, fileName, manifest, err := svc.ExportZip()
 	if err != nil {
@@ -189,6 +196,22 @@ func TestExportZip_ContainsDBAndManifest(t *testing.T) {
 	}
 	if mf.DBSchemaVersion != manifest.DBSchemaVersion {
 		t.Fatal("manifest mismatch")
+	}
+
+	zr, err := zip.OpenReader(zipPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer zr.Close()
+	foundUsers := false
+	for _, f := range zr.File {
+		if f.Name == "users/user-1/avatar-96.jpg" {
+			foundUsers = true
+			break
+		}
+	}
+	if !foundUsers {
+		t.Fatal("expected users/ avatar file in backup zip")
 	}
 }
 

@@ -31,7 +31,22 @@ const (
 	userManager    = "manager"
 	userQA         = "qa"
 	userResearcher = "researcher"
+	demoTag        = "Demo"
 )
+
+// withDemoTag returns tags with the Demo tag first. Manifest entries that
+// already spell Demo (any case) are dropped so the tag is attached once.
+func withDemoTag(tags []string) []string {
+	out := make([]string, 0, len(tags)+1)
+	out = append(out, demoTag)
+	for _, tag := range tags {
+		if strings.EqualFold(tag, demoTag) {
+			continue
+		}
+		out = append(out, tag)
+	}
+	return out
+}
 
 type demoUser struct {
 	key   string
@@ -105,9 +120,10 @@ func seed(dataDir, sopsRoot string) error {
 	}
 
 	sopService := sop.NewService(store.DB, auditLogger, dataDir, "1", false, nil)
-	authService := auth.NewService(store.DB, auditLogger)
+	authService := auth.NewService(store.DB, auditLogger, dataDir)
 
-	userIDs, err := ensureDemoUsers(authService)
+	avatarsDir := filepath.Join(filepath.Dir(sopsRoot), "avatars")
+	userIDs, err := ensureDemoUsers(authService, avatarsDir)
 	if err != nil {
 		return fmt.Errorf("failed to create demo users: %w", err)
 	}
@@ -137,7 +153,10 @@ func seed(dataDir, sopsRoot string) error {
 }
 
 // ensureDemoUsers creates the demo users and returns their IDs by user key.
-func ensureDemoUsers(authService *auth.Service) (map[string]string, error) {
+// When avatarsDir contains <key>.jpg (manager.jpg, qa.jpg, researcher.jpg),
+// that file is set as the user's profile picture. The bootstrap admin is never
+// given a picture here.
+func ensureDemoUsers(authService *auth.Service, avatarsDir string) (map[string]string, error) {
 	ids := map[string]string{}
 
 	for _, d := range demoUsers {
@@ -156,7 +175,17 @@ func ensureDemoUsers(authService *auth.Service) (map[string]string, error) {
 			return nil, fmt.Errorf("failed to set bootstrap password: %w", err)
 		}
 
-		log.Printf("created demo user: %s (%s)", d.name, d.role)
+		avatarPath := filepath.Join(avatarsDir, d.key+".jpg")
+		if raw, err := os.ReadFile(avatarPath); err == nil {
+			if err := authService.SetAvatar(id, raw, nil); err != nil {
+				return nil, fmt.Errorf("failed to set avatar for %s: %w", d.key, err)
+			}
+			log.Printf("created demo user: %s (%s) with avatar", d.name, d.role)
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("failed to read avatar %s: %w", avatarPath, err)
+		} else {
+			log.Printf("created demo user: %s (%s)", d.name, d.role)
+		}
 		ids[d.key] = id
 	}
 
@@ -275,8 +304,9 @@ func seedOneSOP(
 		return err
 	}
 
-	// 3. attach tags, creating each one the first time it is used
-	for _, tag := range manifest.Tags {
+	// 3. attach tags, creating each one the first time it is used.
+	// Every demo SOP gets the Demo tag so evaluators can filter the library.
+	for _, tag := range withDemoTag(manifest.Tags) {
 		tagID, ok := tagIDs[tag]
 		if !ok {
 			tagID, err = sopService.CreateTag(tag, &editorID)

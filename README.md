@@ -40,7 +40,7 @@ other regulatory framework. It is a tooling aid, not a regulatory solution.
 The system follows a **layered architecture** pattern to keep transport, services, and storage separable for security and portability.
 
 - **Containerization:** Root **`docker-compose.yml`** (use with a **`.env`** file; start from **`.env.example`**):
-  - **`sopandgo` service (one image):** Caddy (reverse proxy), **Backend:** Go 1.25 (service layer, SQLite, PASETO auth, mail hooks), **Frontend:** Svelte 5 / SvelteKit (Node adapter).
+  - **`sopandgo` service (one image):** Caddy (reverse proxy), **Backend:** Go 1.26 (service layer, SQLite, PASETO auth, mail hooks), **Frontend:** Svelte 5 / SvelteKit (Node adapter).
   - **`gotenberg` service:** PDF rendering sidecar when PDF export is enabled (see compose file and env vars below).
 - **Storage:**
   - **SQLite:** Stores users, sessions, metadata, audit logs, and encrypted secrets for mail and outbound integrations (ciphertext only; the AES key stays in the environment).
@@ -70,6 +70,7 @@ The system implements a **Stateless/Stateful Hybrid** security model:
 - **Unknowable Passwords:** Admins cannot set passwords. Users set their own credentials via email invites.
 - **Authentication:** PASETO (Stateless) for fast API access + Refresh Tokens (Stateful) for session management.
 - **Revocation:** Deactivating a user or changing their role applies on the next request. Revoking a refresh session stops new tokens immediately; an access token already issued lasts at most 5 minutes.
+- **Profile pictures:** Users upload their own picture; the server stores small re-encoded JPEGs. Any signed-in user can view them the same way they see display names.
 - **RBAC:** Role-Based Access Control limits actions (e.g., only "Editors" can create drafts).
 - **Self-Contained:** No external identity providers required.
 
@@ -187,7 +188,7 @@ If you wish to run the services outside of Docker:
   The Go binary does **not** read a `.env` file; export `SECRET_ENCRYPTION_KEY` (and other vars) in your shell or IDE if you need mail or to match production. Under `air`, put them in `backend/.env` instead (copy `backend/.env.example`).
 - **Frontend:** `cd frontend && npm run dev`
 - **Seeder:** `cd backend && go run cmd/seed-demo-data/main.go` (Only run on an empty `data` folder). Honors `SEED_DEMO_DATA=false`. Run it **before** the backend's first start: the backend creates `app.db` with the bootstrap admin, and the seeder skips once `app.db` exists.
-- **Live reload:** `cd backend && air` uses `backend/.air.toml`, which runs the seeder before each build, so a fresh `backend/data` gets demo users and sample SOPs. To reset demo data, stop air and delete `backend/data`.
+- **Live reload:** `cd backend && air` uses `backend/.air.toml`, which runs `go run ./cmd/seed-demo-data` before each build. Seeding only inserts when `backend/data/app.db` is missing (same as Docker). To reset demo data, stop air and delete `backend/data`, then start air again.
 
 ### Tests
 - **Backend:** `cd backend && go test ./...`

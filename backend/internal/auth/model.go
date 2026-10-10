@@ -17,6 +17,8 @@ type User struct {
 	MustChangePassword bool      `json:"must_change_password"`
 	Locale             string    `json:"locale"`
 	Theme              string    `json:"theme"`
+	HasAvatar          bool      `json:"has_avatar"`
+	AvatarContentHash  string    `json:"avatar_content_hash,omitempty"`
 	CreatedAt          time.Time `json:"created_at"`
 }
 

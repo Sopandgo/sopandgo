@@ -4,6 +4,9 @@ import { isLocale } from '$lib/paraglide/runtime';
 import { isThemePreference } from '$lib/theme';
 import type { Actions, PageServerLoad } from './$types';
 
+/** Matches the backend limit; the cropper exports far less. */
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
 export const load: PageServerLoad = async ({ locals }) => {
     if (!locals.user) {
         throw redirect(303, '/login');
@@ -83,6 +86,31 @@ export const actions: Actions = {
         }
 
         throw redirect(303, '/login?passwordChanged=true');
+    },
+
+    uploadAvatar: async ({ locals, request }) => {
+        const fd = await request.formData();
+        const file = fd.get('file');
+        if (!(file instanceof File) || file.size === 0 || file.size > MAX_AVATAR_BYTES) {
+            return fail(400, { uploadAvatar: { ok: false, error: 'invalid' } });
+        }
+        try {
+            await locals.api.auth.uploadAvatar(file);
+        } catch (err) {
+            console.error('Avatar upload failed:', err);
+            return fail(400, { uploadAvatar: { ok: false, error: 'failed' } });
+        }
+        return { uploadAvatar: { ok: true, error: null } };
+    },
+
+    removeAvatar: async ({ locals }) => {
+        try {
+            await locals.api.auth.removeAvatar();
+        } catch (err) {
+            console.error('Avatar removal failed:', err);
+            return fail(400, { removeAvatar: { ok: false, error: 'failed' } });
+        }
+        return { removeAvatar: { ok: true, error: null } };
     },
 
     signOutOthers: async ({ locals }) => {
