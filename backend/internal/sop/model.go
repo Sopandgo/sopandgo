@@ -7,11 +7,16 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 )
 
-const MaxChangeSummaryRunes = 500
+const (
+	MaxChangeSummaryRunes = 500
+	MaxRejectReasonRunes  = 500
+)
 
 var (
 	ErrChangeSummaryRequired = errors.New("change summary is required")
 	ErrChangeSummaryTooLong  = errors.New("change summary must be 500 characters or fewer")
+	ErrRejectReasonRequired  = errors.New("a reason for rejecting is required")
+	ErrRejectReasonTooLong   = errors.New("the reason for rejecting must be 500 characters or fewer")
 )
 
 type SOP struct {
@@ -98,6 +103,17 @@ type SOPVersionSummary struct {
 	CreatedAt       time.Time                   `json:"created_at"`
 	HashValid       bool                        `json:"hash_valid"`
 	Tags            []Tag                       `json:"tags"`
+	// Rejection says who rejected the version, when and why; nil unless it is rejected.
+	Rejection *VersionRejection `json:"rejection"`
+}
+
+// VersionRejection is the state row that rejected a version.
+type VersionRejection struct {
+	// Reason is nil for rejections recorded before reasons were stored.
+	Reason      *string   `json:"reason"`
+	ActorUserID string    `json:"actor_user_id"`
+	ActorName   string    `json:"actor_name"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type SOPVersionPDFArtifact struct {

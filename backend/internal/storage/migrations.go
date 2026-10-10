@@ -508,6 +508,17 @@ var migrations = []migration{
 			return err
 		},
 	},
+	// v25: the reason given when a version changes state. Set for rejections from
+	// this version on; NULL on every earlier row, whose reasons were never stored.
+	{
+		version: 25,
+		up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`
+				ALTER TABLE sop_version_states ADD COLUMN reason TEXT;
+			`)
+			return err
+		},
+	},
 }
 
 func LatestSchemaVersion() int {

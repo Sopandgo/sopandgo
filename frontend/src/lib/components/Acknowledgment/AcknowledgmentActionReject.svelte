@@ -52,16 +52,19 @@
             <label class="label" for="reason">
                 <span class="label-text">{m.ack_reject_reason_before()} <strong>{m.ack_reject_reason_strong()}</strong>{m.ack_reject_reason_after()}</span>
             </label>
-            <input
+            <!-- Kept with the rejection and shown on the version afterwards -->
+            <textarea
                 id="reason"
                 name="reason"
-                type="text"
-                class="input w-full mt-4 {error ? 'input-error' : ''}"
+                rows="3"
+                maxlength="500"
+                class="textarea w-full mt-4 {error ? 'textarea-error' : ''}"
                 placeholder={m.ack_reject_placeholder()}
                 value={form?.action === 'reject' ? (form.inputName ?? '') : ''}
                 required
                 autocomplete="off"
-            />
+            ></textarea>
+            <p class="mt-1 text-xs text-base-content/70">{m.ack_reject_reason_help()}</p>
         </div>
 
         <div class="card-actions justify-end">

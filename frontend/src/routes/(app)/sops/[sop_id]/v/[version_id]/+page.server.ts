@@ -4,6 +4,9 @@ import { verifyAsset, verifyVersion } from '$lib/server/integrityActions';
 import type { PageServerLoad, Actions } from './$types';
 import { env } from '$env/dynamic/private';
 
+// Same limit as the backend (sop.MaxRejectReasonRunes)
+const MAX_REJECT_REASON = 500;
+
 export const load: PageServerLoad = async ({ locals, params, parent }) => {
     const { sop } = await parent();
     const { version_id } = params;
@@ -135,13 +138,16 @@ export const actions: Actions = {
         if (!reason) {
             return fail(400, { action: 'reject', error: m.error_reject_reason() });
         }
+        if ([...reason].length > MAX_REJECT_REASON) {
+            return fail(400, { action: 'reject', error: m.error_reject_reason_long({ max: String(MAX_REJECT_REASON) }), inputName: reason });
+        }
 
         try {
             await locals.api.sops.rejectRC(params.version_id, reason);
             return { success: true };
         } catch (err) {
             console.error('Reject Action Error:', err);
-            return fail(500, { action: 'reject', error: m.error_reject_failed() });
+            return fail(500, { action: 'reject', error: m.error_reject_failed(), inputName: reason });
         }
     },
 

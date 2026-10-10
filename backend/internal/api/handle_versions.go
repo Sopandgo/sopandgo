@@ -341,10 +341,11 @@ func (s *Server) handleRejectSOPVersion(w http.ResponseWriter, r *http.Request) 
 	var req struct {
 		Reason string `json:"reason"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Reason == "" {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.Reason) == "" {
 		http.Error(w, "invalid request or missing reason", http.StatusBadRequest)
 		return
 	}
+	reason := strings.TrimSpace(req.Reason)
 
 	// 1. Enforce State Machine: Document must currently be an 'rc'
 	v, err := s.sopService.GetSOPVersionByID(versionID)
@@ -359,15 +360,24 @@ func (s *Server) handleRejectSOPVersion(w http.ResponseWriter, r *http.Request) 
 
 	actorID := GetUserID(r.Context())
 
-	// 2. Transition State
-	err = s.sopService.TransitionVersionState(versionID, sop.StateRejected, actorID)
+	// 2. Transition State; the reason is stored with it
+	err = s.sopService.RejectSOPVersion(versionID, actorID, reason)
+	if errors.Is(err, sop.ErrRejectReasonRequired) || errors.Is(err, sop.ErrRejectReasonTooLong) {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil && strings.HasPrefix(err.Error(), "conflict:") {
+		// The version changed state after the check above
+		http.Error(w, "Only release candidates can be rejected", http.StatusConflict)
+		return
+	}
 	if err != nil {
 		log.Printf("ERROR: reject version %s failed: %v", versionID, err)
 		http.Error(w, "Failed to reject version", http.StatusInternalServerError)
 		return
 	}
 
-	s.notifyLifecycle(notify.EventSOPRejected, versionID, actorID, req.Reason)
+	s.notifyLifecycle(notify.EventSOPRejected, versionID, actorID, reason)
 
 	w.WriteHeader(http.StatusOK)
 }

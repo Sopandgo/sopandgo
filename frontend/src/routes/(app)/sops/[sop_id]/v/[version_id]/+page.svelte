@@ -161,7 +161,23 @@
         {/if}
 
         {#if !isPublished}
-            <Alert type={noticeType}>
+            <Alert
+                type={noticeType}
+                title={version.rejection
+                    ? m.version_rejected_by({
+                          name: version.rejection.actor_name || version.rejection.actor_user_id,
+                          when: new Date(version.rejection.created_at).toLocaleString(getLocale())
+                      })
+                    : undefined}
+            >
+                {#if version.rejection}
+                    <!-- The reason the approver gave; older rejections have none on record -->
+                    {#if version.rejection.reason}
+                        <p class="mb-2 whitespace-pre-wrap">{version.rejection.reason}</p>
+                    {:else}
+                        <p class="mb-2 italic">{m.version_rejected_no_reason()}</p>
+                    {/if}
+                {/if}
                 {#if publishedId && publishedNumber != null}
                     {m.version_readers_follow({ version: String(publishedNumber) })}
                     <a href={`/sops/${data.sop.id}/v/${publishedId}`} class="underline">

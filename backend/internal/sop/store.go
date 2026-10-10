@@ -465,11 +465,42 @@ func getLatestPublishedSOPVersionRecord(tx *sql.Tx, sopID string) (*SOPVersion, 
 // --- SOP Version States ---
 
 func createSOPVersionStateRecord(db audit.DBTX, id, sopVersionID, state, actorUserID, createdAt string) error {
+	return createSOPVersionStateWithReasonRecord(db, id, sopVersionID, state, actorUserID, createdAt, nil)
+}
+
+// createSOPVersionStateWithReasonRecord appends a state row that carries the actor's reason (a rejection).
+func createSOPVersionStateWithReasonRecord(db audit.DBTX, id, sopVersionID, state, actorUserID, createdAt string, reason *string) error {
 	_, err := db.Exec(`
-        INSERT INTO sop_version_states (id, sop_version_id, state, actor_user_id, created_at)
-        VALUES (?, ?, ?, ?, ?)
-    `, id, sopVersionID, state, actorUserID, createdAt)
+        INSERT INTO sop_version_states (id, sop_version_id, state, actor_user_id, created_at, reason)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `, id, sopVersionID, state, actorUserID, createdAt, reason)
 	return err
+}
+
+// getVersionRejectionRecord returns the newest rejection of a version, or nil if it was never rejected.
+func getVersionRejectionRecord(db audit.DBTX, sopVersionID string) (*VersionRejection, error) {
+	var r VersionRejection
+	var reason sql.NullString
+	var createdAt string
+	err := db.QueryRow(`
+        SELECT s.reason, s.actor_user_id, COALESCE(u.display_name, ''), s.created_at
+        FROM sop_version_states s
+        LEFT JOIN users u ON u.id = s.actor_user_id
+        WHERE s.sop_version_id = ? AND s.state = 'rejected'
+        ORDER BY s.created_at DESC, s.rowid DESC
+        LIMIT 1
+    `, sopVersionID).Scan(&reason, &r.ActorUserID, &r.ActorName, &createdAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if reason.Valid {
+		r.Reason = &reason.String
+	}
+	r.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
+	return &r, nil
 }
 
 // --- SOP Version PDF Artifacts ---

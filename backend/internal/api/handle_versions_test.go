@@ -162,6 +162,34 @@ func TestAPI_SOPVersions(t *testing.T) {
 		if v.Status != sop.StateRejected {
 			t.Errorf("Expected state %s, got %s", sop.StateRejected, v.Status)
 		}
+
+		// 6. The reason is kept: on the version summary and in the audit chain
+		rec = doJSONRequest(http.MethodGet, fmt.Sprintf("/api/sops/%s/versions/%s/summary", rejectSopID, vID), approverToken, nil)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Summary failed: %d - %s", rec.Code, rec.Body.String())
+		}
+		var summary sop.SOPVersionSummary
+		if err := json.Unmarshal(rec.Body.Bytes(), &summary); err != nil {
+			t.Fatalf("Decode summary: %v", err)
+		}
+		if summary.Rejection == nil || summary.Rejection.Reason == nil || *summary.Rejection.Reason != "Does not meet quality standards" {
+			t.Fatalf("Expected the rejection reason on the summary, got %+v", summary.Rejection)
+		}
+		if summary.Rejection.ActorUserID != approverID || summary.Rejection.ActorName == "" {
+			t.Errorf("Expected the approver as rejecting actor, got %+v", summary.Rejection)
+		}
+		var auditReasons int
+		if err := env.Store.DB.QueryRow(
+			`SELECT COUNT(*) FROM audit_events WHERE entity_id = ? AND payload LIKE '%Does not meet quality standards%'`, vID,
+		).Scan(&auditReasons); err != nil || auditReasons != 1 {
+			t.Errorf("Expected the reason in one audit event, got %d (%v)", auditReasons, err)
+		}
+
+		// 7. A rejected version cannot be rejected again
+		rec = doJSONRequest(http.MethodPost, fmt.Sprintf("/api/sops/%s/versions/%s/reject", rejectSopID, vID), approverToken, rejectPayload)
+		if rec.Code != http.StatusConflict {
+			t.Errorf("Expected 409 rejecting a rejected version, got %d", rec.Code)
+		}
 	})
 
 	// =========================================================================

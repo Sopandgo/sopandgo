@@ -185,7 +185,7 @@ func TestService_GetSOPByIDWithTags_VersionPointers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RegisterSOPVersion v3: %v", err)
 	}
-	if err := env.SOPService.TransitionVersionState(v3, sop.StateRejected, actorID); err != nil {
+	if err := env.SOPService.RejectSOPVersion(v3, actorID, "Not ready"); err != nil {
 		t.Fatalf("Reject v3: %v", err)
 	}
 	check("v3 rejected", v3, sop.StateRejected, v2, 2)

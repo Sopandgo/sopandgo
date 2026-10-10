@@ -279,6 +279,14 @@ func (s *Service) GetSOPVersionSummaryByID(id string) (*SOPVersionSummary, error
 		return nil, fmt.Errorf("integrity check failed: %w", err)
 	}
 
+	var rejection *VersionRejection
+	if v.Status == StateRejected {
+		rejection, err = getVersionRejectionRecord(s.db, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load rejection: %w", err)
+		}
+	}
+
 	summary := &SOPVersionSummary{
 		ID:              v.ID,
 		SOPID:           v.SOPID,
@@ -292,6 +300,7 @@ func (s *Service) GetSOPVersionSummaryByID(id string) (*SOPVersionSummary, error
 		Tags:            tags,
 		Content:         string(contentBytes), // Convert bytes to string
 		HashValid:       hashValid,
+		Rejection:       rejection,
 	}
 
 	return summary, nil
@@ -360,7 +369,28 @@ func validateManualVersionTransition(currentState, newState string) error {
 }
 
 // TransitionVersionState appends a new lifecycle state to a version.
+// Rejections go through RejectSOPVersion, which records the reason.
 func (s *Service) TransitionVersionState(versionID string, newState string, actorUserID string) error {
+	if newState == StateRejected {
+		return fmt.Errorf("conflict: %q must be applied via RejectSOPVersion, which records the reason", StateRejected)
+	}
+	return s.transitionVersionState(versionID, newState, actorUserID, nil)
+}
+
+// RejectSOPVersion rejects a draft or release candidate and stores the reason on the
+// state row and in the audit log, so the version page and an audit can show it later.
+func (s *Service) RejectSOPVersion(versionID string, actorUserID string, reason string) error {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return ErrRejectReasonRequired
+	}
+	if utf8.RuneCountInString(reason) > MaxRejectReasonRunes {
+		return ErrRejectReasonTooLong
+	}
+	return s.transitionVersionState(versionID, StateRejected, actorUserID, &reason)
+}
+
+func (s *Service) transitionVersionState(versionID string, newState string, actorUserID string, reason *string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -393,21 +423,25 @@ func (s *Service) TransitionVersionState(versionID string, newState string, acto
 	stateID := uuid.NewString()
 	createdAt := time.Now().UTC().Format(time.RFC3339Nano)
 
-	err = createSOPVersionStateRecord(tx, stateID, versionID, newState, actorUserID, createdAt)
+	err = createSOPVersionStateWithReasonRecord(tx, stateID, versionID, newState, actorUserID, createdAt, reason)
 	if err != nil {
 		return fmt.Errorf("failed to append new state: %w", err)
 	}
 
 	// 3. Cryptographic Audit Log
+	payload := map[string]any{
+		"new_state": newState,
+	}
+	if reason != nil {
+		payload["reason"] = *reason
+	}
 	err = s.auditLogger.Log(
 		tx,
 		audit.EventSOPVersionStateChanged,
 		audit.EntitySOPVersion,
 		versionID,
 		&actorUserID,
-		map[string]any{
-			"new_state": newState,
-		},
+		payload,
 	)
 	if err != nil {
 		return fmt.Errorf("audit log failed: %w", err)

@@ -62,10 +62,12 @@ API (scopes abbreviated):
 - `POST /api/sops/{sopID}` — create a **draft** (`sop:write`); requires `change_summary`
 - `POST .../versions/{id}/promote` — draft → RC (`sop:write`); **409** if not a draft
 - `POST .../versions/{id}/approve` — RC → published (`sop:sign:approver`); returns `{"id"}` (approver ack)
-- `POST .../versions/{id}/reject` — body `{"reason"}` required (`sop:sign:approver`); **409** if not an RC
+- `POST .../versions/{id}/reject` — body `{"reason"}` required, at most 500 characters (`sop:sign:approver`); **400** if it is missing or too long, **409** if not an RC
 - `POST .../versions/{id}/add-reader` — reader acknowledgment (`sop:sign:reader`); **409** unless the version is `published`
 
 Author acknowledgments are recorded when the version is created. Approver acknowledgments are recorded only by **approve**. There is no separate endpoint for either.
+
+The reject reason is stored on the `rejected` state row and in that transition's audit event, and `GET .../versions/{id}/summary` returns it as `rejection` (`reason`, `actor_user_id`, `actor_name`, `created_at`; `null` unless the version is rejected). The version page shows who rejected the version, when, and why. Rejections recorded before reasons were stored have `reason: null`; their reason went only to the integration notifications and cannot be recovered.
 
 Only one RC per SOP may be open at a time. When a new version is published, the previously published version becomes `superseded`.
 
@@ -163,7 +165,7 @@ This preserves historical traceability even as team members change.
 
 At any point, sopandgo can answer questions such as:
 - Which version of an SOP was active (published) at a given time?
-- Who promoted, approved, or rejected a version?
+- Who promoted, approved, or rejected a version, and why was it rejected?
 - Who acknowledged that version (and as author, approver, or reader)?
 - When was the SOP last changed, and by whom?
 - What changed between versions?

@@ -154,6 +154,16 @@ export interface SOPVersionSummary {
     assets: SOPAsset[];
     acknowledgments: AcknowledgmentWithUser[];
     tags: Tag[];
+    /** Who rejected the version, when and why; null unless it is rejected. */
+    rejection: VersionRejection | null;
+}
+
+export interface VersionRejection {
+    /** Null for rejections recorded before reasons were stored. */
+    reason: string | null;
+    actor_user_id: string;
+    actor_name: string;
+    created_at: string;
 }
 
 export interface AuditEvent {
