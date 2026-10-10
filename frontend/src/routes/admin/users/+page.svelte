@@ -3,7 +3,7 @@
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
     import ListUsers from '$lib/components/ListUsers.svelte';
     import RegisterUser from '$lib/components/RegisterUser.svelte';
-    import { UsersIcon } from 'lucide-svelte';
+    import { UsersIcon } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
     
     let { data, form } = $props();

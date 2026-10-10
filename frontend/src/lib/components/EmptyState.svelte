@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import type { ChevronRightIcon } from 'lucide-svelte';
+    import type { ChevronRightIcon } from '@lucide/svelte';
 
     /*
      * Centred placeholder for a list or card with nothing to show

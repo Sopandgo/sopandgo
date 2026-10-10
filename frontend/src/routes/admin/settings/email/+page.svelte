@@ -5,7 +5,7 @@
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
     import CollapsibleCard from '$lib/components/CollapsibleCard.svelte';
-    import { MailIcon } from 'lucide-svelte';
+    import { MailIcon } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
     import type { PublicSmtpSettings } from '$lib/sdk/types';
 

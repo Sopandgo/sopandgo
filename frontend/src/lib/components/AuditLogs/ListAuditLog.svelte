@@ -23,7 +23,7 @@
         ShieldXIcon,
         TagIcon,
         UserIcon,
-    } from "lucide-svelte";
+    } from "@lucide/svelte";
 
     interface Props {
         auditEvents?: AuditEvent[] | null;

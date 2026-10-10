@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { FileTextIcon } from 'lucide-svelte';
+    import { FileTextIcon } from '@lucide/svelte';
     import type { SOPVersion } from '$lib/sdk/types';
     import Card from './Card.svelte';
     import ListRow from './ListRow.svelte';

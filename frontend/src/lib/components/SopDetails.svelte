@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { CalendarClockIcon, FingerprintPatternIcon, GitBranchIcon, WaypointsIcon } from 'lucide-svelte';
+    import { CalendarClockIcon, FingerprintPatternIcon, GitBranchIcon, WaypointsIcon } from '@lucide/svelte';
     import Card from './Card.svelte';
     import IntegrityCheck from './IntegrityCheck.svelte';
     import ListRow from './ListRow.svelte';

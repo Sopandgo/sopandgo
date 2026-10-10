@@ -6,7 +6,7 @@
     import SelectUserRole from './SelectUserRole.svelte';
     import type { User } from '$lib/sdk/types';
     import Card from './Card.svelte';
-    import { MailIcon, CheckIcon } from 'lucide-svelte';
+    import { MailIcon, CheckIcon } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
     import { getLocale } from '$lib/paraglide/runtime';
 

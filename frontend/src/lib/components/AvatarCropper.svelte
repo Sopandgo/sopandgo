@@ -1,6 +1,6 @@
 <script lang="ts">
     import * as m from '$lib/paraglide/messages.js';
-    import { CheckIcon, XIcon } from 'lucide-svelte';
+    import { CheckIcon, XIcon } from '@lucide/svelte';
     import Alert from '$lib/components/Alert.svelte';
 
     /*

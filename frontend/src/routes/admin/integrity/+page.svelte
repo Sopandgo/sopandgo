@@ -3,7 +3,7 @@
     import Alert from '$lib/components/Alert.svelte';
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-    import { LoaderCircleIcon, ShieldCheckIcon } from 'lucide-svelte';
+    import { LoaderCircleIcon, ShieldCheckIcon } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
     import { getLocale } from '$lib/paraglide/runtime';
     import type { AdminIntegrity } from '$lib/sdk/types';

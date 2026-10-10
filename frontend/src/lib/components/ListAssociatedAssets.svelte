@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ExternalLinkIcon, PaperclipIcon } from 'lucide-svelte';
+    import { ExternalLinkIcon, PaperclipIcon } from '@lucide/svelte';
     import IntegrityCheck from './IntegrityCheck.svelte';
     import ListRow from './ListRow.svelte';
     import type { SOPAsset } from '$lib/sdk/types';

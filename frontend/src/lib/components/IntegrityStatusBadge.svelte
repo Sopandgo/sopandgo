@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { FileXIcon, ShieldAlertIcon, ShieldCheckIcon, ShieldXIcon } from 'lucide-svelte';
+    import { FileXIcon, ShieldAlertIcon, ShieldCheckIcon, ShieldXIcon } from '@lucide/svelte';
     import type { IntegrityStatus } from '$lib/integrity';
     import * as m from '$lib/paraglide/messages.js';
 

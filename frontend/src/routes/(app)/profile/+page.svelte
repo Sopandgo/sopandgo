@@ -15,7 +15,7 @@
         SettingsIcon,
         StampIcon,
         UserIcon
-    } from 'lucide-svelte';
+    } from '@lucide/svelte';
 
     let { data } = $props();
 

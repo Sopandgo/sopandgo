@@ -4,7 +4,7 @@
     import { page } from '$app/state';
     import { breadcrumbsFor } from '$lib/breadcrumbs';
     import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
-    import { CircleUserIcon, LogOutIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, SettingsIcon } from 'lucide-svelte';
+    import { CircleUserIcon, LogOutIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, SettingsIcon } from '@lucide/svelte';
     import AccountThemeSwitch from '$lib/components/AccountThemeSwitch.svelte';
     import Avatar from '$lib/components/Avatar.svelte';
     import GuestLocaleMenu from '$lib/components/GuestLocaleMenu.svelte';

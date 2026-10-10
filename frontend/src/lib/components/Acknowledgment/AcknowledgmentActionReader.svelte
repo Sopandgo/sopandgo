@@ -3,7 +3,7 @@
     import type { User } from '$lib/sdk/types';
     import Alert from '$lib/components/Alert.svelte';
     import Card from '$lib/components/Card.svelte';
-    import { SignatureIcon } from 'lucide-svelte';
+    import { SignatureIcon } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
 
     // 1. Define the shape locally
