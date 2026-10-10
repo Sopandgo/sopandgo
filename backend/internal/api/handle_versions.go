@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -76,6 +77,7 @@ func (s *Server) handleRegisterSOPVersion(w http.ResponseWriter, r *http.Request
 			return
 		}
 
+		log.Printf("ERROR: create version for SOP %s failed: %v", sopId, err)
 		http.Error(w, "Failed to create version", http.StatusInternalServerError)
 		return
 	}
@@ -291,6 +293,7 @@ func (s *Server) handlePromoteSOPVersion(w http.ResponseWriter, r *http.Request)
 	// 2. Transition State
 	err = s.sopService.TransitionVersionState(versionID, sop.StateRC, actorID)
 	if err != nil {
+		log.Printf("ERROR: promote version %s failed: %v", versionID, err)
 		http.Error(w, "Failed to promote version", http.StatusInternalServerError)
 		return
 	}
@@ -312,6 +315,7 @@ func (s *Server) handleApproveSOPVersion(w http.ResponseWriter, r *http.Request)
 	// The Service layer handles the transaction, the state check, AND the signature
 	ackID, err := s.sopService.ApproveSOPVersion(versionID, actorID)
 	if err != nil {
+		log.Printf("ERROR: approve version %s failed: %v", versionID, err)
 		http.Error(w, "Failed to approve and publish SOP", http.StatusInternalServerError)
 		return
 	}
@@ -358,6 +362,7 @@ func (s *Server) handleRejectSOPVersion(w http.ResponseWriter, r *http.Request) 
 	// 2. Transition State
 	err = s.sopService.TransitionVersionState(versionID, sop.StateRejected, actorID)
 	if err != nil {
+		log.Printf("ERROR: reject version %s failed: %v", versionID, err)
 		http.Error(w, "Failed to reject version", http.StatusInternalServerError)
 		return
 	}

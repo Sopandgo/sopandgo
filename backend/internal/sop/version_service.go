@@ -203,9 +203,7 @@ func (s *Service) RegisterSOPVersion(
 
 	commitSuccessful = true
 	if actorID != "" {
-		if err := s.ensureVersionPDFArtifact(id, StateDraft, actorID); err != nil {
-			return "", 0, err
-		}
+		s.generateVersionPDFArtifactAfterCommit(id, StateDraft, actorID)
 	}
 	return id, newVersion, nil
 }
@@ -418,9 +416,7 @@ func (s *Service) TransitionVersionState(versionID string, newState string, acto
 	if err := tx.Commit(); err != nil {
 		return err
 	}
-	if err := s.ensureVersionPDFArtifact(versionID, newState, actorUserID); err != nil {
-		return err
-	}
+	s.generateVersionPDFArtifactAfterCommit(versionID, newState, actorUserID)
 	return nil
 }
 
@@ -505,9 +501,7 @@ func (s *Service) ApproveSOPVersion(versionID string, approverUserID string) (st
 	if err := tx.Commit(); err != nil {
 		return "", err
 	}
-	if err := s.ensureVersionPDFArtifact(versionID, StatePublished, approverUserID); err != nil {
-		return "", err
-	}
+	s.generateVersionPDFArtifactAfterCommit(versionID, StatePublished, approverUserID)
 
 	return ackID, nil
 }

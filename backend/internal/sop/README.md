@@ -35,7 +35,7 @@ It follows a **Service Layer Pattern** (`sop.Service`) for data consistency, ato
 | **`asset_service.go`** | Binary uploads | `AddAsset`, `GetAssetPath`, `VerifyAssetIntegrity` |
 | **`favorite_service.go`** | Per-user bookmarks | `FavoriteSOP`, `UnfavoriteSOP` |
 | **`tag_service.go`** | Global tags + attach/detach | `CreateTag`, `AttachTagToSOP`, `SetTagStatus` |
-| **`pdf_artifact_service.go`** | Gotenberg PDF artifacts | `GetVersionPDFArtifactPath`, backfill helpers |
+| **`pdf_artifact_service.go`** | Gotenberg PDF artifacts, generated after the lifecycle commit; failures are logged and left to the backfill, never returned to the caller | `GetVersionPDFArtifactPath`, `BackfillPDFArtifactsForGenerator` |
 | **`diff.go` / `publish_activity.go`** | Line diffs and recent publishes | `DiffSOPVersion`, `ListRecentPublishes` |
 | **`training.go`** | Reader-signature coverage | `TrainingCoverage` |
 | **`integrity_service.go`** | System-wide scan | `RunSystemIntegrityCheck` |
