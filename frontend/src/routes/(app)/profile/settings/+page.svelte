@@ -1,5 +1,6 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
+    import { resolve } from '$app/paths';
     import Alert from '$lib/components/Alert.svelte';
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
@@ -7,7 +8,7 @@
     import LocaleSelect from '$lib/components/LocaleSelect.svelte';
     import * as m from '$lib/paraglide/messages.js';
     import { daisyTheme } from '$lib/theme';
-    import { KeyRoundIcon, LanguagesIcon, SunMoonIcon } from 'lucide-svelte';
+    import { KeyRoundIcon, LanguagesIcon, SettingsIcon, SunMoonIcon, UserIcon } from 'lucide-svelte';
 
     let { data, form } = $props();
 
@@ -41,10 +42,16 @@
 <div class="flex w-full flex-col gap-6">
     <Card>
         <div class="card-body">
-            <CardPageHeading>
-                <SunMoonIcon class="h-8 w-8" />
-                {m.settings_heading()}
-            </CardPageHeading>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <CardPageHeading>
+                    <SettingsIcon class="h-8 w-8" />
+                    {m.settings_heading()}
+                </CardPageHeading>
+                <a href={resolve('/profile')} class="btn">
+                    <UserIcon class="size-4" />
+                    {m.nav_profile()}
+                </a>
+            </div>
             <p class="text-sm font-medium text-base-content/70">{m.settings_intro()}</p>
         </div>
     </Card>
@@ -52,7 +59,7 @@
     {#snippet passwordCard()}
         <Card>
             <div class="card-body">
-                <h2 class="text-lg font-semibold mb-4">
+                <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold">
                     <KeyRoundIcon class="h-4 w-4" />
                     {m.profile_change_password()}
                 </h2>
@@ -69,14 +76,12 @@
         <div class="flex flex-col gap-6 {mustChange ? 'order-2 lg:order-1' : ''}">
     <Card>
         <div class="card-body gap-4">
-            <h2 class="text-lg font-semibold">
+            <h2 class="flex items-center gap-2 text-lg font-semibold">
                 <LanguagesIcon class="h-4 w-4" />
                 {m.profile_language()}
             </h2>
             <form method="POST" action="?/setLocale" class="flex flex-col gap-3">
-                <label class="form-control w-full" for="profile-locale">
-                    <span class="label-text">{m.locale_label()}</span>
-                </label>
+                <label class="sr-only" for="profile-locale">{m.locale_label()}</label>
                 <LocaleSelect id="profile-locale" value={user.locale} />
                 {#if localeError}
                     <Alert type="error" message={m.locale_failed()} />
@@ -88,7 +93,7 @@
 
     <Card>
         <div class="card-body gap-4">
-            <h2 class="text-lg font-semibold">
+            <h2 class="flex items-center gap-2 text-lg font-semibold">
                 <SunMoonIcon class="h-4 w-4" />
                 {m.theme_label()}
             </h2>
@@ -113,7 +118,7 @@
                         { value: 'dark', label: m.theme_dark() },
                         { value: 'system', label: m.theme_system() }
                     ] as option (option.value)}
-                        <label class="label cursor-pointer justify-start gap-3 rounded-box border border-base-300 px-3 py-2">
+                        <label class="label cursor-pointer justify-start gap-3 py-1">
                             <input
                                 type="radio"
                                 name="theme"
