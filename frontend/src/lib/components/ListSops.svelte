@@ -4,7 +4,7 @@
     FileTextIcon,
     ChevronLeftIcon,
     GitBranchIcon
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
   import type { SOPListItem, SOPListResponse } from '$lib/sdk/types';
   import Card from './Card.svelte';

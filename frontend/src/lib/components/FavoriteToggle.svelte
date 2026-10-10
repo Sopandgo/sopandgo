@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { StarIcon } from 'lucide-svelte';
+    import { StarIcon } from '@lucide/svelte';
     import { enhance } from '$app/forms';
     import { page } from '$app/state';
     import { favoriteErrorFromForm } from '$lib/favorites';

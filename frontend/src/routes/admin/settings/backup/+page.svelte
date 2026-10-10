@@ -7,7 +7,7 @@
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
     import CollapsibleCard from '$lib/components/CollapsibleCard.svelte';
     import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-    import { ArchiveIcon, CalendarClock, History } from 'lucide-svelte';
+    import { ArchiveIcon, CalendarClock, History } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
     import { getLocale } from '$lib/paraglide/runtime';
     import type { BackupS3Settings, S3ScheduledBackupStatus } from '$lib/sdk/types';

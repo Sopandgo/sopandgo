@@ -3,7 +3,7 @@
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
     import IntegrationChannelCard from '$lib/components/IntegrationChannelCard.svelte';
-    import { WebhookIcon } from 'lucide-svelte';
+    import { WebhookIcon } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
     import type { IntegrationEvent } from '$lib/sdk/types';
 

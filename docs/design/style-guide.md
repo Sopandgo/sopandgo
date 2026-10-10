@@ -77,7 +77,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 
 ## Iconography
 
-- Lucide (`lucide-svelte`), stroke width 2 (the default). Do not use `strokeWidth={3}`.
+- Lucide (`@lucide/svelte`), stroke width 2 (the default). Do not use `strokeWidth={3}`.
 - 16px inline with text, in menus and in badges; 20px as the leading icon in list rows.
 - Icons sit beside a word. An icon-only button needs an `aria-label` and a `title`.
 - Icons take the colour of their text. Status icons use the status token.

@@ -21,7 +21,7 @@
         Trash2Icon,
         UploadIcon,
         UserIcon
-    } from 'lucide-svelte';
+    } from '@lucide/svelte';
 
     let { data, form } = $props();
 

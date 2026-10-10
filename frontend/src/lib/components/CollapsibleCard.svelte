@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import { ChevronRightIcon } from 'lucide-svelte';
+    import { ChevronRightIcon } from '@lucide/svelte';
     import Card from '$lib/components/Card.svelte';
 
     /*

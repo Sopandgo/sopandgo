@@ -4,7 +4,7 @@
     import { enhance } from '$app/forms';
     import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
     import type { SOPAsset } from '$lib/sdk/types';
-    import { EyeIcon, FilePenIcon, LoaderCircleIcon, RocketIcon } from 'lucide-svelte';
+    import { EyeIcon, FilePenIcon, LoaderCircleIcon, RocketIcon } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
 
     interface FormResult {

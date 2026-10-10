@@ -1,7 +1,7 @@
 <script lang="ts">
     import Alert from '$lib/components/Alert.svelte';
     import { enhance } from '$app/forms';
-    import { NotebookPenIcon, RocketIcon } from 'lucide-svelte';
+    import { NotebookPenIcon, RocketIcon } from '@lucide/svelte';
     import type { ActionData } from './$types';
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';

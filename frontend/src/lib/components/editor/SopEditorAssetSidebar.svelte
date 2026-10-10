@@ -9,7 +9,7 @@
         UploadIcon,
         LoaderCircleIcon,
         FileUpIcon
-    } from 'lucide-svelte';
+    } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
     import { getLocale } from '$lib/paraglide/runtime';
     import type { SOPAsset } from '$lib/sdk/types';

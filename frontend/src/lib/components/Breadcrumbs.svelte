@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRightIcon } from 'lucide-svelte';
+  import { ChevronRightIcon } from '@lucide/svelte';
   import type { Crumb } from '$lib/breadcrumbs';
   import * as m from '$lib/paraglide/messages.js';
 

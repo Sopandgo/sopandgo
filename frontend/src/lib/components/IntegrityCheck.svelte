@@ -1,7 +1,7 @@
 <script lang="ts">
     import { applyAction, enhance } from '$app/forms';
     import { page } from '$app/state';
-    import { RotateCwIcon, ShieldQuestionMarkIcon } from 'lucide-svelte';
+    import { RotateCwIcon, ShieldQuestionMarkIcon } from '@lucide/svelte';
     import IntegrityStatusBadge from './IntegrityStatusBadge.svelte';
     import { integrityResultFromForm, type IntegrityStatus } from '$lib/integrity';
     import * as m from '$lib/paraglide/messages.js';

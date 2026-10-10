@@ -3,7 +3,7 @@
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
     import Combobox, { type ComboboxOption } from '$lib/components/Combobox.svelte';
-    import { LogsIcon, Link } from 'lucide-svelte';
+    import { LogsIcon, Link } from '@lucide/svelte';
     import { entityTitle, eventTitle } from '$lib/audit/present';
     import * as m from '$lib/paraglide/messages.js';
 

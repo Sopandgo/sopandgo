@@ -5,7 +5,7 @@
     import SopDetails from '$lib/components/SopDetails.svelte';
     import type { PageData, ActionData } from './$types';
     import AcknowledgmentContainerSOPVersion from '$lib/components/Acknowledgment/AcknowledgmentContainerSOPVersion.svelte';
-    import { ArrowUpRightIcon, DownloadIcon, FileDiffIcon, FileTextIcon, NotebookTextIcon, PlusIcon } from 'lucide-svelte';
+    import { ArrowUpRightIcon, DownloadIcon, FileDiffIcon, FileTextIcon, NotebookTextIcon, PlusIcon } from '@lucide/svelte';
     import FavoriteToggle from '$lib/components/FavoriteToggle.svelte';
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';

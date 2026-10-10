@@ -3,7 +3,7 @@
   import ListSopVersions from '$lib/components/ListSopVersions.svelte';
   import SopVersionStatusBadge from '$lib/components/SopVersionStatusBadge.svelte';
   import FavoriteToggle from '$lib/components/FavoriteToggle.svelte';
-  import { BookOpenIcon, NotebookIcon, PlusIcon, XIcon } from 'lucide-svelte';
+  import { BookOpenIcon, NotebookIcon, PlusIcon, XIcon } from '@lucide/svelte';
   import ListAssociatedAssets from '$lib/components/ListAssociatedAssets.svelte';
   import Alert from '$lib/components/Alert.svelte';
   import Card from '$lib/components/Card.svelte';

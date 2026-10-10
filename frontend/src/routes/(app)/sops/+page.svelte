@@ -13,7 +13,7 @@
     SearchXIcon,
     StarIcon,
     XIcon
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import * as m from '$lib/paraglide/messages.js';
   import type { PageData } from './$types';
 

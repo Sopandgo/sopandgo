@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FileTextIcon } from 'lucide-svelte';
+  import { FileTextIcon } from '@lucide/svelte';
   import type { UserSignatureStatus } from '$lib/sdk/types';
   import { partitionSignatureStatus } from '$lib/signatureBuckets';
   import Card from './Card.svelte';

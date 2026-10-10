@@ -15,7 +15,7 @@
 		type GreetingPeriod
 	} from '$lib/greeting';
 	import SopTrainingCoverage from '$lib/components/SopTrainingCoverage.svelte';
-	import { CircleCheckIcon, FileTextIcon, MegaphoneIcon, NotebookIcon, StarIcon } from 'lucide-svelte';
+	import { CircleCheckIcon, FileTextIcon, MegaphoneIcon, NotebookIcon, StarIcon } from '@lucide/svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale } from '$lib/paraglide/runtime';
 

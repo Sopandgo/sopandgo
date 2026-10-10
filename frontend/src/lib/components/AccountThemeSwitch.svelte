@@ -1,7 +1,7 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
     import { invalidateAll } from '$app/navigation';
-    import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-svelte';
+    import { MonitorIcon, MoonIcon, SunIcon } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
     import { applyTheme, isThemePreference, type ThemePreference } from '$lib/theme';
 

@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import { ChevronRightIcon } from 'lucide-svelte';
+    import { ChevronRightIcon } from '@lucide/svelte';
 
     /*
      * One item in a `<ul class="list">` inside a Card (docs/design/style-guide.md → ListRow).

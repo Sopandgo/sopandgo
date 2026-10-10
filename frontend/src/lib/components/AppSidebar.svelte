@@ -2,7 +2,7 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import {
-        GithubIcon,
+        CodeIcon,
         HouseIcon,
         LogsIcon,
         NotebookIcon,
@@ -10,7 +10,7 @@
         ShieldCheckIcon,
         ShieldUserIcon,
         UsersIcon
-    } from 'lucide-svelte';
+    } from '@lucide/svelte';
     import * as m from '$lib/paraglide/messages.js';
     import type { User } from '$lib/sdk/types';
 
@@ -90,7 +90,7 @@
                     data-tip="{m.footer_github()} · {versionLabel}"
                     aria-label="{m.footer_github()} · {versionLabel}"
                 >
-                    <GithubIcon size={16} aria-hidden="true" />
+                    <CodeIcon size={16} aria-hidden="true" />
                     <span class="is-drawer-close:hidden">{versionLabel}</span>
                 </a>
             </li>
