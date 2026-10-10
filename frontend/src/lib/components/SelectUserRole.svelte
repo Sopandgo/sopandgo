@@ -61,7 +61,7 @@
             
             <select
                 name="role"
-                class="select select-sm select-bordered focus:select-primary transition-all"
+                class="select select-sm focus:select-primary transition-all"
                 disabled={loading}
                 value={user.role}
                 onchange={(e) => e.currentTarget.form?.requestSubmit()}

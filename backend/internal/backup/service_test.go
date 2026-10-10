@@ -421,7 +421,7 @@ func TestStageImportApply_CreatesPendingAndSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := svc.StageImportApply(f, "APPLY BACKUP")
+	res, err := svc.StageImportApply(f, "RESTORE BACKUP")
 	_ = f.Close()
 	if err != nil {
 		t.Fatal(err)
@@ -488,7 +488,7 @@ func TestStageImportApply_ErrInvalidArchiveEmptyDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer f.Close()
-	_, err = svc.StageImportApply(f, "APPLY BACKUP")
+	_, err = svc.StageImportApply(f, "RESTORE BACKUP")
 	if !errors.Is(err, ErrInvalidBackupArchive) {
 		t.Fatalf("got %v, want ErrInvalidBackupArchive", err)
 	}
@@ -526,7 +526,7 @@ func TestApplyPendingRestoreAtStartup_RestoresDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = svc.StageImportApply(f, "APPLY BACKUP")
+	_, err = svc.StageImportApply(f, "RESTORE BACKUP")
 	_ = f.Close()
 	if err != nil {
 		t.Fatal(err)

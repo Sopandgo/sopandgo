@@ -1,4 +1,6 @@
 <script lang="ts">
+    import Alert from '$lib/components/Alert.svelte';
+    import Card from '$lib/components/Card.svelte';
     import { enhance } from '$app/forms';
     import {
         PaperclipIcon,
@@ -66,13 +68,13 @@
 </script>
 
 <div class="flex flex-col gap-6">
-    <div class="card bg-base-100 shadow-sm border border-base-200">
+    <Card>
         <div class="card-body p-4 gap-3">
-            <h3 class="card-title text-sm uppercase tracking-wider opacity-70 flex items-center gap-2">
-                <FileUpIcon class="w-4 h-4" />
+            <h3 class="flex items-center gap-2 text-lg font-semibold">
+                <FileUpIcon class="size-4" />
                 {m.editor_import_word()}
             </h3>
-            <p class="text-xs text-base-content/60">
+            <p class="text-xs text-base-content/70">
                 {m.editor_import_help()}
             </p>
             <input
@@ -86,44 +88,40 @@
             />
             <button
                 type="button"
-                class="btn btn-secondary btn-block"
+                class="btn btn-block"
                 disabled={!canImportDocx || importing}
                 title={canImportDocx ? m.editor_import_title() : m.editor_import_blocked()}
                 onclick={openDocxPicker}
             >
                 {#if importing}
-                    <LoaderCircleIcon class="w-5 h-5 shrink-0 animate-spin opacity-70" />
+                    <LoaderCircleIcon class="w-5 h-5 shrink-0 animate-spin text-base-content/70" />
                 {:else}
                     <FileUpIcon class="w-5 h-5 shrink-0" />
                 {/if}
                 {m.editor_choose_docx()}
             </button>
             {#if !canImportDocx}
-                <p class="text-xs text-base-content/60">
+                <p class="text-xs text-base-content/70">
                     {m.editor_clear_to_import()}
                 </p>
             {/if}
             {#if importError}
-                <div role="alert" class="alert alert-warning text-xs py-2">
-                    <span class="whitespace-pre-wrap">{importError}</span>
-                </div>
+                <Alert type="warning" message={importError} compact />
             {/if}
         </div>
-    </div>
+    </Card>
 
-    <div class="card bg-base-100 shadow-sm border border-base-200">
+    <Card>
         <div class="card-body p-4">
-            <h3 class="card-title text-sm uppercase tracking-wider opacity-70 flex items-center gap-2">
-                <PaperclipIcon class="w-4 h-4" />
+            <h3 class="flex items-center gap-2 text-lg font-semibold">
+                <PaperclipIcon class="size-4" />
                 {m.editor_assets()}
             </h3>
             
             <div class="divider my-1"></div>
 
             {#if form?.uploadError}
-                <div class="alert alert-error text-xs p-2 mb-2 rounded-md">
-                    <span class="whitespace-pre-wrap">{form.uploadError}</span>
-                </div>
+                <Alert type="error" message={form.uploadError} compact class="mb-2" />
             {/if}
 
             {#if safeAssets.length > 0}
@@ -138,7 +136,7 @@
                                     <span class="font-medium text-sm truncate max-w-[150px]" title={asset.file_name}>
                                         {asset.file_name}
                                     </span>
-                                    <span class="text-xs opacity-50 truncate">
+                                    <span class="text-xs text-base-content/70 truncate">
                                         {new Date(asset.created_at).toLocaleDateString(getLocale())}
                                     </span>
                                 </div>
@@ -150,13 +148,13 @@
                                 title={m.editor_copy_link()}
                                 onclick={() => copyToClipboard(`![${asset.file_name}](assets/${encodeURIComponent(asset.file_name)})`)}
                             >
-                                <CopyIcon class="w-4 h-4" />
+                                <CopyIcon class="size-4" />
                             </button>
                         </li>
                     {/each}
                 </ul>
             {:else}
-                <div class="text-center py-8 opacity-50">
+                <div class="text-center py-8 text-base-content/70">
                     <p class="text-sm">{m.editor_no_assets()}</p>
                     <p class="text-xs mt-1">{m.editor_no_assets_help()}</p>
                 </div>
@@ -166,7 +164,7 @@
 
             <button 
                 type="button" 
-                class="btn btn-secondary" 
+                class="btn" 
                 aria-label={m.editor_upload()}
                 onclick={() => fileInput.click()}
                 disabled={uploading}
@@ -179,7 +177,7 @@
                 {m.editor_upload()}
             </button>
         </div>
-    </div>
+    </Card>
     
     <form 
         method="POST" 
@@ -208,9 +206,7 @@
         />
     </form>
     
-    <div class="alert shadow-sm text-sm">
-        <span>
-            <strong>{m.editor_tip()}</strong> {m.editor_tip_body()}
-        </span>
-    </div>
+    <Alert type="info" role="note" class="text-sm">
+        <strong>{m.editor_tip()}</strong> {m.editor_tip_body()}
+    </Alert>
 </div>

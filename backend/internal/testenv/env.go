@@ -64,6 +64,17 @@ func New(t *testing.T) *Env {
 	// Fixed 32-byte key so admin SMTP settings endpoints can be exercised in tests
 	testEncKey := []byte("01234567890123456789012345678901")
 	smtpSettingsStore := mail.NewSMTPSettingsStore(store.DB, testEncKey)
+	// Email is only used with a saved transport (otherwise manual links); the mock
+	// sender does the sending, this row just makes SMTP count as configured.
+	if err := smtpSettingsStore.Save(mail.SaveSMTPInput{
+		Host:        "smtp.testenv.local",
+		Port:        "587",
+		Username:    "testenv",
+		FromAddress: "noreply@testenv.local",
+		Password:    "testenv",
+	}); err != nil {
+		t.Fatalf("failed to save test SMTP settings: %v", err)
+	}
 	integrationSettings := notify.NewSettingsStore(store.DB, testEncKey)
 	notifyService := notify.NewService(integrationSettings, auditLogger)
 
@@ -72,7 +83,11 @@ func New(t *testing.T) *Env {
 	}
 	backupService := backup.NewService(store.DB, dataDir, "test", storage.LatestSchemaVersion())
 
-	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, nil)
+	s3Settings := backup.NewS3SettingsStore(store.DB, testEncKey)
+	// Never started: API tests read status and settings but do not upload.
+	s3Scheduler := backup.NewS3Scheduler(backupService, auditLogger)
+
+	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler)
 
 	return &Env{
 		Store:          store,

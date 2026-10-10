@@ -3,8 +3,8 @@ package notify
 import "errors"
 
 var (
-	// ErrKeyMissing is returned when saving or sending requires SMTP_SECRET_ENCRYPTION_KEY but it is unset.
-	ErrKeyMissing = errors.New("SMTP_SECRET_ENCRYPTION_KEY is not set or invalid")
+	// ErrKeyMissing is returned when saving or sending requires SECRET_ENCRYPTION_KEY but it is unset.
+	ErrKeyMissing = errors.New("SECRET_ENCRYPTION_KEY is not set or invalid")
 
 	// ErrNotConfigured is returned when a channel is enabled but credentials are missing.
 	ErrNotConfigured = errors.New("integration channel is not configured")

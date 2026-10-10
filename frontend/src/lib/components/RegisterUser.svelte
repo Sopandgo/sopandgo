@@ -42,21 +42,21 @@
 
 <div class="flex flex-col gap-4">
   {#if result?.error}
-    <Alert variant="error" message={result.error} class="shadow-lg" />
+    <Alert type="error" message={result.error} />
   {/if}
 
   {#if isOk}
-    <Alert variant="success" message={m.users_registered()} class="shadow-lg" />
+    <Alert type="success" message={m.users_registered()} />
   {/if}
 
   {#if result?.warning}
-    <Alert variant="warning" message={result.warning} class="shadow-lg" />
+    <Alert type="warning" message={result.warning} />
   {/if}
 
   {#if result?.link}
-    <div class="alert alert-info text-xs break-all">
-      <span>{m.users_invite_link()} <code>{result.link}</code></span>
-    </div>
+    <Alert type="info" compact class="break-all">
+      {m.users_invite_link()} <code>{result.link}</code>
+    </Alert>
   {/if}
 
   <form
@@ -85,7 +85,7 @@
         id="display_name"
         name="display_name"
         type="text"
-        class="input input-accent input-bordered w-full {hasError ? 'input-error' : ''}"
+        class="input input-accent w-full {hasError ? 'input-error' : ''}"
         placeholder={m.users_full_name_placeholder()}
         value={values.display_name ?? ''}
         required
@@ -99,7 +99,7 @@
         id="email"
         name="email"
         type="email"
-        class="input input-accent input-bordered w-full {hasError ? 'input-error' : ''}"
+        class="input input-accent w-full {hasError ? 'input-error' : ''}"
         placeholder="user@example.com"
         value={values.email ?? ''}
         required
@@ -118,7 +118,7 @@
       <select
         id="role"
         name="role"
-        class="select select-accent select-bordered w-full {hasError ? 'select-error' : ''}"
+        class="select select-accent w-full {hasError ? 'select-error' : ''}"
         required
         disabled={loading}
       >
@@ -130,7 +130,7 @@
         {/each}
       </select>
 
-      <button type="submit" class="btn btn-accent mt-6 w-full" disabled={loading}>
+      <button type="submit" class="btn mt-6 w-full" disabled={loading}>
         {#if loading}
           <span class="loading loading-spinner"></span>
         {/if}
@@ -139,7 +139,7 @@
 
       <div class="mt-4">
         <Alert
-          variant="warning"
+          type="info"
           message={mailMode === 'manual_links'
             ? m.users_manual_links_help()
             : m.users_password_help()}

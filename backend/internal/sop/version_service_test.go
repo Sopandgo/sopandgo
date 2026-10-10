@@ -1,11 +1,13 @@
 package sop_test
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
@@ -123,7 +125,7 @@ func TestService_RegisterSOPVersion_Lifecycle(t *testing.T) {
 	// 6. Test Idempotency
 	// If we submit the exact same content for a new version, the system should catch the identical hash.
 	time.Sleep(15 * time.Millisecond) // <-- Added sleep
-	err = env.SOPService.TransitionVersionState(v3ID, sop.StateRejected, actorID)
+	err = env.SOPService.RejectSOPVersion(v3ID, actorID, "Superseded by a later draft")
 	if err != nil {
 		t.Fatalf("Failed to reject V2: %v", err)
 	}
@@ -370,5 +372,68 @@ func TestService_VerifyVersionIntegrity(t *testing.T) {
 	_, err = env.SOPService.VerifyVersionIntegrity("fake-uuid-123")
 	if err == nil {
 		t.Error("Expected an error when verifying a non-existent version ID, got nil")
+	}
+}
+
+func TestService_RejectSOPVersion_StoresReason(t *testing.T) {
+	env := testenv.New(t)
+	actorID := "reject-admin"
+	env.SeedTestUser(t, actorID, "reject@test.local", auth.RoleAdmin)
+
+	sopID, err := env.SOPService.RegisterSOP("Reject Reason SOP", &actorID)
+	if err != nil {
+		t.Fatalf("RegisterSOP: %v", err)
+	}
+	vID, _, err := env.SOPService.RegisterSOPVersion(sopID, "Content", "First", &actorID)
+	if err != nil {
+		t.Fatalf("RegisterSOPVersion: %v", err)
+	}
+	if err := env.SOPService.TransitionVersionState(vID, sop.StateRC, actorID); err != nil {
+		t.Fatalf("Promote: %v", err)
+	}
+
+	if err := env.SOPService.TransitionVersionState(vID, sop.StateRejected, actorID); err == nil {
+		t.Fatal("TransitionVersionState must refuse a rejection without a reason")
+	}
+	if err := env.SOPService.RejectSOPVersion(vID, actorID, "   "); !errors.Is(err, sop.ErrRejectReasonRequired) {
+		t.Fatalf("Blank reason: want ErrRejectReasonRequired, got %v", err)
+	}
+	if err := env.SOPService.RejectSOPVersion(vID, actorID, strings.Repeat("x", sop.MaxRejectReasonRunes+1)); !errors.Is(err, sop.ErrRejectReasonTooLong) {
+		t.Fatalf("Long reason: want ErrRejectReasonTooLong, got %v", err)
+	}
+
+	summary, err := env.SOPService.GetSOPVersionSummaryByID(vID)
+	if err != nil {
+		t.Fatalf("Summary: %v", err)
+	}
+	if summary.Rejection != nil {
+		t.Fatalf("A release candidate has no rejection, got %+v", summary.Rejection)
+	}
+
+	if err := env.SOPService.RejectSOPVersion(vID, actorID, "  Step 4 contradicts the safety sheet  "); err != nil {
+		t.Fatalf("RejectSOPVersion: %v", err)
+	}
+	summary, err = env.SOPService.GetSOPVersionSummaryByID(vID)
+	if err != nil {
+		t.Fatalf("Summary: %v", err)
+	}
+	r := summary.Rejection
+	if r == nil || r.Reason == nil || *r.Reason != "Step 4 contradicts the safety sheet" {
+		t.Fatalf("Want the trimmed reason, got %+v", r)
+	}
+	if r.ActorUserID != actorID || r.ActorName == "" || r.CreatedAt.IsZero() {
+		t.Errorf("Want actor and time on the rejection, got %+v", r)
+	}
+
+	// Rejections stored before reasons were kept read back with no reason
+	if _, err := env.Store.DB.Exec(`UPDATE sop_version_states SET reason = NULL WHERE sop_version_id = ? AND state = 'rejected'`, vID); err != nil {
+		t.Fatalf("Clear reason: %v", err)
+	}
+	summary, err = env.SOPService.GetSOPVersionSummaryByID(vID)
+	if err != nil {
+		t.Fatalf("Summary: %v", err)
+	}
+	if summary.Rejection == nil || summary.Rejection.Reason != nil {
+		t.Errorf("Want a rejection without a reason, got %+v", summary.Rejection)
 	}
 }

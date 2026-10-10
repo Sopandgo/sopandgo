@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -171,6 +172,37 @@ func TestAPI_Assets(t *testing.T) {
 
 		if rec.Code != http.StatusNotFound {
 			t.Errorf("Expected 404 Not Found, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Asset Integrity: wrong SOP and missing file", func(t *testing.T) {
+		otherSOPID, err := env.SOPService.RegisterSOP("Other Asset SOP", &authorID)
+		if err != nil {
+			t.Fatalf("Failed to setup other SOP: %v", err)
+		}
+		decodeErr := func(rec *httptest.ResponseRecorder) string {
+			var body struct {
+				Error string `json:"error"`
+			}
+			json.NewDecoder(rec.Body).Decode(&body)
+			return body.Error
+		}
+
+		rec := doRequest(http.MethodGet, fmt.Sprintf("/api/sops/%s/assets/%s/integrity", otherSOPID, uploadedAssetID), authorToken)
+		if rec.Code != http.StatusNotFound || decodeErr(rec) != "asset_not_found" {
+			t.Errorf("Expected 404 asset_not_found for SOP mismatch, got %d", rec.Code)
+		}
+
+		path, err := env.SOPService.GetAssetPath(uploadedAssetID)
+		if err != nil {
+			t.Fatalf("GetAssetPath: %v", err)
+		}
+		if err := os.Remove(path); err != nil {
+			t.Fatalf("remove asset file: %v", err)
+		}
+		rec = doRequest(http.MethodGet, fmt.Sprintf("/api/sops/%s/assets/%s/integrity", sopID, uploadedAssetID), authorToken)
+		if rec.Code != http.StatusNotFound || decodeErr(rec) != "file_missing" {
+			t.Errorf("Expected 404 file_missing, got %d", rec.Code)
 		}
 	})
 }

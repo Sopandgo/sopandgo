@@ -25,7 +25,7 @@ git tag -a v1.0.1 -m "v1.0.1"
 git push origin v1.0.1
 ```
 
-4. The [Release workflow](../../.github/workflows/version-and-release.yml) reads that changelog section and uses it as the GitHub Release text. It does not write a second set of notes from commit titles. It then builds `linux/amd64` and `linux/arm64` images and pushes them to `ghcr.io/sopandgo/sopandgo`. The image is stamped with `APP_VERSION` from the tag (`1.0.1`), which the footer and backup manifests show.
+4. The [Release workflow](../../.github/workflows/version-and-release.yml) reads that changelog section and uses it as the GitHub Release text. It does not write a second set of notes from commit titles. It then builds `linux/amd64` and `linux/arm64` images and pushes them to `ghcr.io/sopandgo/sopandgo`. The image is stamped with `APP_VERSION` from the tag (`1.0.1`), which the public footer, the signed-in sidebar, and backup manifests show.
 5. A lab gets it the next time they export a backup and run `docker compose pull` and `docker compose up -d`. They do not edit a version.
 
 For a normal 1.x release, do not edit `.env`, `package.json`, or the image line in `docker-compose.yml`.
@@ -60,4 +60,4 @@ After the first successful publish, open GitHub Packages and confirm the `sopand
 - Do not invent a version in docs without a matching git tag.
 - Do not auto-number from commit messages. Tags are the source of truth.
 - Do not publish this project to npm.
-- Source builds (`docker-compose.dev.yml`) and local `npm run dev` are not releases. The footer may say `dev` or a `git describe` string.
+- Source builds (`docker-compose.dev.yml`) and local `npm run dev` are not releases. The public footer and the signed-in sidebar may say `dev` or a `git describe` string.

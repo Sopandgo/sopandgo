@@ -62,16 +62,20 @@ API (scopes abbreviated):
 - `POST /api/sops/{sopID}` — create a **draft** (`sop:write`); requires `change_summary`
 - `POST .../versions/{id}/promote` — draft → RC (`sop:write`); **409** if not a draft
 - `POST .../versions/{id}/approve` — RC → published (`sop:sign:approver`); returns `{"id"}` (approver ack)
-- `POST .../versions/{id}/reject` — body `{"reason"}` required (`sop:sign:approver`); **409** if not an RC
+- `POST .../versions/{id}/reject` — body `{"reason"}` required, at most 500 characters (`sop:sign:approver`); **400** if it is missing or too long, **409** if not an RC
 - `POST .../versions/{id}/add-reader` — reader acknowledgment (`sop:sign:reader`); **409** unless the version is `published`
 
 Author acknowledgments are recorded when the version is created. Approver acknowledgments are recorded only by **approve**. There is no separate endpoint for either.
 
+The reject reason is stored on the `rejected` state row and in that transition's audit event, and `GET .../versions/{id}/summary` returns it as `rejection` (`reason`, `actor_user_id`, `actor_name`, `created_at`; `null` unless the version is rejected). The version page shows who rejected the version, when, and why. Rejections recorded before reasons were stored have `reason: null`; their reason went only to the integration notifications and cannot be recovered.
+
 Only one RC per SOP may be open at a time. When a new version is published, the previously published version becomes `superseded`.
 
-The change summary is stored on the version and shown in the version list, on the version page, and in the dashboard’s recent-publishes list. The version page also shows a line diff against the previous published version (or the previous version, if nothing is published yet).
+Only one version is **current** at a time: the published one. `GET /api/sops/{sopID}` names it in `published_version` and `published_version_id`, and the newest version of any state in `latest_version` (`id`, `version`, `status`, `created_at`); each is `null` until such a version exists. These are worked out from `sop_version_states` on every read, never stored on the SOP, so they always agree with the version list and with `GET .../version-latest`. The version page uses them to point from a draft, release candidate, rejected or superseded version to the current one, and to tell editors and approvers on the published version that a newer draft or release candidate is waiting. Each row in the SOP list (`/sops`) opens the latest version; a versions button next to the favorite star opens the SOP page (`/sops/{sop_id}`) with every version. The list shows the newest version's status as a badge when it is a draft or release candidate, or when nothing is published yet. A version rejected after a published one gets no badge there, because readers still see the published version. The SOP page lists the rejected version.
 
-When mail is set to send (not manual links), **publishing** a version emails other active users who can reader-sign. If mail cannot be delivered, the version stays published. Optional Slack / Gotify / generic webhook notifications for publish, RC, and reject are configured under admin Settings → Integrations and likewise never roll back the lifecycle action. Reminder digests for unsigned acknowledgments are not part of 1.0; use the dashboard and training coverage views.
+The change summary is stored on the version and shown in the version list, on the version page, and in the dashboard’s recent-publishes list. The version page also shows a line diff against the previous published version (or the previous version, if nothing is published yet) on its **Changes** tab, beside the document. `?view=changes` opens that tab directly; an approver opening a release candidate lands on it. Added and removed lines that embed an uploaded image (`![…](assets/…)`) show that image under the line. Assets belong to the SOP, file names are unique per SOP and files are never rewritten, so a removed line shows exactly the image the older version showed.
+
+When an email transport is switched on (not manual links), **publishing** a version emails other active users who can reader-sign. If mail cannot be delivered, the version stays published. Optional Slack / Gotify / generic webhook notifications for publish, RC, and reject are configured under admin Settings → Integrations and likewise never roll back the lifecycle action. PDF export follows the same rule. Create, promote, approve and reject generate the PDF for the new state after the change is committed. If rendering fails (for example, Gotenberg is unreachable), the request still succeeds, the failure goes to the application log, and the PDF backfill at the next start creates the missing file. Until then, downloading that PDF returns **404**. Reminder digests for unsigned acknowledgments are not part of 1.0; use the dashboard and training coverage views.
 
 ---
 
@@ -87,6 +91,8 @@ After a version is created:
 The system records a content hash for each version. Whenever an SOP is retrieved, the system recalculates this hash. If files are modified outside the application, the mismatch is detected and flagged immediately.
 
 This allows sopandgo to proactively identify integrity issues without silently serving corrupted content.
+
+Users can also re-check a version's checksum or an asset file from the version page without reloading it. A failed check distinguishes a **corrupt** file (hash mismatch) from a **missing** file and from a check that **could not run**. Admins can scan all versions, assets, and the audit chain at once from **Admin → Integrity**.
 
 ---
 
@@ -159,7 +165,7 @@ This preserves historical traceability even as team members change.
 
 At any point, sopandgo can answer questions such as:
 - Which version of an SOP was active (published) at a given time?
-- Who promoted, approved, or rejected a version?
+- Who promoted, approved, or rejected a version, and why was it rejected?
 - Who acknowledged that version (and as author, approver, or reader)?
 - When was the SOP last changed, and by whom?
 - What changed between versions?

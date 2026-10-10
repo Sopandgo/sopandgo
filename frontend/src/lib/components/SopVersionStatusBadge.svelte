@@ -1,19 +1,22 @@
-<script>
+<script lang="ts">
     import * as m from '$lib/paraglide/messages.js';
 
-    let { status } = $props();
+    /*
+     * Owns the status → look mapping (docs/design/style-guide.md → StatusBadge).
+     * No other file picks a badge colour for a version status.
+     */
+    let { status }: { status: string | null | undefined } = $props();
+
+    const badges: Record<string, { classes: string; label: () => string }> = {
+        draft: { classes: 'badge badge-outline', label: m.status_draft },
+        rc: { classes: 'badge badge-soft badge-warning', label: m.status_rc },
+        published: { classes: 'badge badge-soft badge-success', label: m.status_published },
+        rejected: { classes: 'badge badge-soft badge-error', label: m.status_rejected },
+        // Superseded is history, not a state to act on: plain muted text.
+        superseded: { classes: 'text-xs text-base-content/70', label: m.status_superseded }
+    };
+
+    const badge = $derived(badges[status ?? ''] ?? { classes: 'badge badge-outline', label: m.status_unclear });
 </script>
 
-{#if status == "draft"}
-    <div class="badge badge-secondary">{m.status_draft()}</div>
-{:else if status == "rc"}
-    <div class="badge badge-warning">{m.status_rc()}</div>
-{:else if status == "published"}
-    <div class="badge badge-primary">{m.status_published()}</div>
-{:else if status == "rejected"}
-    <div class="badge badge-error">{m.status_rejected()}</div>
-{:else if status == "superseded"}
-    <div class="badge badge-ghost">{m.status_superseded()}</div>
-{:else}
-    <div class="badge badge-ghost">{m.status_unclear()}</div>
-{/if}
+<span class={badge.classes}>{badge.label()}</span>

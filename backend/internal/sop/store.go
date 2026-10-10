@@ -9,6 +9,12 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 )
 
+// currentVersionStateSQL is a version's current state: its newest state row, with
+// rowid breaking ties between rows written at the same instant. Every query that
+// asks "which version is published" uses it, so the list, the SOP detail and
+// /version-latest cannot disagree. Expects the version aliased as v.
+const currentVersionStateSQL = `COALESCE((SELECT state FROM sop_version_states WHERE sop_version_id = v.id ORDER BY created_at DESC, rowid DESC LIMIT 1), '')`
+
 // --- SOP ---
 
 func createSOPRecord(db audit.DBTX, id, title, createdAt string) error {
@@ -170,7 +176,84 @@ func listSOPsRecord(db audit.DBTX, userID string, limit, offset int, tagID strin
 		}
 	}
 
+	// 7. Bulk fetch versions (newest first) for the latest and published version per SOP
+	versionQuery := `
+		SELECT v.sop_id, v.id, v.version, v.created_at, ` + currentVersionStateSQL + ` AS status
+		FROM sop_versions v
+		WHERE v.sop_id IN (` + strings.Join(placeholders, ",") + `)
+		ORDER BY v.sop_id, v.version DESC
+	`
+
+	versionRows, err := db.Query(versionQuery, sopIDs...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to fetch versions for sops: %w", err)
+	}
+	defer versionRows.Close()
+
+	latestBySOP := make(map[string]*SOPListVersion)
+	publishedBySOP := make(map[string]int)
+	for versionRows.Next() {
+		var sopID, createdAt string
+		var v SOPListVersion
+		if err := versionRows.Scan(&sopID, &v.ID, &v.Version, &createdAt, &v.Status); err != nil {
+			return nil, 0, err
+		}
+		v.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
+		if _, ok := latestBySOP[sopID]; !ok {
+			latestBySOP[sopID] = &v
+		}
+		if _, ok := publishedBySOP[sopID]; !ok && v.Status == StatePublished {
+			publishedBySOP[sopID] = v.Version
+		}
+	}
+	if err := versionRows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	for i, s := range sops {
+		sops[i].LatestVersion = latestBySOP[s.ID]
+		if n, ok := publishedBySOP[s.ID]; ok {
+			sops[i].PublishedVersion = &n
+		}
+	}
+
 	return sops, total, nil
+}
+
+// getSOPVersionPointersRecord returns the newest version of an SOP and the version
+// readers see. Either is nil when the SOP has no such version.
+func getSOPVersionPointersRecord(db audit.DBTX, sopID string) (latest, published *SOPListVersion, err error) {
+	query := `
+		SELECT v.id, v.version, v.created_at, ` + currentVersionStateSQL + ` AS status
+		FROM sop_versions v
+		WHERE v.sop_id = ?
+		ORDER BY v.version DESC
+	`
+
+	rows, err := db.Query(query, sopID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to fetch versions for sop: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var v SOPListVersion
+		var createdAt string
+		if err := rows.Scan(&v.ID, &v.Version, &createdAt, &v.Status); err != nil {
+			return nil, nil, err
+		}
+		v.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
+		if latest == nil {
+			latest = &v
+		}
+		if published == nil && v.Status == StatePublished {
+			published = &v
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+	return latest, published, nil
 }
 
 // --- SOP Version ---
@@ -382,11 +465,42 @@ func getLatestPublishedSOPVersionRecord(tx *sql.Tx, sopID string) (*SOPVersion, 
 // --- SOP Version States ---
 
 func createSOPVersionStateRecord(db audit.DBTX, id, sopVersionID, state, actorUserID, createdAt string) error {
+	return createSOPVersionStateWithReasonRecord(db, id, sopVersionID, state, actorUserID, createdAt, nil)
+}
+
+// createSOPVersionStateWithReasonRecord appends a state row that carries the actor's reason (a rejection).
+func createSOPVersionStateWithReasonRecord(db audit.DBTX, id, sopVersionID, state, actorUserID, createdAt string, reason *string) error {
 	_, err := db.Exec(`
-        INSERT INTO sop_version_states (id, sop_version_id, state, actor_user_id, created_at)
-        VALUES (?, ?, ?, ?, ?)
-    `, id, sopVersionID, state, actorUserID, createdAt)
+        INSERT INTO sop_version_states (id, sop_version_id, state, actor_user_id, created_at, reason)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `, id, sopVersionID, state, actorUserID, createdAt, reason)
 	return err
+}
+
+// getVersionRejectionRecord returns the newest rejection of a version, or nil if it was never rejected.
+func getVersionRejectionRecord(db audit.DBTX, sopVersionID string) (*VersionRejection, error) {
+	var r VersionRejection
+	var reason sql.NullString
+	var createdAt string
+	err := db.QueryRow(`
+        SELECT s.reason, s.actor_user_id, COALESCE(u.display_name, ''), s.created_at
+        FROM sop_version_states s
+        LEFT JOIN users u ON u.id = s.actor_user_id
+        WHERE s.sop_version_id = ? AND s.state = 'rejected'
+        ORDER BY s.created_at DESC, s.rowid DESC
+        LIMIT 1
+    `, sopVersionID).Scan(&reason, &r.ActorUserID, &r.ActorName, &createdAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if reason.Valid {
+		r.Reason = &reason.String
+	}
+	r.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
+	return &r, nil
 }
 
 // --- SOP Version PDF Artifacts ---
@@ -727,11 +841,9 @@ func getActivePublishedVersionIDRecord(db audit.DBTX, sopID string, excludeVersi
 	var oldPublishedVersionID string
 
 	query := `
-        SELECT v.id 
+        SELECT v.id
         FROM sop_versions v
-        JOIN sop_version_states s ON v.id = s.sop_version_id
-        WHERE v.sop_id = ? AND s.state = 'published'
-        AND s.created_at = (SELECT MAX(created_at) FROM sop_version_states WHERE sop_version_id = v.id)
+        WHERE v.sop_id = ? AND ` + currentVersionStateSQL + ` = 'published'
         AND v.id != ?
         ORDER BY v.version DESC LIMIT 1
     `

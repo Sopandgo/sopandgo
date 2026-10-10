@@ -47,7 +47,8 @@ Key properties:
 - **Secure Hashing:** Passwords are stored using cryptographic hashing (Bcrypt).
 - **Dual-Token System:** The system uses short-lived access tokens (5 minutes) and server-tracked refresh tokens. Refresh tokens can be revoked by an admin.
 - **Password Reset Tokens:** Resets are handled via high-entropy, one-time-use tokens sent via email. These tokens are hashed in the database and deleted immediately upon use ("Burn-After-Reading").
-- **Brute-Force Protection:** Login and Password Reset endpoints are protected by strict IP-based rate limiting to prevent credential guessing attacks.
+- **Password change needs the current password:** Changing the password from account settings asks for the current one. Someone who finds a session left open on a shared PC cannot use it to lock the owner out. Reset links do not ask for it, because the one-time token already proves identity.
+- **Brute-Force Protection:** Login, Password Reset, and the signed-in password change are protected by strict IP-based rate limiting to prevent credential guessing attacks.
 - **Administrative Recovery:** Admins can trigger password resets.
 
 External identity providers (SSO, LDAP, OAuth) are **out of scope**.
@@ -70,17 +71,25 @@ The system uses Platform-Agnostic Security Tokens (PASETO) instead of JWT, avoid
 
 This allows for:
 - **Session revocation:** Revoking a refresh session takes effect immediately for new access tokens. An access token that was already issued stays valid until it expires (at most 5 minutes), because those tokens are not stored on the server.
-- **Per-device sessions:** Each login is its own refresh session. A user can log out that session. An admin can revoke every session for one user, or trigger a system-wide panic logout. The admin session list does not include refresh tokens.
+- **Per-device sessions:** Each login is its own refresh session. A user can log out that session, or sign out every other device from account settings. An admin can revoke every session for one user, or trigger a system-wide panic logout. The admin session list does not include refresh tokens.
 - **No Sensitive URLs:** No sensitive identifiers are embedded in SOP content/assets. One-time invite/reset tokens are delivered via email links and are time-boxed and single-use.
 
 ## Outbound integrations
 
 Admins may configure instance-level destinations (Slack Incoming Webhooks, Gotify, generic HTTP webhooks) under Settings. Those destinations receive SOP lifecycle and selected ops alerts.
 
-- **Admin-controlled only:** webhook URLs and tokens are stored encrypted in SQLite; the AES key stays in the environment (`SMTP_SECRET_ENCRYPTION_KEY`). APIs never return decrypted secrets.
+- **Admin-controlled only:** webhook URLs and tokens are stored encrypted in SQLite; the AES key stays in the environment (`SECRET_ENCRYPTION_KEY`). APIs never return decrypted secrets.
 - **Trust the destination:** anyone who can administer the instance can point notifications at an arbitrary HTTPS endpoint. Treat that as equivalent to other admin powers (mail settings, user invites).
 - **Best-effort delivery:** failed notification sends are audited (`notification_failed`) and do not undo publish/promote/reject.
 - **Not a bot platform:** Incoming Webhooks / HTTP push only — no OAuth Slack apps, slash commands, or interactive components.
+
+## Scheduled S3 backups
+
+Admins configure automatic backups to an S3 bucket under **Settings → Backup**. Each run uploads the same full archive as **Export**: the database (including password hashes and the audit log) and every SOP file.
+
+- **Admin-controlled only:** the settings live in SQLite; the secret access key is encrypted with `SECRET_ENCRYPTION_KEY` and never returned. Leaving the credentials empty uses the server's own AWS credentials (for example an IAM role) instead.
+- **Trust the destination:** an admin can point backups at any bucket, which sends a full copy of the data there on every run. Admins can already download the same archive with **Export**, so this is not a new power, but it is persistent and quiet. Every change is audited as `backup_s3_settings_updated` (without the secret); review it with the other admin events.
+- **Restores do not redirect backups:** a staged restore keeps the running instance's S3 settings instead of the archive's, so restoring an old or foreign archive cannot change where backups go.
 
 
 ## Data integrity and auditability
@@ -94,6 +103,8 @@ sopandgo distinguishes between **content** and **metadata**:
 - **Integrity Verification:** For each SOP version, a content hash is recorded. The system can detect if files have been modified outside the application.
 - **Tamper-Evident Audit Logs:** Audit logs are cryptographically linked using a SHA-256 hash chain. Any modification or deletion of a past log entry breaks the chain, making tampering detectable via built-in verification tools.
 - **Proactive Verification of SOPs:** The Service Layer re-verifies SHA-256 hashes during retrieval of full SOP summaries and Audit Logs to ensure that what the user sees is exactly what was originally committed to disk.
+- **On-Demand Checks:** Any signed-in user can re-check a single version or asset file from the SOP pages. The result is one of **verified** (hash matches), **hash mismatch** (hash differs), **missing** (file gone from disk), or **couldn't check** (the check itself failed). The check only answers for the SOP named in the request path; an asset or version from another SOP returns 404.
+- **System Scan:** Admins can run a full scan at **Admin → Integrity** (`/admin/integrity`). It re-hashes every version and asset and verifies the audit hash chain. Each run is written to the audit log, and a failed run sends `integrity_check_failed` to enabled integrations. The scan runs only when an admin starts it; nothing schedules it.
 
 
 ## What sopandgo protects against

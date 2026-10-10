@@ -87,11 +87,6 @@ export const auth = (client: Client, event: RequestEvent) => {
             return await res.json();
         },
 
-        /**
-         * Updates a user's password.
-         * Match: POST /api/auth/update-password
-         * Note: Admins can use this to reset other users' passwords by passing a different userId. REMOVE THIS ADMIN ENDPOINT FROM PRODUCTION!!!
-         */
         updateLocale: async (locale: string): Promise<void> => {
             const res = await client.fetch('/auth/me/locale', {
                 method: 'PATCH',
@@ -110,18 +105,34 @@ export const auth = (client: Client, event: RequestEvent) => {
             if (!res.ok) throw new Error('UPDATE_THEME_FAILED');
         },
 
-        updatePassword: async (newPassword: string): Promise<void> => {
+        updatePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
             const res = await client.fetch('/auth/me/update-password', {
                 method: 'PATCH',
-                body: { new_password: newPassword }
+                body: { current_password: currentPassword, new_password: newPassword }
             });
 
             if (!res.ok) {
                 // Backend returns 400 if password validation fails (e.g. too short)
                 if (res.status === 400) throw new Error('WEAK_PASSWORD');
-                if (res.status === 403) throw new Error('FORBIDDEN_PASSWORD_CHANGE');
+                if (res.status === 403) throw new Error('WRONG_CURRENT_PASSWORD');
+                if (res.status === 429) throw new Error('TOO_MANY_ATTEMPTS');
                 throw new Error('UPDATE_PASSWORD_FAILED');
             }
+        },
+
+        /** Ends every session of the signed-in user except this one. */
+        signOutOtherSessions: async (): Promise<number> => {
+            const refreshToken = event.cookies.get('refresh_token');
+            if (!refreshToken) throw new Error('NO_SESSION');
+
+            const res = await client.fetch('/auth/me/sessions/sign-out-others', {
+                method: 'POST',
+                body: { refresh_token: refreshToken }
+            });
+            if (!res.ok) throw new Error('SIGN_OUT_OTHERS_FAILED');
+
+            const result: { sessions_revoked: number } = await res.json();
+            return result.sessions_revoked;
         },
 
         resetPassword: async (token: string, newPassword: string): Promise<void> => {

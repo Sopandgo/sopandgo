@@ -29,13 +29,13 @@ It follows a **Service Layer Pattern** (`sop.Service`) for data consistency, ato
 | File | Purpose | Key methods |
 | --- | --- | --- |
 | **`service.go`** | `Service` constructor and PDF config | `NewService`, `IsPDFExportEnabled` |
-| **`sop_service.go`** | SOP containers | `RegisterSOP`, `ListSOPs`, `GetSOPByIDWithTags` |
-| **`version_service.go`** | Drafts, content I/O, lifecycle | `RegisterSOPVersion`, `TransitionVersionState`, `ApproveSOPVersion`, summaries, integrity |
+| **`sop_service.go`** | SOP containers; list rows carry tags, favorite state, the latest version (id, number, state, date) and the published version number; the detail adds the published version's id. Both are derived from the version states on read, not stored | `RegisterSOP`, `ListSOPs`, `GetSOPByIDWithTags` |
+| **`version_service.go`** | Drafts, content I/O, lifecycle; a rejection stores its reason on the state row and in the audit event, and the summary returns it | `RegisterSOPVersion`, `TransitionVersionState`, `ApproveSOPVersion`, `RejectSOPVersion`, summaries, integrity |
 | **`acknowledgment_service.go`** | Reader sign-off on published versions, and signature status | `AddAcknowledgment`, `GetSignatureStatusByUser` |
 | **`asset_service.go`** | Binary uploads | `AddAsset`, `GetAssetPath`, `VerifyAssetIntegrity` |
 | **`favorite_service.go`** | Per-user bookmarks | `FavoriteSOP`, `UnfavoriteSOP` |
 | **`tag_service.go`** | Global tags + attach/detach | `CreateTag`, `AttachTagToSOP`, `SetTagStatus` |
-| **`pdf_artifact_service.go`** | Gotenberg PDF artifacts | `GetVersionPDFArtifactPath`, backfill helpers |
+| **`pdf_artifact_service.go`** | Gotenberg PDF artifacts, generated after the lifecycle commit; failures are logged and left to the backfill, never returned to the caller | `GetVersionPDFArtifactPath`, `BackfillPDFArtifactsForGenerator` |
 | **`diff.go` / `publish_activity.go`** | Line diffs and recent publishes | `DiffSOPVersion`, `ListRecentPublishes` |
 | **`training.go`** | Reader-signature coverage | `TrainingCoverage` |
 | **`integrity_service.go`** | System-wide scan | `RunSystemIntegrityCheck` |
@@ -56,6 +56,7 @@ id, ver, err := sopService.RegisterSOPVersion(sopID, content, changeSummary, &ac
 ```go
 err := sopService.TransitionVersionState(versionID, sop.StateRC, actorID)
 ackID, err := sopService.ApproveSOPVersion(versionID, approverID)
+err = sopService.RejectSOPVersion(versionID, approverID, reason) // reason required, stored
 ```
 
 ### 3. Integrity

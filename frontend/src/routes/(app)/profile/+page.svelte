@@ -1,6 +1,7 @@
 <script lang="ts">
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
+    import ListRow from '$lib/components/ListRow.svelte';
     import ListUserSignatures from '$lib/components/ListUserSignatures.svelte';
     import { resolve } from '$app/paths';
     import * as m from '$lib/paraglide/messages.js';
@@ -48,71 +49,31 @@
                 <UserIcon class="w-8 h-8" />
                 {m.profile_heading()}
             </CardPageHeading>
-            <a href={resolve('/profile/settings')} class="btn btn-ghost">
-                <SettingsIcon class="w-4 h-4" />
+            <a href={resolve('/profile/settings')} class="btn">
+                <SettingsIcon class="size-4" />
                 {m.nav_account_settings()}
             </a>
         </div>
-        <p class="text-sm font-medium text-base-content/70">{m.profile_intro()}</p>
+        <p class="text-sm text-base-content/70">{m.profile_intro()}</p>
     </div>
 </Card>
 
 <div class="mt-6 flex flex-col gap-6">
-    <Card>
+    <Card title={m.profile_information()}>
         <ul class="list">
-            <li class="border-b border-base-200/50 p-4 pb-2 text-xs font-bold tracking-widest uppercase opacity-60">
-                {m.profile_information()}
-            </li>
-
-            <li class="list-row items-center">
-                <div>
-                    <UserIcon size={24} class="p-1 opacity-70" />
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm font-medium">{user.display_name}</div>
-                </div>
-            </li>
-
-            <li class="list-row items-center">
-                <div>
-                    <MailIcon size={24} class="p-1 opacity-70" />
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm font-medium">{user.email}</div>
-                </div>
-            </li>
-
-            <li class="list-row items-center">
-                <div>
-                    <StampIcon size={24} class="p-1 opacity-70" />
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm font-medium">{m.profile_role({ role: roleLabel(user.role) })}</div>
-                </div>
-            </li>
-
-            <li class="list-row items-center">
-                <div>
-                    <CalendarClockIcon size={24} class="p-1 opacity-70" />
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm font-medium">
-                        {m.common_created({ when: new Date(user.created_at).toLocaleString(getLocale()) })}
-                    </div>
-                    <div class="font-mono text-xs italic opacity-40">
-                        {m.profile_timestamp()}
-                    </div>
-                </div>
-            </li>
-
-            <li class="list-row items-center">
-                <div>
-                    <IdCardIcon size={24} class="p-1 opacity-70" />
-                </div>
-                <div class="flex-1">
-                    <div class="text-sm font-medium">{m.common_id({ id: user.id })}</div>
-                </div>
-            </li>
+            <ListRow title={user.display_name} icon={UserIcon} />
+            <ListRow title={user.email} icon={MailIcon} />
+            <ListRow title={m.common_role()} icon={StampIcon}>
+                {#snippet trailing()}<span class="badge badge-outline">{roleLabel(user.role)}</span>{/snippet}
+            </ListRow>
+            <ListRow
+                title={m.common_created({ when: new Date(user.created_at).toLocaleString(getLocale()) })}
+                meta={m.profile_timestamp()}
+                icon={CalendarClockIcon}
+            />
+            <ListRow title={m.common_id_label()} icon={IdCardIcon}>
+                {#snippet meta()}<span class="font-mono">{user.id}</span>{/snippet}
+            </ListRow>
         </ul>
     </Card>
 

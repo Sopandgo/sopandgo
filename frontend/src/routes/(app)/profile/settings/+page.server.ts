@@ -39,11 +39,13 @@ export const actions: Actions = {
             console.error('Theme update failed:', err);
             return fail(400, { setTheme: { error: 'failed' } });
         }
-        throw redirect(303, '/profile/settings');
+        // No redirect: the navbar theme switch posts here from any page.
+        return { setTheme: { ok: true, error: null } };
     },
 
     changePassword: async ({ locals, request }) => {
         const fd = await request.formData();
+        const current_password = String(fd.get('current_password') ?? '');
         const new_password = String(fd.get('new_password') ?? '');
         const confirm_password = String(fd.get('confirm_password') ?? '');
 
@@ -61,14 +63,19 @@ export const actions: Actions = {
         }
 
         try {
-            await locals.api.auth.updatePassword(new_password);
+            await locals.api.auth.updatePassword(current_password, new_password);
             await locals.api.auth.logout();
         } catch (err: unknown) {
             console.error('Change Password Error:', err);
             const message = err instanceof Error ? err.message : '';
-            const msg = message === 'WEAK_PASSWORD'
-                ? m.error_weak_password()
-                : m.error_password_update_failed();
+            const msg =
+                message === 'WEAK_PASSWORD'
+                    ? m.error_weak_password()
+                    : message === 'WRONG_CURRENT_PASSWORD'
+                      ? m.error_current_password_wrong()
+                      : message === 'TOO_MANY_ATTEMPTS'
+                        ? m.error_too_many_attempts()
+                        : m.error_password_update_failed();
 
             return fail(400, {
                 changePassword: { error: msg }
@@ -76,5 +83,15 @@ export const actions: Actions = {
         }
 
         throw redirect(303, '/login?passwordChanged=true');
+    },
+
+    signOutOthers: async ({ locals }) => {
+        try {
+            await locals.api.auth.signOutOtherSessions();
+        } catch (err) {
+            console.error('Sign out other sessions failed:', err);
+            return fail(400, { signOutOthers: { ok: false, error: 'failed' } });
+        }
+        return { signOutOthers: { ok: true, error: null } };
     }
 };

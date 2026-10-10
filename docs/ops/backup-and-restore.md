@@ -23,9 +23,9 @@ The data directory contains:
 - SOP content — Markdown version files and assets under `sops/`
 
 The SMTP password and integration secrets are stored encrypted; recovery still requires the same
-`SMTP_SECRET_ENCRYPTION_KEY` (or re-entered secrets after key rotation) when
-`mail_mode` is `smtp` or outbound integrations are enabled.
-If `mail_mode` is `manual_links`, invites/resets do not require SMTP delivery.
+`SECRET_ENCRYPTION_KEY` (or re-entered secrets after key rotation) when
+an email transport or outbound integrations are switched on.
+With no email transport on, invites/resets use manual links and do not need SMTP delivery.
 
 If the full data directory is backed up, the entire system state is preserved.
 
@@ -33,7 +33,7 @@ If the full data directory is backed up, the entire system state is preserved.
 
 ## Admin UI backup (recommended for operators)
 
-Sign in as **admin** and open **Backup**: `/admin/backup`.
+Sign in as **admin** and open **Settings → Backup**: `/admin/settings/backup`. `/admin/backup` redirects there.
 
 ### Export
 
@@ -49,10 +49,10 @@ Export is also available via the API: `GET /api/admin/backups/export` (admin aut
 - Upload a `.zip` to check structure and compatibility **without** changing live data.
 - Rejects backups whose **database schema is newer** than the running app (older-or-equal schema is allowed; migrations run on startup after restore).
 
-### Apply (staged restore)
+### Restore (staged)
 
 - Destructive: stages replacement of live data from the uploaded archive.
-- Requires typing **`APPLY BACKUP`** exactly as confirmation.
+- After you choose the archive, a confirmation dialog repeats the warning and requires typing **`RESTORE BACKUP`** exactly.
 - Before staging, the server writes a **pre-apply** snapshot zip under:
   - `data/_backup_snapshots/` (filename prefix `pre-apply-`)
 - Staged payload is written to:
@@ -60,8 +60,10 @@ Export is also available via the API: `GET /api/admin/backups/export` (admin aut
 - **The restore is not active until the next backend process start.** Restart the
   container or process (e.g. `docker compose restart`) so startup can apply
   `_restore_pending` and then run normal migrations.
-- While a restore is pending (`_restore_pending` present), further validate/apply
+- While a restore is pending (`_restore_pending` present), further validate/restore
   uploads are blocked until after restart clears it.
+- Automatic S3 backup settings are **not** taken from the archive: the running
+  instance keeps its own (see [Automatic S3 backups](#automatic-s3-backups-optional)).
 
 Environment variable (optional):
 
@@ -71,43 +73,68 @@ Environment variable (optional):
 
 ## Automatic S3 backups (optional)
 
-When enabled, the backend uploads the **same** `.zip` as manual export on a fixed
-interval. Objects are stored under:
+When switched on, the backend uploads the **same** `.zip` as manual export on a
+fixed interval. Configure it under **Settings → Backup → Automatic S3 backups**
+(`/admin/settings/backup`). There are no environment variables for it: settings
+are stored in SQLite (`backup_s3_settings`) and take effect when you save, without
+a restart.
 
-`<BACKUP_S3_PREFIX>/automated/sopandgo-automated-YYYYMMDDThhmmss.zip`
+Objects are stored under:
 
-(`BACKUP_S3_PREFIX` is optional; if set, leading/trailing slashes are trimmed.)
+`<key prefix>/automated/sopandgo-automated-YYYYMMDDThhmmss.zip`
 
-| Variable | Meaning |
-|----------|---------|
-| **`BACKUP_S3_ENABLED`** | Set to `true` / `1` / `yes` to enable uploads. |
-| **`BACKUP_S3_BUCKET`** | Target bucket name (required when enabled). |
-| **`BACKUP_S3_REGION`** | AWS region for the SDK (set for AWS; for MinIO you can use a placeholder such as `us-east-1` if needed). |
-| **`BACKUP_S3_PREFIX`** | Optional key prefix (e.g. `prod/myorg`). |
-| **`BACKUP_S3_INTERVAL`** | Go duration between runs (default **`24h`**). Minimum **`1m`**. |
-| **`BACKUP_S3_RETENTION_MAX`** | After each successful upload, delete older automated archives until at most this many **non-expired** objects remain (`0` = no count limit). |
-| **`BACKUP_S3_RETENTION_DAYS`** | Delete automated archives whose S3 `LastModified` is older than this many days (`0` = no age limit). |
-| **`BACKUP_S3_ENDPOINT`** | Optional custom endpoint (MinIO, LocalStack, etc.). |
-| **`BACKUP_S3_USE_PATH_STYLE`** | Set `true` for path-style addressing (common with MinIO). |
-| **`BACKUP_S3_ACCESS_KEY_ID`** / **`BACKUP_S3_SECRET_ACCESS_KEY`** | Optional static credentials. If **both** are omitted, the AWS SDK default chain is used (container / instance role, env vars, shared config). |
+(The key prefix is optional; leading and trailing slashes are trimmed.)
+
+| Setting | Meaning |
+|---------|---------|
+| **On/off toggle** | In the card header, once a bucket is saved; until then the header says "Not configured". Save the settings first, then switch it on. |
+| **Bucket** | Target bucket name (required while on). |
+| **Region** | AWS region for the SDK (set it for AWS; for MinIO a placeholder such as `us-east-1` works). |
+| **Key prefix** | Optional, e.g. `prod/myorg`. |
+| **Endpoint** | Optional custom endpoint (MinIO, Cloudflare R2, Backblaze B2, LocalStack…). Leave empty for AWS S3. |
+| **Path-style URLs** | Path-style addressing, needed by most MinIO setups. |
+| **Access key ID / secret access key** | Optional static credentials. Leave **both** empty to use the AWS SDK default chain (container or instance role, `AWS_*` variables in the backend environment, shared config). The secret is encrypted with `SECRET_ENCRYPTION_KEY` and never returned; leave it blank to keep the stored one. A new access key ID needs its secret. |
+| **Schedule** | Every hour, 6 hours, 12 hours, day (default) or week. |
+| **Keep at most** | After each successful upload, delete older automated archives until at most this many **non-expired** objects remain (`0` = no count limit; default `14`). |
+| **Delete after (days)** | Delete automated archives whose S3 `LastModified` is older than this (`0` = no age limit; default `30`). |
+
+**Test connection** writes and deletes a small probe object
+(`<key prefix>/automated/sopandgo-connection-test.txt`) with the **saved**
+settings, so it checks credentials, bucket and write permission without uploading
+an archive. **Back up now** (while on) uploads one archive immediately and moves the
+next scheduled run one interval out. Changing only retention keeps the next run
+time; changing the schedule or switching on starts the interval again.
 
 **Retention semantics:** objects matching the automated naming pattern under the
-prefix are listed. Any object **older than** `BACKUP_S3_RETENTION_DAYS` (when set)
-is deleted. Among those that remain, if `BACKUP_S3_RETENTION_MAX` is set and the
-count is still greater than the limit, the **oldest** extras are deleted until
-the count is at most the limit.
+prefix are listed. Any object **older than** the age limit (when set) is deleted.
+Among those that remain, if the count limit is set and the count is still greater
+than the limit, the **oldest** extras are deleted until the count is at most the
+limit. The connection-test probe never matches the pattern.
+
+**Restores keep this instance's S3 settings.** The settings live in `app.db`,
+which an archive contains, but a staged restore keeps the running instance's
+settings (including the encrypted secret) instead of the archive's: a restore
+brings back data, not where backups go. It also means a restore onto a server
+with a different `SECRET_ENCRYPTION_KEY` never leaves an S3 secret it cannot decrypt.
 
 The admin **Backup** page and `GET /api/admin/backups/status` include a
 `s3_scheduled` object (bucket, prefix, interval, retention settings, last
-success, next run, last error) for operators. **Secrets are never returned.**
+success, next run, last error). `GET /api/admin/settings/backup-s3` returns the
+saved settings. **Secrets are never returned.**
 
-Successful uploads and failures are also written to the **audit log**
-(`backup_s3_uploaded`, `backup_s3_failed`).
+Successful uploads and failures are written to the **audit log**
+(`backup_s3_uploaded`, `backup_s3_failed`), and failures also go to the
+`backup_s3_failed` integration event. Every settings change is audited as
+`backup_s3_settings_updated` (without the secret).
 
-**Security notes:** use a dedicated IAM principal with least privilege on the
-bucket/prefix; prefer **versioning** and (for stronger ransomware resistance)
-**S3 Object Lock** or a separate backup account. Manual export/download is
-unchanged and does not require S3 configuration.
+**Security notes:** an admin can point backups at any bucket, which sends a full
+copy of the data there on every run. That is no more than an admin can already do
+with **Export**, but it is persistent, so check `backup_s3_settings_updated` in the
+audit log. Use a dedicated IAM principal with least privilege on the
+bucket/prefix (`s3:PutObject`, `s3:ListBucket`, `s3:DeleteObject`); prefer
+**versioning** and (for stronger ransomware resistance) **S3 Object Lock** or a
+separate backup account. Manual export/download is unchanged and does not require
+S3 configuration.
 
 ---
 
@@ -164,9 +191,9 @@ The appropriate frequency depends on how often SOPs are updated.
 
 ## Restore procedure
 
-### From admin staged apply
+### From an admin staged restore
 
-1. Use **Apply** on `/admin/backup` with confirmation `APPLY BACKUP`.
+1. Use **Restore backup** on `/admin/settings/backup` and confirm with `RESTORE BACKUP`.
 2. **Restart** the backend/container so pending files in `_restore_pending` are applied.
 3. Verify in the web UI (SOPs, acknowledgments, audit as expected).
 
@@ -206,7 +233,7 @@ Because SOP content is stored as plain files:
 
 **Schema compatibility:** Restoring an **older** backup into a **newer** app version
 is supported (migrations upgrade the database on startup). Restoring a backup
-whose schema is **newer** than the app supports is rejected by validate/apply.
+whose schema is **newer** than the app supports is rejected by validate and restore.
 
 ---
 
@@ -215,7 +242,7 @@ whose schema is **newer** than the app supports is rejected by validate/apply.
 Unless **S3 automatic backups** are enabled, sopandgo does not upload archives by
 itself. In all cases, operators must still preserve:
 
-- configuration **outside** the data directory (e.g. `docker-compose.yml`, `ORIGIN`, `SMTP_SECRET_ENCRYPTION_KEY`)
+- configuration **outside** the data directory (e.g. `docker-compose.yml`, `ORIGIN`, `SECRET_ENCRYPTION_KEY`)
 - container images
 - host system settings
 

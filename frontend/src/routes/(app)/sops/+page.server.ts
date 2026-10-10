@@ -1,11 +1,12 @@
-import { error, fail } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages.js';
+import { favorite, unfavorite } from '$lib/server/favoriteActions';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     try {
         // 1. Extract query params from the URL
-        const limit = Number(url.searchParams.get('limit')) || 10;
+        const limit = Number(url.searchParams.get('limit')) || 25;
         const offset = Number(url.searchParams.get('offset')) || 0;
         const q = url.searchParams.get('q') || '';
         const tag_id = url.searchParams.get('tag_id') || '';
@@ -34,33 +35,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         };
     } catch (err) {
         console.error('SOP List Error:', err);
-        throw error(500, 'Could not connect to the backend');
+        throw error(500, m.error_service_unavailable());
     }
 };
 
 export const actions: Actions = {
-    favorite: async ({ locals, request }) => {
-        const form = await request.formData();
-        const sopId = String(form.get('sop_id') ?? '').trim();
-        if (!sopId) return fail(400, { message: m.error_missing_sop() });
-        try {
-            await locals.api.sops.favorite(sopId);
-            return { success: true };
-        } catch (err) {
-            console.error('favorite', err);
-            return fail(500, { message: m.error_favorite_failed() });
-        }
-    },
-    unfavorite: async ({ locals, request }) => {
-        const form = await request.formData();
-        const sopId = String(form.get('sop_id') ?? '').trim();
-        if (!sopId) return fail(400, { message: m.error_missing_sop() });
-        try {
-            await locals.api.sops.unfavorite(sopId);
-            return { success: true };
-        } catch (err) {
-            console.error('unfavorite', err);
-            return fail(500, { message: m.error_unfavorite_failed() });
-        }
-    }
+    favorite,
+    unfavorite
 };

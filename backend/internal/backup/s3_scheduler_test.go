@@ -1,6 +1,8 @@
 package backup
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -64,13 +66,62 @@ func TestKeysToDeleteForRetention(t *testing.T) {
 	})
 }
 
-func TestLoadS3SchedulerConfigFromEnv(t *testing.T) {
-	t.Setenv("BACKUP_S3_ENABLED", "")
-	cfg, err := LoadS3SchedulerConfigFromEnv()
-	if err != nil {
+func TestS3Scheduler_Configure(t *testing.T) {
+	sch := NewS3Scheduler(nil, nil)
+	cfg := S3SchedulerConfig{
+		Enabled:      true,
+		Bucket:       "lab-backups",
+		Region:       "eu-central-1",
+		RootPrefix:   "lab",
+		Endpoint:     "http://127.0.0.1:1", // never contacted: Configure only builds the client
+		StaticKey:    "AKIDEXAMPLE",
+		StaticSecret: "secret",
+		Interval:     6 * time.Hour,
+	}
+	ctx := context.Background()
+
+	if st := sch.Status(); st.Enabled || st.NextRunUTC != "" {
+		t.Fatalf("new scheduler should be off, got %+v", st)
+	}
+	if _, err := sch.RunNow(ctx); !errors.Is(err, ErrS3NotEnabled) {
+		t.Fatalf("RunNow while off: want ErrS3NotEnabled, got %v", err)
+	}
+
+	if err := sch.Configure(ctx, cfg); err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Enabled {
-		t.Fatal("expected disabled")
+	st := sch.Status()
+	if !st.Enabled || st.Bucket != "lab-backups" || st.KeyPrefix != "lab/automated/" || st.NextRunUTC == "" {
+		t.Fatalf("after enable: %+v", st)
+	}
+	firstNext := st.NextRunUTC
+
+	cfg.RetentionMax = 3
+	if err := sch.Configure(ctx, cfg); err != nil {
+		t.Fatal(err)
+	}
+	if got := sch.Status().NextRunUTC; got != firstNext {
+		t.Fatalf("same interval should keep the next run: %q -> %q", firstNext, got)
+	}
+
+	cfg.Interval = 12 * time.Hour
+	if err := sch.Configure(ctx, cfg); err != nil {
+		t.Fatal(err)
+	}
+	if got := sch.Status().NextRunUTC; got == firstNext {
+		t.Fatal("a new interval should move the next run")
+	}
+
+	if err := sch.Configure(ctx, S3SchedulerConfig{}); err != nil {
+		t.Fatal(err)
+	}
+	if st := sch.Status(); st.Enabled || st.NextRunUTC != "" || st.Bucket != "" {
+		t.Fatalf("after disable: %+v", st)
+	}
+}
+
+func TestCheckS3Connection_NeedsBucket(t *testing.T) {
+	if err := CheckS3Connection(context.Background(), S3SchedulerConfig{}); !errors.Is(err, ErrS3NotConfigured) {
+		t.Fatalf("want ErrS3NotConfigured, got %v", err)
 	}
 }

@@ -167,6 +167,48 @@ func TestAPI_AdminEndpoints(t *testing.T) {
 		}
 	})
 
+	t.Run("Email mode without a saved transport falls back to manual links", func(t *testing.T) {
+		// Email on, but Resend (never saved) chosen: nothing can send, so invites get a link.
+		for path, body := range map[string]map[string]any{
+			"/api/admin/settings/mail-mode":      {"mail_mode": "smtp"},
+			"/api/admin/settings/mail-transport": {"mail_transport": "resend"},
+		} {
+			if rec := doRequest(http.MethodPatch, path, adminToken, body); rec.Code != http.StatusNoContent {
+				t.Fatalf("PATCH %s: %d %s", path, rec.Code, rec.Body.String())
+			}
+		}
+		t.Cleanup(func() {
+			doRequest(http.MethodPatch, "/api/admin/settings/mail-transport", adminToken, map[string]any{"mail_transport": "smtp"})
+		})
+
+		initialMailCount := env.MockMailSender.SentCount
+		rec := doRequest(http.MethodPost, "/api/admin/users/register", adminToken, map[string]any{
+			"display_name": "Fallback Link User",
+			"email":        "fallback-link@api.local",
+			"role":         auth.RoleViewer,
+		})
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("Expected 201, got %d: %s", rec.Code, rec.Body.String())
+		}
+		var out map[string]any
+		if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+			t.Fatalf("decode register response: %v", err)
+		}
+		if _, ok := out["invite_link"].(string); !ok {
+			t.Fatalf("expected invite_link from the fallback, got: %v", out)
+		}
+		if env.MockMailSender.SentCount != initialMailCount {
+			t.Fatal("expected no email without a saved transport")
+		}
+
+		rec = doRequest(http.MethodGet, "/api/admin/settings/email", adminToken, nil)
+		var pub map[string]any
+		_ = json.NewDecoder(rec.Body).Decode(&pub)
+		if pub["mail_mode"] != "smtp" || pub["effective_mail_mode"] != "manual_links" {
+			t.Fatalf("expected mail_mode smtp with effective manual_links, got %v / %v", pub["mail_mode"], pub["effective_mail_mode"])
+		}
+	})
+
 	t.Run("SMTP mode failure does not return fallback link", func(t *testing.T) {
 		rec := doRequest(http.MethodPatch, "/api/admin/settings/mail-mode", adminToken, map[string]any{
 			"mail_mode": "smtp",

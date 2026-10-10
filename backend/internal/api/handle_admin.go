@@ -146,10 +146,10 @@ func (s *Server) handleAdminRegisterUser(w http.ResponseWriter, r *http.Request)
 	// 3. Construct the URL
 	inviteURL := fmt.Sprintf("%s/reset-password?token=%s", s.Config.Origin, rawToken)
 
-	mailMode, modeErr := s.smtpSettings.GetMailMode()
+	mailMode, modeErr := s.smtpSettings.EffectiveMailMode()
 	if modeErr != nil {
 		log.Printf("ERROR: failed to read mail mode: %v", modeErr)
-		mailMode = mail.MailModeSMTP
+		mailMode = mail.MailModeManualLinks // cannot tell: hand the admin the link
 	}
 	if mailMode == mail.MailModeManualLinks {
 		s.writeAudit(audit.EventManualInviteLinkGenerated, audit.EntityUser, userID, &actorID, map[string]string{
@@ -271,10 +271,10 @@ func (s *Server) handleAdminTriggerPasswordReset(w http.ResponseWriter, r *http.
 	// 2. Construct the URL
 	resetURL := fmt.Sprintf("%s/reset-password?token=%s", s.Config.Origin, rawToken)
 
-	mailMode, modeErr := s.smtpSettings.GetMailMode()
+	mailMode, modeErr := s.smtpSettings.EffectiveMailMode()
 	if modeErr != nil {
 		log.Printf("ERROR: failed to read mail mode: %v", modeErr)
-		mailMode = mail.MailModeSMTP
+		mailMode = mail.MailModeManualLinks // cannot tell: hand the admin the link
 	}
 	if mailMode == mail.MailModeManualLinks {
 		actorID := GetUserID(r.Context())

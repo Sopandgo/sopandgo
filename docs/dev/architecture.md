@@ -32,10 +32,10 @@ The system is built around these core entities:
 * **SOP favorite:** A private link between a **User** and an **SOP** (`sop_favorites` in SQLite). Used for bookmarks and list ordering; not shared between users.
 * **Asset:** Immutable files (images/PDFs) linked to specific SOPs.
 * **Audit Event:** A cryptographically linked, permanent record of a state change or significant system action.
-* **Mail settings:** `smtp_settings` holds provider host, port, username, from-address, and AES-GCM-encrypted password. Resend API key is stored similarly when that transport is selected. `app_settings` holds `mail_mode` (`smtp` or `manual_links`), `mail_transport` (`smtp` or `resend`), and `default_locale` (organization language for shared notifications, test messages, and PDF chrome). The encryption key is supplied only via `SMTP_SECRET_ENCRYPTION_KEY`; configuration is edited in the admin UI. `users.locale` and `app_settings.default_locale` are plain text with no SQL allow-list, so a new language does not need a migration. Both columns are in SQLite and travel with backups.
-* **Appearance:** `users.theme` is `light`, `dark`, or `system` (the default). Light uses the corporate theme and dark uses business. System follows the browser color scheme. The column is plain text with no SQL allow-list and travels with backups. Account language, appearance, and password live at `/profile/settings`. `/profile` shows account details and training signatures.
+* **Mail settings:** `smtp_settings` holds provider host, port, username, from-address, and AES-GCM-encrypted password. Resend API key is stored similarly when that transport is selected. `app_settings` holds `mail_mode` (`smtp` or `manual_links`), `mail_transport` (`smtp` or `resend`), and `default_locale` (organization language for shared notifications, test messages, and PDF chrome). The encryption key is supplied only via `SECRET_ENCRYPTION_KEY`; configuration is edited in the admin UI. `users.locale` and `app_settings.default_locale` are plain text with no SQL allow-list, so a new language does not need a migration. Both columns are in SQLite and travel with backups.
+* **Appearance:** `users.theme` is `light`, `dark`, or `system` (the default). Light uses the `sop-light` theme and dark uses `sop-dark` (both defined in `frontend/src/routes/layout.css`; see `docs/design/style-guide.md`). System follows the browser color scheme. The column is plain text with no SQL allow-list and travels with backups. Before sign-in, the navbar can set light or dark in a non-httpOnly `theme` cookie. With no cookie, appearance follows the system color scheme. After sign-in, `users.theme` applies and the cookie is ignored. Signed-in users can switch light, dark, or system from the avatar menu, which posts to the `/profile/settings` `setTheme` action. Account language, appearance, and password live at `/profile/settings`. `/profile` shows account details and training signatures.
 * **Integration settings:** `integration_settings` holds Slack Incoming Webhook URL (encrypted), Gotify URL + token (token encrypted), and generic webhook URL + optional bearer (encrypted), plus per-channel enable flags and event subscriptions. Same encryption key as mail. The `notify` package fans out after lifecycle commits (publish / RC / reject) and for ops alerts (S3 backup failure, failed integrity check).
-* **Backup:** Admin export/validate/staged restore; optional scheduled S3 uploads (`BACKUP_S3_*`).
+* **Backup:** Admin export/validate/staged restore; optional scheduled S3 uploads, configured in the UI and stored in `backup_s3_settings` (secret sealed with `SECRET_ENCRYPTION_KEY`); a staged restore keeps the running instance's S3 settings.
 
 ## Routing & Proxy Model
 To simplify the frontend's communication with the backend, we use a Reverse Proxy within the container (Caddy):
@@ -74,7 +74,7 @@ The architecture uses a **Stateless/Stateful Hybrid**:
 
 ## Languages
 
-The interface ships in English (`en`, the fallback), German (`de`), French (`fr`), Spanish (`es`), Portuguese (`pt`), Chinese (`zh`), Italian (`it`), Dutch (`nl`), Polish (`pl`), Japanese (`ja`), Korean (`ko`), Turkish (`tr`), and Swedish (`sv`). Signed-in pages use `users.locale`. The login and password-reset pages use the locale cookie, then `Accept-Language`, then English. Emails use the recipient's locale. Slack, Gotify, webhooks, and PDF chrome use `app_settings.default_locale`, because those outputs are shared. A PDF is generated once and is not re-rendered per reader.
+The interface ships in English (`en`, the fallback), German (`de`), French (`fr`), Spanish (`es`), Portuguese (`pt`), Chinese (`zh`), Italian (`it`), Dutch (`nl`), Polish (`pl`), Japanese (`ja`), Korean (`ko`), Turkish (`tr`), Swedish (`sv`), Czech (`cs`), and Slovak (`sk`). Signed-in pages use `users.locale`. Public pages set the locale cookie from the navbar language menu; resolution is that cookie, then `Accept-Language`, then English. Emails use the recipient's locale. Slack, Gotify, webhooks, and PDF chrome use `app_settings.default_locale`, because those outputs are shared. A PDF is generated once and is not re-rendered per reader.
 
 SOP titles, Markdown, change summaries, reject reasons, tag names, and display names are stored as written and are not translated. Only the surrounding system sentences change.
 
@@ -97,6 +97,8 @@ Integrity is verified via SHA-256 cryptographic hashes in two distinct ways:
 1. **Content Integrity:** SOP versions and assets are hashed upon creation. This is automatically checked when retrieving a SOP version summary to detect disk tampering.
 
 2. **Audit Integrity:** Audit logs are formed into a Hash Chain. The backend verifies the chain continuity on read to detect if logs have been deleted or altered.
+
+3. **On-Demand Checks:** `GET /api/sops/{sopID}/versions/{versionID}/integrity` and `GET /api/sops/{sopID}/assets/{assetID}/integrity` re-hash one file. They return `{"hash_valid": bool}`, or a JSON error: 404 `version_not_found` / `asset_not_found` when the record does not exist or belongs to another SOP, 404 `file_missing` when the file is gone from disk, and 500 `integrity_check_failed` otherwise. `GET /api/admin/integrity` scans everything, audits the run, and notifies on failure.
 
 ## Audit Logging
 
@@ -160,9 +162,13 @@ export const load = async ({ locals, params }) => {
 
 ```
 
+### Entry point (`/`)
+
+There is no public landing page. The root route **`/`** only redirects: signed-in users go to **`/dashboard`**, everyone else to the sign-in form at **`/login`**. Pages that need a session also send signed-out visitors to `/login`.
+
 ### Home dashboard (signed-in landing)
 
-The route **`/dashboard`** is the default post-login destination in the SvelteKit app. It loads signature status and a favorites slice from the SDK, surfaces **All SOPs** (`/sops`), and deep-links pending acknowledgments to **`/sops/{id}/v/latest`**. Conceptual overview: `docs/concepts/home-dashboard.md`.
+The route **`/dashboard`** is the default post-login destination in the SvelteKit app. It loads signature status, recent publishes, a favorites slice, and (for admin and approver) training coverage from the SDK, surfaces **All SOPs** (`/sops`), and deep-links pending acknowledgments to **`/sops/{id}/v/latest`**. Each request is settled on its own, so one failing API leaves an error in that card instead of failing the page. The greeting is computed in the reader's time zone: the page stores the browser's IANA zone in a non-httpOnly `tz` cookie (no security meaning) that the loader reads, and the browser's own clock takes over after hydration. Conceptual overview: `docs/concepts/home-dashboard.md`.
 
 ### Draft editor and preview (new SOP version)
 
@@ -180,6 +186,7 @@ Draft markdown is **`bindable`** from the page into **both** components so Word 
 The SDK provides direct access to the system's **Integrity Model**:
 
 * **Automatic**: The `sops.getVersionSummary` method (and admin audit list responses) return `hash_valid` as verified by the Go backend.
-* **On-Demand**: The `assets.checkIntegrity` and `admin.checkIntegrity` methods allow for manual or global verification of binary assets on the physical filesystem.
+* **On-Demand**: `sops.checkIntegrity(sopId, versionId)` and `assets.checkIntegrity(sopId, assetId)` re-check one file and throw `SdkHttpError` on failure; `admin.checkIntegrity()` runs the system scan.
+* **UI**: Pages call these through SvelteKit form actions, not a JSON proxy. `$lib/server/integrityActions` provides `verifyAsset` and `verifyVersion` for the `/sops/[sop_id]` pages, and `$lib/integrity` maps results to `verified` / `mismatch` / `missing` / `unavailable`. `IntegrityCheck.svelte` posts to those actions with `use:enhance` and also works without JavaScript. `/admin/integrity` runs the system scan through its own `?/run` action.
 
 ---

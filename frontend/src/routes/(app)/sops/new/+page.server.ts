@@ -14,7 +14,7 @@ export const actions: Actions = {
         try {
             const { id } = await locals.api.sops.create(title);
 
-            throw redirect(303, `/sops/${id}`);
+            throw redirect(303, `/sops/${id}/new`);
 
         } catch (err) {
             if ((err as { status?: number }).status === 303) throw err;

@@ -1,48 +1,45 @@
-<script>
+<script lang="ts">
   import { enhance } from '$app/forms';
   import * as m from '$lib/paraglide/messages.js';
   import Alert from './Alert.svelte';
 
-  /**
-   * @typedef {{
-   *   ok?: boolean,
-   *   error?: string
-   * }} PasswordResult
-   */
+  type PasswordResult = { ok?: boolean; error?: string };
 
-  /** @type {{
-   *   form: any,
-   *   actionName?: string,
-   *   resultKey?: string,
-   *   userId?: string | null,
-   *   legend?: string | null,
-   *   showLogoutWarning?: boolean,
-   *   onSuccess?: (() => void) | null
-   * }} */
+  interface Props {
+    /** Page ActionData; the result is read from `form[resultKey]`. */
+    form: Record<string, unknown> | null | undefined;
+    actionName?: string;
+    resultKey?: string;
+    userId?: string | null;
+    showLogoutWarning?: boolean;
+  }
+
   let {
     form,
     actionName = 'changePassword',
     resultKey = 'changePassword',
     userId = null,
-    showLogoutWarning = true,
-    onSuccess = null
-  } = $props();
+    showLogoutWarning = true
+  }: Props = $props();
 
   let loading = $state(false);
 
-  /** @type {PasswordResult | undefined} */
-  const result = $derived(form?.[resultKey]);
+  const result = $derived(form?.[resultKey] as PasswordResult | undefined);
   const hasError = $derived(!!result?.error);
   const isOk = $derived(!!result?.ok);
 </script>
 
 <div class="flex w-full flex-col gap-4">
+  {#if showLogoutWarning}
+    <Alert type="warning" message={m.password_logout_warning()} />
+  {/if}
+
   {#if result?.error}
-    <Alert variant="error" message={result.error} class="w-xs shadow-lg" />
+    <Alert type="error" message={result.error} class="w-xs" />
   {/if}
 
   {#if isOk}
-    <Alert variant="success" message={m.password_updated()} class="w-xs shadow-lg" />
+    <Alert type="success" message={m.password_updated()} class="w-xs" />
   {/if}
 
   <form
@@ -63,6 +60,19 @@
     {/if}
 
     <fieldset class="fieldset">
+
+      <label class="label" for="current_password">
+        {m.password_current()}
+      </label>
+      <input
+        id="current_password"
+        name="current_password"
+        type="password"
+        class="input w-full {hasError ? 'input-error' : ''}"
+        placeholder={m.password_current()}
+        autocomplete="current-password"
+        required
+      />
 
       <label class="label" for="new_password">
         {m.password_new()}
@@ -98,9 +108,6 @@
         {/if}
         {m.password_update()}
       </button>
-      {#if showLogoutWarning}
-        <Alert variant="warning" message={m.password_logout_warning()}/>
-      {/if}
     </fieldset>
   </form>
 

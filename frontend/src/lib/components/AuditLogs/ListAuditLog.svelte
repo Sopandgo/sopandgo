@@ -75,40 +75,17 @@
         }
     }
 
-    function rowTone(entityType: string, eventType: string): string {
+    // Colour means state: only failures are tinted; everything else is neutral.
+    function rowTone(eventType: string): string {
         const event = eventType.toLowerCase();
-        if (
-            event === "login_failed" ||
-            event === "email_failed" ||
-            event === "admin_revoked_all_user_sessions" ||
-            event === "system_global_revocation"
-        ) {
-            return "bg-error text-error-content";
-        }
-
-        switch (entityType.toLowerCase()) {
-            case "system":
-            case "mail":
-            case "email":
-                return "bg-info text-info-content";
-            case "user":
-                return "bg-success text-success-content";
-            case "sop":
-            case "sop_version":
-            case "sop_asset":
-            case "acknowledgment":
-                return "bg-primary text-primary-content";
-            default:
-                return "bg-secondary text-secondary-content";
-        }
+        return event === "login_failed" || event === "email_failed"
+            ? "bg-error/10 text-error"
+            : "bg-base-200 text-base-content/70";
     }
 </script>
 
-<Card>
+<Card title={m.audit_log_count({ range: rangeLabel })}>
     <ul class="list">
-        <li class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold">
-            {m.audit_log_count({ range: rangeLabel })}
-        </li>
 
         {#each auditEvents as auditEvent (auditEvent.id)}
             {@const eventId = String(auditEvent.id)}
@@ -117,29 +94,22 @@
             {@const entityType = auditEvent.entity_type.toLowerCase()}
             {@const linkedSopId = versionSopId(auditEvent.payload)}
             {@const open = Boolean(openIds[eventId])}
-            <li class="border-b border-base-200 last:border-b-0">
+            <li class="border-b border-base-300 last:border-b-0">
                 <button
                     type="button"
-                    class="list-row w-full items-center text-left cursor-pointer hover:bg-base-200/50 transition-colors"
+                    class="list-row w-full cursor-pointer items-center text-left transition-colors duration-150 after:hidden hover:bg-base-200 focus-visible:-outline-offset-2"
                     aria-expanded={open}
                     onclick={() => toggle(eventId)}
                 >
-                    <div class="avatar avatar-placeholder">
-                        <div
-                            class="w-12 lg:w-16 rounded-field flex items-center justify-center {rowTone(
-                                auditEvent.entity_type,
-                                auditEvent.event_type,
-                            )}"
-                        >
-                            <Icon size={24} />
-                        </div>
+                    <div class="flex size-10 shrink-0 items-center justify-center rounded-field {rowTone(auditEvent.event_type)}" aria-hidden="true">
+                        <Icon class="size-5" />
                     </div>
 
                     <div class="flex-1 min-w-0">
-                        <div class="font-bold text-sm lg:text-base">
+                        <div class="text-sm font-medium">
                             {eventTitle(auditEvent.event_type)}
                         </div>
-                        <div class="text-xs opacity-60 break-all">
+                        <div class="text-xs text-base-content/70 break-all">
                             {actorLabel(auditEvent.actor_name)} · {formatEventTime(
                                 auditEvent.created_at,
                             )}{#if summary}
@@ -149,31 +119,31 @@
 
                     <div class="flex items-center gap-2 shrink-0">
                         {#if auditEvent.hash_valid}
-                            <div class="badge badge-success badge-outline gap-1 h-7">
-                                <ShieldCheckIcon class="size-4" />
+                            <div class="badge badge-soft badge-success gap-1">
+                                <ShieldCheckIcon class="size-4" aria-hidden="true" />
                                 {m.audit_hash_ok()}
                             </div>
                         {:else}
-                            <div class="badge badge-error badge-outline gap-1 h-7">
-                                <ShieldXIcon class="size-4" />
+                            <div class="badge badge-soft badge-error gap-1">
+                                <ShieldXIcon class="size-4" aria-hidden="true" />
                                 {m.audit_hash_bad()}
                             </div>
                         {/if}
 
                         <ChevronDownIcon
-                            class="size-4 opacity-50 transition-transform {open ? 'rotate-180' : ''}"
+                            class="size-4 text-base-content/70 transition-transform {open ? 'rotate-180' : ''}"
                         />
                     </div>
                 </button>
 
                 {#if open}
-                    <div class="px-4 pb-4 grid gap-3 text-xs">
+                    <div class="grid gap-3 px-4 pb-4 text-xs">
                         <div>
-                            <div class="opacity-50 uppercase tracking-widest font-bold">{m.audit_actor_id()}</div>
+                            <div class="font-medium text-base-content/70">{m.audit_actor_id()}</div>
                             <div class="font-mono break-all">{auditEvent.actor_user_id || m.common_none()}</div>
                         </div>
                         <div>
-                            <div class="opacity-50 uppercase tracking-widest font-bold">{m.audit_entity()}</div>
+                            <div class="font-medium text-base-content/70">{m.audit_entity()}</div>
                             {#if entityType === "sop" && auditEvent.entity_id}
                                 <a
                                     class="link font-mono break-all"
@@ -197,25 +167,25 @@
                             {/if}
                         </div>
                         <div>
-                            <div class="opacity-50 uppercase tracking-widest font-bold">{m.audit_payload()}</div>
+                            <div class="font-medium text-base-content/70">{m.audit_payload()}</div>
                             <pre class="mt-1 whitespace-pre-wrap break-all font-mono">{formatPayload(
                                     auditEvent.payload,
                                 )}</pre>
                         </div>
                         <div>
-                            <div class="opacity-50 uppercase tracking-widest font-bold">{m.audit_hash()}</div>
+                            <div class="font-medium text-base-content/70">{m.audit_hash()}</div>
                             <div class="font-mono break-all">{auditEvent.hash}</div>
                         </div>
                         <div>
-                            <div class="opacity-50 uppercase tracking-widest font-bold">{m.audit_prev_hash()}</div>
+                            <div class="font-medium text-base-content/70">{m.audit_prev_hash()}</div>
                             <div class="font-mono break-all">{auditEvent.prev_hash}</div>
                         </div>
                     </div>
                 {/if}
             </li>
         {:else}
-            <li class="p-12 text-center">
-                <div class="text-sm opacity-40">
+            <li class="p-6">
+                <div class="text-sm text-base-content/70">
                     {#if filtered}
                         {m.audit_no_match()}
                     {:else}

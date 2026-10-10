@@ -56,7 +56,7 @@ If the application is removed, SOP content remains readable on disk as standard 
 - Each version:
   - has structured content (Markdown) that is never rewritten after create
   - may reference local assets (images, diagrams)
-  - has a content hash recorded in the database
+  - has a content hash recorded in the database; any user can re-check a version or asset file against it, and admins can scan everything at **Admin → Integrity** (`/admin/integrity`)
   - moves through a lifecycle: **draft → RC → published** (or rejected); a later publish marks the prior published version **superseded**
 - Users acknowledge specific SOP versions (`author` / `approver` / `reader`)
 - Content files are never modified or deleted; lifecycle state history is recorded separately
@@ -79,7 +79,7 @@ The security model is documented in detail under `docs/concepts/security-model.m
 
 ## Features (1.0)
 
-Self-hosted SOP management with invite-only auth, RBAC, immutable versioned content (draft → RC → published), acknowledgments, home dashboard, tags and favorites, audit trail, mail (SMTP/Resend or manual links), optional publish notices, Slack/Gotify/HTTP webhooks, backup/restore, PDF export, and Word import. The interface, emails, notifications, and PDF chrome ship in English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, and Swedish. SOP titles and Markdown stay in the language the author wrote. Adding another interface language is a catalog change; see [Architecture](docs/dev/architecture.md#languages).
+Self-hosted SOP management with invite-only auth, RBAC, immutable versioned content (draft → RC → published), acknowledgments, home dashboard, tags and favorites, audit trail, mail (SMTP/Resend or manual links), optional publish notices, Slack/Gotify/HTTP webhooks, backup/restore, PDF export, and Word import. The interface, emails, notifications, and PDF chrome ship in English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, Swedish, Czech, and Slovak. SOP titles and Markdown stay in the language the author wrote. Adding another interface language is a catalog change; see [Architecture](docs/dev/architecture.md#languages).
 
 Pending-acknowledgment reminder digests and lifecycle emails for RC/reject/archive are **out of scope for 1.0** — the dashboard and training coverage are the nudge surfaces; publish notices are the email surface.
 
@@ -108,17 +108,16 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
 2. **Configure environment (critical)** Copy **`.env.example`** to **`.env`** and set at least the values you need for your deployment. The repo already includes **`docker-compose.yml`**; you normally do **not** need to author compose from scratch.
 
 - **ORIGIN:** Must match the URL you use in the browser (default: `http://localhost:8087`). If it does not match, login fails with **403 Forbidden**.
-- **SMTP_SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets or send mail/integrations that need them.
+- **SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets or send mail/integrations that need them.
 - **SEED_DEMO_DATA:** `true` (default) inserts demo users and sample SOPs on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
-- **Mail mode:** In **Settings** (`/admin/settings`), choose either `smtp` (default; sends invites/resets by email) or `manual_links` (admin copies one-time links and shares them manually).
-- **SMTP provider details** (host, port, user, password, from-address) are configured in the same admin page when using `smtp`, then verified with **Send test email**.
-- **Integrations:** On the same Settings page, optionally enable Slack Incoming Webhooks, Gotify, and/or a generic HTTP webhook for lifecycle and ops alerts. There are no `SLACK_ENABLED`-style env flags — configure destinations in the UI.
+- **Mail:** In **Settings → Email** (`/admin/settings/email`), save **SMTP** (host, port, user, password, from-address) or **Resend** and switch it on in its card header to send invites and resets by email; verify with **Send test email**. Until a transport is on, admins get one-time links to share manually (manual links).
+- **Integrations:** On **Settings → Integrations** (`/admin/settings/integrations`), optionally enable Slack Incoming Webhooks, Gotify, and/or a generic HTTP webhook for lifecycle and ops alerts. There are no `SLACK_ENABLED`-style env flags — configure destinations in the UI.
 - **PDF export (Gotenberg):**
   - `PDF_EXPORT_ENABLED=true|false` toggles PDF artifact generation and download.
   - `PDF_RENDERER=gotenberg|none` selects renderer mode.
   - `GOTENBERG_URL` points to the Gotenberg service URL (default in Docker: `http://gotenberg:3000`).
   - `PDF_GENERATOR_VERSION` controls append-only artifact generation/backfill versioning.
-- **Backups:** Admins can use **Backup** (`/admin/backup`) to export a `.zip`, validate archives, and stage a restore (restart required). Optional automatic uploads to S3 use `BACKUP_S3_*` in `.env` (see `docs/ops/backup-and-restore.md`).
+- **Backups:** Admins can use **Settings → Backup** (`/admin/settings/backup`) to export a `.zip`, validate archives, and stage a restore (restart required). Optional automatic uploads to S3 (or S3-compatible storage) are set up on the same page, with a connection test and a run-now button; see `docs/ops/backup-and-restore.md`.
 
 See `docs/ops/deployment.md` for the full environment variable reference. How versions ship: `docs/ops/releasing.md`.
 
@@ -131,7 +130,7 @@ The compose file uses the published image `ghcr.io/sopandgo/sopandgo:1`. You do 
 
 4. **Access the app**
 
-Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`HOST_WEB_PORT`** if you changed it).
+Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`HOST_WEB_PORT`** if you changed it). It opens on the sign-in form.
 
 **Default Admin:** `admin` / `admin`
 
@@ -142,11 +141,11 @@ Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`
 
 ### First-week checklist
 
-1. Set **`ORIGIN`** and **`SMTP_SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOPs are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
-2. Sign in as `admin` / `admin` and **set a strong password** (required).
-3. Configure mail (`smtp` + transport, or `manual_links`) and send a **test email** if using SMTP/Resend.
+1. Set **`ORIGIN`** and **`SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOPs are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
+2. Sign in as `admin` / `admin` and **set a strong password** (required; enter `admin` as the current password).
+3. Optionally save SMTP or Resend under **Settings → Email**, switch it on and send a **test email**; without it, invites use manual links.
 4. Create a real user invite (or keep demo data only for a trial).
-5. **Backup:** Admin → **Backup** → export a `.zip`, then optionally **validate** it.
+5. **Backup:** **Settings → Backup** → export a `.zip`, then optionally **validate** it.
 6. Practice restore once on a non-production copy: stage apply → restart container → confirm SOPs and acknowledgments. See `docs/ops/backup-and-restore.md`.
 
 ### Upgrading
@@ -175,7 +174,7 @@ All system data is stored in the `backend/data` folder (inside the container: `D
 - **SQLite Database:** `app.db` holds metadata, audit logs, users, per-user SOP favorites (`sop_favorites`), and encrypted SMTP / integration settings.
 - **SOP content:** `sops/` holds versioned Markdown and per-SOP assets.
 
-**Recommended (admin UI):** Sign in as **admin** → **Backup** (`/admin/backup`). You can **export** a `.zip` (consistent DB snapshot plus `sops/` and `manifest.json`), **validate** an archive, and **stage apply** of a restore. Staged restores run on the **next backend/container restart**; see `docs/ops/backup-and-restore.md`.
+**Recommended (admin UI):** Sign in as **admin** → **Settings → Backup** (`/admin/settings/backup`). You can **export** a `.zip` (consistent DB snapshot plus `sops/` and `manifest.json`), **validate** an archive, and **stage apply** of a restore. Staged restores run on the **next backend/container restart**; see `docs/ops/backup-and-restore.md`.
 
 **Alternative (manual):** Stop the container and copy the whole data directory, or archive `backend/data` on the host. SOP Markdown on disk stays readable without the app.
 
@@ -185,9 +184,10 @@ All system data is stored in the `backend/data` folder (inside the container: `D
 
 If you wish to run the services outside of Docker:
 - **Backend:** `cd backend && go run cmd/sopandgo/main.go`  
-  The Go binary does **not** read a `.env` file; export `SMTP_SECRET_ENCRYPTION_KEY` (and other vars) in your shell or IDE if you need mail or to match production.
+  The Go binary does **not** read a `.env` file; export `SECRET_ENCRYPTION_KEY` (and other vars) in your shell or IDE if you need mail or to match production. Under `air`, put them in `backend/.env` instead (copy `backend/.env.example`).
 - **Frontend:** `cd frontend && npm run dev`
-- **Seeder:** `cd backend && go run cmd/seed-demo-data/main.go` (Only run on an empty `data` folder). Honors `SEED_DEMO_DATA=false`.
+- **Seeder:** `cd backend && go run cmd/seed-demo-data/main.go` (Only run on an empty `data` folder). Honors `SEED_DEMO_DATA=false`. Run it **before** the backend's first start: the backend creates `app.db` with the bootstrap admin, and the seeder skips once `app.db` exists.
+- **Live reload:** `cd backend && air` uses `backend/.air.toml`, which runs the seeder before each build, so a fresh `backend/data` gets demo users and sample SOPs. To reset demo data, stop air and delete `backend/data`.
 
 ### Tests
 - **Backend:** `cd backend && go test ./...`
