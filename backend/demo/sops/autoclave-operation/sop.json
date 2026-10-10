@@ -1,0 +1,9 @@
+{
+  "tags": ["Equipment", "Safety"],
+  "final_state": "rc",
+  "change_summaries": [
+    "Initial release",
+    "Added biological indicator test and cycle log"
+  ],
+  "read_by": { "researcher": [1] }
+}

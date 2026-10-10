@@ -1,0 +1,9 @@
+{
+  "tags": ["Safety"],
+  "change_summaries": [
+    "Initial release",
+    "Added spill size triage and incident reporting"
+  ],
+  "read_by": { "researcher": [1] },
+  "favorited_by": ["researcher"]
+}

@@ -109,7 +109,7 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
 
 - **ORIGIN:** Must match the URL you use in the browser (default: `http://localhost:8087`). If it does not match, login fails with **403 Forbidden**.
 - **SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets or send mail/integrations that need them.
-- **SEED_DEMO_DATA:** `true` (default) inserts demo users and a sample SOP on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
+- **SEED_DEMO_DATA:** `true` (default) inserts demo users and sample SOPs on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
 - **Mail:** In **Settings → Email** (`/admin/settings/email`), save **SMTP** (host, port, user, password, from-address) or **Resend** and switch it on in its card header to send invites and resets by email; verify with **Send test email**. Until a transport is on, admins get one-time links to share manually (manual links).
 - **Integrations:** On **Settings → Integrations** (`/admin/settings/integrations`), optionally enable Slack Incoming Webhooks, Gotify, and/or a generic HTTP webhook for lifecycle and ops alerts. There are no `SLACK_ENABLED`-style env flags — configure destinations in the UI.
 - **PDF export (Gotenberg):**
@@ -141,7 +141,7 @@ Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`
 
 ### First-week checklist
 
-1. Set **`ORIGIN`** and **`SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOP are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
+1. Set **`ORIGIN`** and **`SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOPs are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
 2. Sign in as `admin` / `admin` and **set a strong password** (required; enter `admin` as the current password).
 3. Optionally save SMTP or Resend under **Settings → Email**, switch it on and send a **test email**; without it, invites use manual links.
 4. Create a real user invite (or keep demo data only for a trial).
@@ -187,7 +187,7 @@ If you wish to run the services outside of Docker:
   The Go binary does **not** read a `.env` file; export `SECRET_ENCRYPTION_KEY` (and other vars) in your shell or IDE if you need mail or to match production. Under `air`, put them in `backend/.env` instead (copy `backend/.env.example`).
 - **Frontend:** `cd frontend && npm run dev`
 - **Seeder:** `cd backend && go run cmd/seed-demo-data/main.go` (Only run on an empty `data` folder). Honors `SEED_DEMO_DATA=false`. Run it **before** the backend's first start: the backend creates `app.db` with the bootstrap admin, and the seeder skips once `app.db` exists.
-- **Live reload:** `cd backend && air` uses `backend/.air.toml`, which runs the seeder before each build, so a fresh `backend/data` gets demo users and the sample SOP. To reset demo data, stop air and delete `backend/data`.
+- **Live reload:** `cd backend && air` uses `backend/.air.toml`, which runs the seeder before each build, so a fresh `backend/data` gets demo users and sample SOPs. To reset demo data, stop air and delete `backend/data`.
 
 ### Tests
 - **Backend:** `cd backend && go test ./...`

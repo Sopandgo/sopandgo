@@ -54,7 +54,7 @@ Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left o
 | Variable | Default | Description |
 | --- | --- | --- |
 | `DATA_DIR` | `/app/data` | The internal path for SQLite and assets. |
-| `SEED_DEMO_DATA` | `true` | When not `false`, the first start with no `app.db` inserts demo users and a sample SOP. Set `false` before first boot for a real deployment. Has no effect once `app.db` exists. |
+| `SEED_DEMO_DATA` | `true` | When not `false`, the first start with no `app.db` inserts demo users and sample SOPs. Set `false` before first boot for a real deployment. Has no effect once `app.db` exists. |
 | `ORIGIN` | `http://localhost:8087` | **CRITICAL.** The full public URL of your instance. If this does not match the browser URL, login/invites will fail. |
 | `HOST_WEB_PORT` | `8087` | Host port mapped to Caddy `:80` inside the `sopandgo` container (compose). |
 | `BACKEND_URL` | `http://127.0.0.1:8080` | Internal URL the SvelteKit Node server uses to reach the Go API (loopback inside the container). |
