@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
     import { ChevronRightIcon } from '@lucide/svelte';
-    import Card from '$lib/components/Card.svelte';
+    import Card from '#lib/components/Card.svelte';
 
     /*
      * A Card whose body collapses behind a header row (docs/design/style-guide.md →

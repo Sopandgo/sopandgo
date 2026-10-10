@@ -1,11 +1,11 @@
 <script lang="ts">
     import { FileTextIcon } from '@lucide/svelte';
-    import type { SOPVersion } from '$lib/sdk/types';
+    import type { SOPVersion } from '#lib/sdk/types.js';
     import Card from './Card.svelte';
     import ListRow from './ListRow.svelte';
     import SopVersionStatusBadge from './SopVersionStatusBadge.svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import { getLocale } from '$lib/paraglide/runtime';
+    import * as m from '#lib/paraglide/messages.js';
+    import { getLocale } from '#lib/paraglide/runtime.js';
 
     interface Props {
         sopId: string;

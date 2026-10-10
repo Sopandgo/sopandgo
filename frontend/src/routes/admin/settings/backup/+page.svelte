@@ -1,42 +1,47 @@
 <script lang="ts">
-    import { enhance } from '$app/forms';
+    import { enhance, type SubmitFunction } from '$app/forms';
     import { resolve } from '$app/paths';
-    import type { SubmitFunction } from '@sveltejs/kit';
-    import Alert from '$lib/components/Alert.svelte';
-    import Card from '$lib/components/Card.svelte';
-    import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-    import CollapsibleCard from '$lib/components/CollapsibleCard.svelte';
-    import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+    import Alert from '#lib/components/Alert.svelte';
+    import Card from '#lib/components/Card.svelte';
+    import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+    import CollapsibleCard from '#lib/components/CollapsibleCard.svelte';
+    import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
     import { ArchiveIcon, CalendarClock, History } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import { getLocale } from '$lib/paraglide/runtime';
-    import type { BackupS3Settings, S3ScheduledBackupStatus } from '$lib/sdk/types';
+    import * as m from '#lib/paraglide/messages.js';
+    import { getLocale } from '#lib/paraglide/runtime.js';
+    import type { BackupS3Settings, S3ScheduledBackupStatus } from '#lib/sdk/types.js';
 
     let { data, form }: { data: any; form: any } = $props();
 
     const backupStatus = $derived(data.backupStatus);
-    const importBackupResult = $derived(
-        form?.importBackup as
-            | {
-                    error?: string;
-                    ok?: boolean;
-                    note?: string;
-                    manifest?: { app_version: string; db_schema_version: number; created_at_utc: string };
-              }
-            | undefined
-    );
-    const applyBackupResult = $derived(
-        form?.applyBackup as
-            | {
-                    error?: string;
-                    ok?: boolean;
-                    note?: string;
-                    requires_restart?: boolean;
-                    pre_apply_backup?: string;
-                    manifest?: { app_version: string; db_schema_version: number; created_at_utc: string };
-              }
-            | undefined
-    );
+
+    const importBackupResult = $derived(form?.importBackup as 
+        { 
+            error?: string;
+            ok?: boolean;
+            note?: string;
+            manifest?: { 
+                app_version: string;
+                db_schema_version: number;
+                created_at_utc: string
+             }
+         } |
+        undefined);
+
+    const applyBackupResult = $derived(form?.applyBackup as 
+        { 
+            error?: string;
+            ok?: boolean;
+            note?: string;
+            requires_restart?: boolean;
+            pre_apply_backup?: string;
+            manifest?: { 
+                app_version: string;
+                db_schema_version: number;
+                created_at_utc: string
+             }
+         } |
+        undefined);
     const pendingRestart = $derived(backupStatus?.pending_restore ?? false);
     const uploadsLocked = $derived((backupStatus?.locked ?? false) || pendingRestart);
 
@@ -59,7 +64,7 @@
     const intervalPresets = ['1h0m0s', '6h0m0s', '12h0m0s', '24h0m0s', '168h0m0s'];
     const intervalOptions = $derived(
         s3Settings?.interval && !intervalPresets.includes(s3Settings.interval)
-            ? [...intervalPresets, s3Settings.interval]
+        ? [...intervalPresets, s3Settings.interval]
             : intervalPresets
     );
 
@@ -124,7 +129,7 @@
         const h = interval.match(/^(\d+)h/);
         if (h) {
             const n = parseInt(h[1], 10);
-            const wholeHours = /^\d+h(0m0s)?$/.test(interval);
+            const wholeHours = (/^\d+h(0m0s)?$/).test(interval);
             if (wholeHours && n === 24) return m.backup_every_day();
             if (wholeHours && n === 168) return m.backup_every_week();
             return every(n, m.backup_every_hour, (count) => m.backup_every_hours({ n: count }));
@@ -179,8 +184,13 @@
                 <Alert type="warning" message={m.backup_restart_wait()} />
             {/if}
 
-            <div class="flex flex-col border-t border-base-300 pt-4 sm:flex-row sm:justify-end">
-                <a href={resolve('/admin/settings/backup/export')} class="btn btn-primary w-full sm:w-auto">{m.backup_export()}</a>
+            <div
+                class="flex flex-col border-t border-base-300 pt-4 sm:flex-row sm:justify-end"
+            >
+                <a
+                    href={resolve('admin/settings/backup/export')}
+                    class="btn btn-primary w-full sm:w-auto"
+                >{m.backup_export()}</a>
             </div>
         </div>
     </Card>
@@ -566,7 +576,7 @@
                     accept=".zip,application/zip"
                     required
                     disabled={uploadsLocked}
-                    onchange={(e) => (applyFileName = e.currentTarget.files?.[0]?.name ?? '')}
+                    onchange={(e) => applyFileName = e.currentTarget.files?.[0]?.name ?? ''}
                 />
             </label>
             <div class="flex flex-col border-t border-base-300 pt-4 sm:flex-row sm:justify-end">

@@ -86,7 +86,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 
 - Navbar: `base-100`, a `base-300` bottom border, no shadow. The logo sits at its own size, not inside a circular button.
 - Signed-in avatar menu: the user's name (to `/profile`), **Account settings** (`/profile/settings`), the appearance switch (`AccountThemeSwitch`: light, dark and system as a `join` of icon-only `btn-xs btn-square` buttons with `aria-pressed`), then sign out, with hairline dividers between the groups. Guests get `GuestLocaleMenu` and `GuestThemeToggle` in the navbar instead.
-- Breadcrumbs live in the signed-in navbar, next to the sidebar toggle. Trails are defined per route in `$lib/breadcrumbs.ts` and start at the section (SOPs, Profile, or the admin page itself), never at the dashboard or an "Admin" crumb, because the sidebar already marks the section. Pages do not render their own breadcrumbs. On phones only the last two crumbs show.
+- Breadcrumbs live in the signed-in navbar, next to the sidebar toggle. Trails are defined per route in `#lib/breadcrumbs.ts` and start at the section (SOPs, Profile, or the admin page itself), never at the dashboard or an "Admin" crumb, because the sidebar already marks the section. Pages do not render their own breadcrumbs. On phones only the last two crumbs show.
 - Pages: page header (`page-title` plus one line of `body-sm` in `base-content-muted`, actions on the right), then cards stacked with `space-6` gaps.
 - Lists, not tables, for SOPs, versions, assets and signatures: a `ListRow` per item inside one bordered card.
 - Detail pages with one main text (the SOP version page): from `xl` the text takes the left column and a `22rem` side column holds what the reader does and what is known about it, in that order (your action, the signature log, files, technical details). Below `xl` the side column follows the text, so the action comes right after reading. Keep the text at a readable measure (`max-w-3xl`) when the column is wider. Other views of the same text, such as the diff, are `tabs-lift` link tabs over that column, with the view in the URL (`?view=changes`), as on admin Settings; don't add a separate card for them.
@@ -99,7 +99,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 
 ### Card
 
-The bordered `base-100` section that holds every block of content on a page; always rendered through `$lib/components/Card.svelte`.
+The bordered `base-100` section that holds every block of content on a page; always rendered through `#lib/components/Card.svelte`.
 
 **Markup**: `card bg-base-100 border border-base-300`, no shadow. Note that daisyUI's own `card-border` draws in `base-200`, which disappears on the `base-200` page, so the component sets the border itself.
 
@@ -109,7 +109,7 @@ The bordered `base-100` section that holds every block of content on a page; alw
 
 **Consumer provides**: `title` (optional), `description` (optional), an `actions` snippet (optional) and `children`.
 
-**Collapsible**: when a page lists sections that are configured once and then left alone (the channels on Settings → Integrations, the SMTP and Resend transports on Settings → Email, S3, validate and restore on Settings → Backup), render them through `$lib/components/CollapsibleCard.svelte`. Its header row is a disclosure: a 20px chevron that turns when open, the `section-title` as a `<button aria-expanded aria-controls>` stretched over the row, and a `meta` line. The section's state stays visible on the collapsed row, as the control itself when it can be changed there (the channel's on/off toggle, raised above the stretched button) or as a badge when it cannot ("Not configured"). Don't use `<details>` for this: a toggle inside `<summary>` is a control nested in a button. Collapsed by default; open the section by itself when a form inside it returns a result, so the message is never hidden. The row hovers to `base-200` and keeps the focus ring inset.
+**Collapsible**: when a page lists sections that are configured once and then left alone (the channels on Settings → Integrations, the SMTP and Resend transports on Settings → Email, S3, validate and restore on Settings → Backup), render them through `#lib/components/CollapsibleCard.svelte`. Its header row is a disclosure: a 20px chevron that turns when open, the `section-title` as a `<button aria-expanded aria-controls>` stretched over the row, and a `meta` line. The section's state stays visible on the collapsed row, as the control itself when it can be changed there (the channel's on/off toggle, raised above the stretched button) or as a badge when it cannot ("Not configured"). Don't use `<details>` for this: a toggle inside `<summary>` is a control nested in a button. Collapsed by default; open the section by itself when a form inside it returns a result, so the message is never hidden. The row hovers to `base-200` and keeps the focus ring inset.
 
 **Don't**
 - Don't write `class="card …"` by hand in pages. Today 16 places do; route them through `Card`.
@@ -118,7 +118,7 @@ The bordered `base-100` section that holds every block of content on a page; alw
 
 ### EmptyState
 
-What a list or card shows when it has nothing to list; rendered through `$lib/components/EmptyState.svelte`.
+What a list or card shows when it has nothing to list; rendered through `#lib/components/EmptyState.svelte`.
 
 **Anatomy**: centred, `space-12` vertical padding (`space-16` from `sm`). A 64px `radius-box` tile with a 32px icon and an 8px halo ring, then the heading (`body`, semibold), one line of `body-sm` in `base-content-muted` (at most `max-w-sm`), and the actions `space-6` below.
 
@@ -210,7 +210,7 @@ The result of a file or version hash check (`IntegrityCheck`, which renders `Int
 
 After any other result, an icon-only ghost button (`btn-square btn-sm`, rotate icon, "Check again" in `title` and `aria-label`) sits next to the badge. Each badge's `title` explains the state in a sentence.
 
-**Consumer provides**: `kind` (`asset` or `version`) and `id`, plus an optional `initial` status from the page load and an `onresult` callback. The component posts to the page's `?/verifyAsset` or `?/verifyVersion` form action (`$lib/server/integrityActions`), which calls the SDK with the real `sop_id` from the route and maps the response status to one of the states above.
+**Consumer provides**: `kind` (`asset` or `version`) and `id`, plus an optional `initial` status from the page load and an `onresult` callback. The component posts to the page's `?/verifyAsset` or `?/verifyVersion` form action (`#lib/server/integrityActions`), which calls the SDK with the real `sop_id` from the route and maps the response status to one of the states above.
 
 **Don't**
 - Never show "Corrupt" for anything but a confirmed hash mismatch. A failed request is not evidence of corruption.
@@ -218,7 +218,7 @@ After any other result, an icon-only ghost button (`btn-square btn-sm`, rotate i
 
 ### Alert
 
-An inline message about the page or a form, rendered through `$lib/components/Alert.svelte` as `alert alert-soft alert-<status>`.
+An inline message about the page or a form, rendered through `#lib/components/Alert.svelte` as `alert alert-soft alert-<status>`.
 
 | Type | Use for | Icon |
 | --- | --- | --- |
@@ -238,7 +238,7 @@ An inline message about the page or a form, rendered through `$lib/components/Al
 
 ### Avatar
 
-A person's profile picture, or their initials in a neutral circle when they have none (`$lib/components/Avatar.svelte`), the same for every role. Pictures load through the same-origin proxy `/api/users/avatar` (`user_id`, `size`, `v` = content hash for cache busting) and fall back to initials if the image fails to load. Users set or remove their picture in Account settings with `AvatarCropper` (square crop, drag and zoom, exported as JPEG).
+A person's profile picture, or their initials in a neutral circle when they have none (`#lib/components/Avatar.svelte`), the same for every role. Pictures load through the same-origin proxy `/api/users/avatar` (`user_id`, `size`, `v` = content hash for cache busting) and fall back to initials if the image fails to load. Users set or remove their picture in Account settings with `AvatarCropper` (square crop, drag and zoom, exported as JPEG).
 
 **Markup**: `avatar avatar-placeholder` with an inner `rounded-full bg-base-200 text-base-content border border-base-300`. Sizes `sm` 32px (lists, signatures), `md` 40px (navbar), `lg` 48px (profile).
 
@@ -278,7 +278,7 @@ A toggle switches something on or off (a notification channel, a user account); 
 
 ### ConfirmDialog
 
-The modal that confirms a destructive action, such as restoring a backup (`$lib/components/ConfirmDialog.svelte`).
+The modal that confirms a destructive action, such as restoring a backup (`#lib/components/ConfirmDialog.svelte`).
 
 **Markup**: a native `<dialog class="modal">` opened with `showModal()`, so focus moves into it and Escape closes it. The box is `modal-box` on `base-100` with a `base-300` border, `radius-box` and `shadow-overlay`.
 

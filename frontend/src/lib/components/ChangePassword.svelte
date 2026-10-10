@@ -1,6 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import * as m from '$lib/paraglide/messages.js';
+  import * as m from '#lib/paraglide/messages.js';
   import Alert from './Alert.svelte';
 
   type PasswordResult = { ok?: boolean; error?: string };

@@ -1,5 +1,5 @@
-import { SdkHttpError } from '$lib/sdk/httpError';
-import type { Integrity } from '$lib/sdk/types';
+import { SdkHttpError } from '#lib/sdk/httpError.js';
+import type { Integrity } from '#lib/sdk/types.js';
 
 /**
  * Outcome of a single file integrity check.

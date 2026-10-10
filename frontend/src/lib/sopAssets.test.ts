@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { SOPAsset } from '$lib/sdk/types';
+import type { SOPAsset } from '#lib/sdk/types.js';
 import { assetUrl, findAsset, imagesInLine } from './sopAssets';
 
 const asset = (id: string, file_name: string): SOPAsset => ({ id, file_name, content_hash: '', created_at: '' });

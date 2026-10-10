@@ -1,14 +1,13 @@
 <script lang="ts">
-    import ListAuditLog from '$lib/components/AuditLogs/ListAuditLog.svelte';
-    import Card from '$lib/components/Card.svelte';
-    import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-    import Combobox, { type ComboboxOption } from '$lib/components/Combobox.svelte';
+    import ListAuditLog from '#lib/components/AuditLogs/ListAuditLog.svelte';
+    import Card from '#lib/components/Card.svelte';
+    import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+    import Combobox, { type ComboboxOption } from '#lib/components/Combobox.svelte';
     import { LogsIcon, Link } from '@lucide/svelte';
-    import { entityTitle, eventTitle } from '$lib/audit/present';
-    import * as m from '$lib/paraglide/messages.js';
+    import { entityTitle, eventTitle } from '#lib/audit/present.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     import { goto } from '$app/navigation';
-    import { resolve } from '$app/paths';
     import { page } from '$app/state';
 
     let { data } = $props();
@@ -62,16 +61,13 @@
 
     function changePage(newPage: number) {
         if (newPage < 0 || newPage >= totalPages) return;
-        const newUrl = new URL(page.url);
+        const newUrl = new URL(page.url.href);
         newUrl.searchParams.set('page', newPage.toString());
-        goto(resolve((`/admin/audit-logs${newUrl.search}`) as '/admin/audit-logs'), {
-            keepFocus: true,
-            noScroll: false
-        });
+        goto(newUrl, { reset: false });
     }
 
     function applyFilters() {
-        const newUrl = new URL(page.url);
+        const newUrl = new URL(page.url.href);
         newUrl.searchParams.set('page', '0');
 
         if (filterType.trim() !== '') newUrl.searchParams.set('type', filterType.trim());
@@ -86,10 +82,7 @@
         if (filterSopId.trim() !== '') newUrl.searchParams.set('sop_id', filterSopId.trim());
         else newUrl.searchParams.delete('sop_id');
 
-        goto(resolve((`/admin/audit-logs${newUrl.search}`) as '/admin/audit-logs'), {
-            keepFocus: true,
-            noScroll: false
-        });
+        goto(newUrl, { reset: false });
     }
 
     function resetFilters() {

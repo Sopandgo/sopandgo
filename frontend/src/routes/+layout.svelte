@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
-	import AppSidebar from '$lib/components/AppSidebar.svelte';
-	import Navbar from '$lib/components/Navbar.svelte';
-	import Footer from '$lib/components/Footer.svelte';
-	import * as m from '$lib/paraglide/messages.js';
+	import favicon from '#lib/assets/favicon.svg';
+	import AppSidebar from '#lib/components/AppSidebar.svelte';
+	import Navbar from '#lib/components/Navbar.svelte';
+	import Footer from '#lib/components/Footer.svelte';
+	import * as m from '#lib/paraglide/messages.js';
 
 	let { data, children } = $props();
 

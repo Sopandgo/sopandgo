@@ -10,7 +10,7 @@
 </script>
 
 <script lang="ts">
-    import * as m from '$lib/paraglide/messages.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     /*
      * Searchable single-select following the WAI-ARIA combobox pattern

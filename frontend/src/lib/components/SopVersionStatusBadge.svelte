@@ -1,5 +1,5 @@
 <script lang="ts">
-    import * as m from '$lib/paraglide/messages.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     /*
      * Owns the status → look mapping (docs/design/style-guide.md → StatusBadge).

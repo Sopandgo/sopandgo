@@ -1,12 +1,12 @@
 <script lang="ts">
-    import type { User, AcknowledgmentWithUser } from '$lib/sdk/types';
+    import type { User, AcknowledgmentWithUser } from '#lib/sdk/types.js';
     import AcknowledgmentActionReader from './AcknowledgmentActionReader.svelte';
     import Alert from '../Alert.svelte';
     import Card from '../Card.svelte';
     import AcknowledgmentActionApprove from './AcknowledgmentActionApprove.svelte';
     import AcknowledgmentActionReject from './AcknowledgmentActionReject.svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import { getLocale } from '$lib/paraglide/runtime';
+    import * as m from '#lib/paraglide/messages.js';
+    import { getLocale } from '#lib/paraglide/runtime.js';
 
     /*
      * What the signed-in user can do with this version: sign it as a reader, see

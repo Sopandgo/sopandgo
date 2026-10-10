@@ -1,9 +1,9 @@
 <script lang="ts">
     import { marked } from 'marked';
-    import type { SOPAsset } from '$lib/sdk/types';
-    import { sanitizeSopHtml } from '$lib/security/sanitizeSopHtml';
-    import { assetUrl, findAsset } from '$lib/sopAssets';
-    import * as m from '$lib/paraglide/messages.js';
+    import type { SOPAsset } from '#lib/sdk/types.js';
+    import { sanitizeSopHtml } from '#lib/security/sanitizeSopHtml.js';
+    import { assetUrl, findAsset } from '#lib/sopAssets.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     interface Props {
         content?: string;

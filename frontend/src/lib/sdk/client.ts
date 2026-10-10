@@ -1,4 +1,4 @@
-import { BACKEND_URL } from '$env/static/private';
+import { BACKEND_URL } from '$app/env/private';
 import type { RequestEvent } from '@sveltejs/kit';
 
 export interface FetchOptions {
@@ -47,7 +47,9 @@ export function createClient(event: RequestEvent) {
                 method: options.method || 'GET',
                 headers,
                 // If it's JSON/Text, stringify it. If FormData, pass raw.
-                body: isFormData ? options.body : (options.body && typeof options.body === 'object' ? JSON.stringify(options.body) : options.body)
+                body: isFormData
+                    ? options.body
+                    : options.body && typeof options.body === 'object' ? JSON.stringify(options.body) : options.body
             });
             return res;
         } catch (err) {

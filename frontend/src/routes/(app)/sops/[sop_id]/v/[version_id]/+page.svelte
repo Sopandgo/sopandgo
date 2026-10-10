@@ -1,21 +1,21 @@
 <script lang="ts">
-    import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
-    import ListAssociatedAssets from '$lib/components/ListAssociatedAssets.svelte';
-    import ListAcknowledgmentLog from '$lib/components/ListAcknowledgmentLog.svelte';
-    import SopDetails from '$lib/components/SopDetails.svelte';
+    import MarkdownRenderer from '#lib/components/MarkdownRenderer.svelte';
+    import ListAssociatedAssets from '#lib/components/ListAssociatedAssets.svelte';
+    import ListAcknowledgmentLog from '#lib/components/ListAcknowledgmentLog.svelte';
+    import SopDetails from '#lib/components/SopDetails.svelte';
     import type { PageData, ActionData } from './$types';
-    import AcknowledgmentContainerSOPVersion from '$lib/components/Acknowledgment/AcknowledgmentContainerSOPVersion.svelte';
+    import AcknowledgmentContainerSOPVersion from '#lib/components/Acknowledgment/AcknowledgmentContainerSOPVersion.svelte';
     import { ArrowUpRightIcon, DownloadIcon, FileDiffIcon, FileTextIcon, NotebookTextIcon, PlusIcon } from '@lucide/svelte';
-    import FavoriteToggle from '$lib/components/FavoriteToggle.svelte';
-    import Card from '$lib/components/Card.svelte';
-    import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-    import SopVersionStatusBadge from '$lib/components/SopVersionStatusBadge.svelte';
+    import FavoriteToggle from '#lib/components/FavoriteToggle.svelte';
+    import Card from '#lib/components/Card.svelte';
+    import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+    import SopVersionStatusBadge from '#lib/components/SopVersionStatusBadge.svelte';
     import { enhance } from '$app/forms';
     import { page } from '$app/state';
-    import Alert from '$lib/components/Alert.svelte';
-    import VersionDiff from '$lib/components/VersionDiff.svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import { getLocale } from '$lib/paraglide/runtime';
+    import Alert from '#lib/components/Alert.svelte';
+    import VersionDiff from '#lib/components/VersionDiff.svelte';
+    import * as m from '#lib/paraglide/messages.js';
+    import { getLocale } from '#lib/paraglide/runtime.js';
     let pdfError = $state<string | null>(null);
 
     // Receive data and form (ActionData) from the server
@@ -218,7 +218,7 @@
             role="tab"
             aria-selected={view === 'document'}
             aria-controls="{uid}-panel"
-            data-sveltekit-noscroll
+            data-sveltekit-reset="false"
             data-sveltekit-replacestate
         >
             <FileTextIcon class="size-4" aria-hidden="true" />
@@ -233,7 +233,7 @@
                 role="tab"
                 aria-selected={view === 'changes'}
                 aria-controls="{uid}-panel"
-                data-sveltekit-noscroll
+                data-sveltekit-reset="false"
                 data-sveltekit-replacestate
             >
                 <FileDiffIcon class="size-4" aria-hidden="true" />

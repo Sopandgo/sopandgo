@@ -1,10 +1,10 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
     import type { Snippet } from 'svelte';
-    import Alert from '$lib/components/Alert.svelte';
-    import CollapsibleCard from '$lib/components/CollapsibleCard.svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import type { IntegrationEvent, PublicIntegrationChannel } from '$lib/sdk/types';
+    import Alert from '#lib/components/Alert.svelte';
+    import CollapsibleCard from '#lib/components/CollapsibleCard.svelte';
+    import * as m from '#lib/paraglide/messages.js';
+    import type { IntegrationEvent, PublicIntegrationChannel } from '#lib/sdk/types.js';
 
     /*
      * One outbound channel on Settings → Integrations, collapsed to a header row

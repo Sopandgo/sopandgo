@@ -1,8 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import Alert from '$lib/components/Alert.svelte';
-  import * as m from '$lib/paraglide/messages.js';
-  import { getLocale } from '$lib/paraglide/runtime';
+  import Alert from '#lib/components/Alert.svelte';
+  import * as m from '#lib/paraglide/messages.js';
+  import { getLocale } from '#lib/paraglide/runtime.js';
   import Card from './Card.svelte';
 
   /** Flexible session row from the admin sessions API */
@@ -111,7 +111,7 @@
               revokingUserId = uid || 'unknown';
 
               return async ({ update }) => {
-                await update({ invalidateAll: true });
+                await update({ refreshAll: true });
                 revokingUserId = null;
               };
             }}

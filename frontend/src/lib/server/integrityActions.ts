@@ -1,5 +1,5 @@
 import { fail, type RequestEvent } from '@sveltejs/kit';
-import { resolveIntegrityStatus } from '$lib/integrity';
+import { resolveIntegrityStatus } from '#lib/integrity.js';
 
 /*
  * Form actions shared by every page under /sops/[sop_id] that lists assets or

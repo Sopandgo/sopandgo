@@ -1,11 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
+import * as m from '#lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
-import type { SOPAsset } from '$lib/sdk/types';
+import type { SOPAsset } from '#lib/sdk/types.js';
 import {
 	messageForAssetUploadFailure,
 	messageForPublishFailure
-} from '$lib/utils/actionErrorMessages';
+} from '#lib/utils/actionErrorMessages.js';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
     const { sop } = await parent();

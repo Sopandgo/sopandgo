@@ -1,12 +1,12 @@
 <script lang="ts">
     import type { PageData, ActionData } from './$types';
-    import SopVersionEditor from '$lib/components/editor/SopVersionEditor.svelte';
-    import SopEditorAssetSidebar from '$lib/components/editor/SopEditorAssetSidebar.svelte';
+    import SopVersionEditor from '#lib/components/editor/SopVersionEditor.svelte';
+    import SopEditorAssetSidebar from '#lib/components/editor/SopEditorAssetSidebar.svelte';
     import { NotebookPenIcon } from '@lucide/svelte';
-    import IdBadge from '$lib/components/IdBadge.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-  import * as m from '$lib/paraglide/messages.js';
+    import IdBadge from '#lib/components/IdBadge.svelte';
+  import Card from '#lib/components/Card.svelte';
+  import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+  import * as m from '#lib/paraglide/messages.js';
 
     let { data, form } = $props<{ data: PageData, form: ActionData }>();
 

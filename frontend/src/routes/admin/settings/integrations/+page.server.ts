@@ -1,7 +1,7 @@
 import { fail } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
+import * as m from '#lib/paraglide/messages.js';
 import type { Actions, PageServerLoad } from './$types';
-import type { IntegrationEvent } from '$lib/sdk/types';
+import type { IntegrationEvent } from '#lib/sdk/types.js';
 
 const ALL_EVENTS: IntegrationEvent[] = [
     'sop_published',

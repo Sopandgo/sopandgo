@@ -1,6 +1,6 @@
 <script lang="ts">
-    import Alert from '$lib/components/Alert.svelte';
-    import Card from '$lib/components/Card.svelte';
+    import Alert from '#lib/components/Alert.svelte';
+    import Card from '#lib/components/Card.svelte';
     import { enhance } from '$app/forms';
     import {
         PaperclipIcon,
@@ -10,9 +10,9 @@
         LoaderCircleIcon,
         FileUpIcon
     } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import { getLocale } from '$lib/paraglide/runtime';
-    import type { SOPAsset } from '$lib/sdk/types';
+    import * as m from '#lib/paraglide/messages.js';
+    import { getLocale } from '#lib/paraglide/runtime.js';
+    import type { SOPAsset } from '#lib/sdk/types.js';
     import type { ActionData } from '../../../routes/(app)/sops/[sop_id]/new/$types';
 
     let { assets = [], form, content = $bindable('') } = $props<{ 
@@ -55,7 +55,7 @@
         importing = true;
         importError = null;
         try {
-            const { importDocxToMarkdown } = await import('$lib/utils/importDocxToMarkdown');
+            const { importDocxToMarkdown } = await import('#lib/utils/importDocxToMarkdown.js');
             const { markdown } = await importDocxToMarkdown(file);
             content = markdown;
         } catch (e) {

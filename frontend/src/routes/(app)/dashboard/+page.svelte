@@ -1,23 +1,23 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import Alert from '$lib/components/Alert.svelte';
-	import Card from '$lib/components/Card.svelte';
-	import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-	import EmptyState from '$lib/components/EmptyState.svelte';
-	import ListHeading from '$lib/components/ListHeading.svelte';
-	import ListRow from '$lib/components/ListRow.svelte';
-	import FavoriteToggle from '$lib/components/FavoriteToggle.svelte';
-	import TagList from '$lib/components/TagList.svelte';
-	import { partitionSignatureStatus, pendingSignatureCount } from '$lib/signatureBuckets';
+	import Alert from '#lib/components/Alert.svelte';
+	import Card from '#lib/components/Card.svelte';
+	import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+	import EmptyState from '#lib/components/EmptyState.svelte';
+	import ListHeading from '#lib/components/ListHeading.svelte';
+	import ListRow from '#lib/components/ListRow.svelte';
+	import FavoriteToggle from '#lib/components/FavoriteToggle.svelte';
+	import TagList from '#lib/components/TagList.svelte';
+	import { partitionSignatureStatus, pendingSignatureCount } from '#lib/signatureBuckets.js';
 	import {
 		greetingPeriodForDate,
 		timeZoneCookieAssignment,
 		type GreetingPeriod
-	} from '$lib/greeting';
-	import SopTrainingCoverage from '$lib/components/SopTrainingCoverage.svelte';
+	} from '#lib/greeting.js';
+	import SopTrainingCoverage from '#lib/components/SopTrainingCoverage.svelte';
 	import { CircleCheckIcon, FileTextIcon, MegaphoneIcon, NotebookIcon, StarIcon } from '@lucide/svelte';
-	import * as m from '$lib/paraglide/messages.js';
-	import { getLocale } from '$lib/paraglide/runtime';
+	import * as m from '#lib/paraglide/messages.js';
+	import { getLocale } from '#lib/paraglide/runtime.js';
 
 	let { data } = $props();
 

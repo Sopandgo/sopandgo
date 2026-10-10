@@ -1,3 +1,4 @@
+import adapter from '@sveltejs/adapter-node';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -39,7 +40,12 @@ export default defineConfig({
 			outputStructure: 'message-modules'
 		}),
 		tailwindcss(),
-		sveltekit()
+		// Public origin for CSRF is unset: adapter-node derives it from HOST_HEADER /
+		// PROTOCOL_HEADER at runtime (compose still sets ORIGIN for the Go API).
+		sveltekit({
+			// adapter-node will create a 'build' folder when you run 'npm run build'
+			adapter: adapter()
+		})
 	],
 	define: { __APP_VERSION__: JSON.stringify(appVersion) }
 });

@@ -1,6 +1,6 @@
 <script lang="ts">
-    import LoginForm from '$lib/components/auth/LoginForm.svelte';
-    import * as m from '$lib/paraglide/messages.js';
+    import LoginForm from '#lib/components/auth/LoginForm.svelte';
+    import * as m from '#lib/paraglide/messages.js';
 
     let { form } = $props();
 </script>

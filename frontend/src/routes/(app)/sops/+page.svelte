@@ -1,10 +1,10 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import Card from '$lib/components/Card.svelte';
-  import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-  import Combobox from '$lib/components/Combobox.svelte';
-  import ListSops from '$lib/components/ListSops.svelte';
-  import EmptyState from '$lib/components/EmptyState.svelte';
+  import Card from '#lib/components/Card.svelte';
+  import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+  import Combobox from '#lib/components/Combobox.svelte';
+  import ListSops from '#lib/components/ListSops.svelte';
+  import EmptyState from '#lib/components/EmptyState.svelte';
   import {
     NotebookIcon,
     NotebookPenIcon,
@@ -14,7 +14,7 @@
     StarIcon,
     XIcon
   } from '@lucide/svelte';
-  import * as m from '$lib/paraglide/messages.js';
+  import * as m from '#lib/paraglide/messages.js';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -44,7 +44,7 @@
 
     if (resetOffset) url.searchParams.set('offset', '0');
     // Filters change the list, not the page: keep focus and scroll where the user is
-    goto(url.toString(), { keepFocus: true, noScroll: true });
+    goto(url.toString(), { reset: false });
   }
 
   let searchTimer: ReturnType<typeof setTimeout> | undefined;

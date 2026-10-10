@@ -1,14 +1,14 @@
 <script lang="ts">
-    import Alert from '$lib/components/Alert.svelte';
+    import Alert from '#lib/components/Alert.svelte';
     import { enhance } from '$app/forms';
-    import Avatar from '$lib/components/Avatar.svelte';
+    import Avatar from '#lib/components/Avatar.svelte';
     import ToggleUserStatus from './ToggleUserStatus.svelte';
     import SelectUserRole from './SelectUserRole.svelte';
-    import type { User } from '$lib/sdk/types';
+    import type { User } from '#lib/sdk/types.js';
     import Card from './Card.svelte';
     import { MailIcon, CheckIcon } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import { getLocale } from '$lib/paraglide/runtime';
+    import * as m from '#lib/paraglide/messages.js';
+    import { getLocale } from '#lib/paraglide/runtime.js';
 
     interface Props {
         items?: User[] | null;

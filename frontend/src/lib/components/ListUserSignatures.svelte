@@ -1,11 +1,11 @@
 <script lang="ts">
   import { FileTextIcon } from '@lucide/svelte';
-  import type { UserSignatureStatus } from '$lib/sdk/types';
-  import { partitionSignatureStatus } from '$lib/signatureBuckets';
+  import type { UserSignatureStatus } from '#lib/sdk/types.js';
+  import { partitionSignatureStatus } from '#lib/signatureBuckets.js';
   import Card from './Card.svelte';
   import ListHeading from './ListHeading.svelte';
   import ListRow from './ListRow.svelte';
-  import * as m from '$lib/paraglide/messages.js';
+  import * as m from '#lib/paraglide/messages.js';
 
   interface Props {
     status?: UserSignatureStatus[];

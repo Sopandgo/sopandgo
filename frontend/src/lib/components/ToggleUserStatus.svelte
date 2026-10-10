@@ -1,7 +1,7 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
-    import * as m from '$lib/paraglide/messages.js';
-    import type { User } from '$lib/sdk/types';
+    import * as m from '#lib/paraglide/messages.js';
+    import type { User } from '#lib/sdk/types.js';
 
     let { user, currentUserId } = $props<{
         user: User;

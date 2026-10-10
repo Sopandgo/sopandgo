@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { FileTextIcon, UsersIcon } from '@lucide/svelte';
-	import type { SOPTrainingCoverage, TrainingMember } from '$lib/sdk/types';
+	import type { SOPTrainingCoverage, TrainingMember } from '#lib/sdk/types.js';
 	import EmptyState from './EmptyState.svelte';
 	import ListRow from './ListRow.svelte';
-	import * as m from '$lib/paraglide/messages.js';
+	import * as m from '#lib/paraglide/messages.js';
 
 	let { items = [] } = $props<{ items?: SOPTrainingCoverage[] }>();
 

@@ -2,10 +2,10 @@
     import { ExternalLinkIcon, PaperclipIcon } from '@lucide/svelte';
     import IntegrityCheck from './IntegrityCheck.svelte';
     import ListRow from './ListRow.svelte';
-    import type { SOPAsset } from '$lib/sdk/types';
+    import type { SOPAsset } from '#lib/sdk/types.js';
   import Card from './Card.svelte';
-  import * as m from '$lib/paraglide/messages.js';
-  import { getLocale } from '$lib/paraglide/runtime';
+  import * as m from '#lib/paraglide/messages.js';
+  import { getLocale } from '#lib/paraglide/runtime.js';
 
     // Define props with Svelte 5 runes
     let { items = [] }: { items?: SOPAsset[] | null } = $props();

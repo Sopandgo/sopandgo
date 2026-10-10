@@ -1,10 +1,10 @@
 <script lang="ts">
-    import Card from '$lib/components/Card.svelte';
-    import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-    import ListUsers from '$lib/components/ListUsers.svelte';
-    import RegisterUser from '$lib/components/RegisterUser.svelte';
+    import Card from '#lib/components/Card.svelte';
+    import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+    import ListUsers from '#lib/components/ListUsers.svelte';
+    import RegisterUser from '#lib/components/RegisterUser.svelte';
     import { UsersIcon } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
+    import * as m from '#lib/paraglide/messages.js';
     
     let { data, form } = $props();
 </script>

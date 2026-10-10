@@ -1,7 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
-import { favorite, unfavorite } from '$lib/server/favoriteActions';
-import { verifyAsset } from '$lib/server/integrityActions';
+import * as m from '#lib/paraglide/messages.js';
+import { favorite, unfavorite } from '#lib/server/favoriteActions.js';
+import { verifyAsset } from '#lib/server/integrityActions.js';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {

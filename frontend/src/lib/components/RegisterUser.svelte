@@ -1,10 +1,10 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { tick } from 'svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import LocaleSelect from '$lib/components/LocaleSelect.svelte';
-  import * as m from '$lib/paraglide/messages.js';
-  import type { UserRole } from '$lib/sdk/types';
+  import Alert from '#lib/components/Alert.svelte';
+  import LocaleSelect from '#lib/components/LocaleSelect.svelte';
+  import * as m from '#lib/paraglide/messages.js';
+  import type { UserRole } from '#lib/sdk/types.js';
 
   // Define the shape of the action result locally
   interface FormResult {

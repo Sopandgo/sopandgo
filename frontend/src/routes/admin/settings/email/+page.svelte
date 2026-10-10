@@ -1,13 +1,12 @@
 <script lang="ts">
-    import { enhance } from '$app/forms';
-    import type { SubmitFunction } from '@sveltejs/kit';
-    import Alert from '$lib/components/Alert.svelte';
-    import Card from '$lib/components/Card.svelte';
-    import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-    import CollapsibleCard from '$lib/components/CollapsibleCard.svelte';
+    import { enhance, type SubmitFunction } from '$app/forms';
+    import Alert from '#lib/components/Alert.svelte';
+    import Card from '#lib/components/Card.svelte';
+    import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+    import CollapsibleCard from '#lib/components/CollapsibleCard.svelte';
     import { MailIcon } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import type { PublicSmtpSettings } from '$lib/sdk/types';
+    import * as m from '#lib/paraglide/messages.js';
+    import type { PublicSmtpSettings } from '#lib/sdk/types.js';
 
     type Transport = 'smtp' | 'resend';
 
@@ -29,7 +28,9 @@
     const resendMeta = $derived(smtp?.resend_configured ? smtp.resend_from_address : undefined);
 
     function configured(kind: Transport): boolean {
-        return kind === 'smtp' ? (smtp?.configured ?? false) : (smtp?.resend_configured ?? false);
+        return kind === 'smtp'
+            ? smtp?.configured ?? false
+            : smtp?.resend_configured ?? false;
     }
 
     // A transport's toggle is on when email is on and it is the chosen, saved transport.

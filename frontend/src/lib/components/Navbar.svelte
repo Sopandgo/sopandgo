@@ -2,15 +2,15 @@
     import { enhance } from '$app/forms';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { breadcrumbsFor } from '$lib/breadcrumbs';
-    import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
+    import { breadcrumbsFor } from '#lib/breadcrumbs.js';
+    import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
     import { CircleUserIcon, LogOutIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, SettingsIcon } from '@lucide/svelte';
-    import AccountThemeSwitch from '$lib/components/AccountThemeSwitch.svelte';
-    import Avatar from '$lib/components/Avatar.svelte';
-    import GuestLocaleMenu from '$lib/components/GuestLocaleMenu.svelte';
-    import GuestThemeToggle from '$lib/components/GuestThemeToggle.svelte';
-    import * as m from '$lib/paraglide/messages.js';
-    import type { UserRole } from '$lib/sdk/types';
+    import AccountThemeSwitch from '#lib/components/AccountThemeSwitch.svelte';
+    import Avatar from '#lib/components/Avatar.svelte';
+    import GuestLocaleMenu from '#lib/components/GuestLocaleMenu.svelte';
+    import GuestThemeToggle from '#lib/components/GuestThemeToggle.svelte';
+    import * as m from '#lib/paraglide/messages.js';
+    import type { UserRole } from '#lib/sdk/types.js';
 
     let { user, rail = false } = $props();
 
@@ -75,14 +75,17 @@
                         class="menu menu-sm dropdown-content z-10 mt-3 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-overlay"
                     >
                         <li>
-                            <a href={resolve('/profile')} class="w-full text-left flex gap-4 items-center">
-                                <CircleUserIcon size={16}/>
-                                {user.display_name}
-                            </a>
+                            <a
+                                href={resolve('profile')}
+                                class="w-full text-left flex gap-4 items-center"
+                            ><CircleUserIcon size={16} />{user.display_name}</a>
                         </li>
                         <li>
-                            <a href={resolve('/profile/settings')} class="w-full text-left flex gap-4 items-center">
-                                <SettingsIcon size={16}/>
+                            <a
+                                href={resolve('profile/settings')}
+                                class="w-full text-left flex gap-4 items-center"
+                            >
+                                <SettingsIcon size={16} />
                                 {m.nav_account_settings()}
                             </a>
                         </li>
@@ -93,7 +96,7 @@
                             <AccountThemeSwitch theme={user.theme} />
                         </li>
 
-                        <div class="divider my-0"></div> 
+                        <div class="divider my-0"></div>
 
                         <li>
                             <form action="/logout" method="POST" use:enhance class="w-full">
@@ -111,9 +114,7 @@
             {:else}
                 <GuestThemeToggle />
                 <GuestLocaleMenu />
-                <a href={resolve('/login')} class="btn shrink-0">
-                    {m.nav_login()}
-                </a>
+                <a href={resolve('login')} class="btn shrink-0">{m.nav_login()}</a>
             {/if}
         </div>
     </div>
@@ -126,6 +127,10 @@
             SOP and GO
         </span>
     </a>
+{/snippet}
+
+{#snippet roleChip(role: UserRole)}
+    <span class="badge badge-outline badge-sm shrink-0">{roleLabels[role]()}</span>
 {/snippet}
 
 <style>
@@ -157,7 +162,3 @@
         margin-inline-start: auto;
     }
 </style>
-
-{#snippet roleChip(role: UserRole)}
-    <span class="badge badge-outline badge-sm shrink-0">{roleLabels[role]()}</span>
-{/snippet}

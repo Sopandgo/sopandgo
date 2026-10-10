@@ -1,10 +1,10 @@
 <script lang="ts">
-    import Card from '$lib/components/Card.svelte';
-    import CardPageHeading from '$lib/components/CardPageHeading.svelte';
-    import ListSessions from '$lib/components/ListSessions.svelte';
-    import PanicRevokeAll from '$lib/components/PanicRevokeAll.svelte';
+    import Card from '#lib/components/Card.svelte';
+    import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+    import ListSessions from '#lib/components/ListSessions.svelte';
+    import PanicRevokeAll from '#lib/components/PanicRevokeAll.svelte';
     import { UsersIcon } from '@lucide/svelte';
-    import * as m from '$lib/paraglide/messages.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     let { data, form } = $props();
 

@@ -1,5 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import type { CookieSerializeOptions } from 'cookie';
+import type { SerializeOptions } from 'cookie';
 import type { Client } from './client';
 import type { User, UserSignatureStatus } from './types';
 
@@ -12,7 +12,7 @@ export const auth = (client: Client, event: RequestEvent) => {
 
     // 1. Helper to ensure consistent cookie options
     // This is crucial: 'delete' must use the exact same options as 'set'
-    const getCookieOptions = (): CookieSerializeOptions & { path: string } => {
+    const getCookieOptions = (): SerializeOptions & { path: string } => {
         const isSecure = event.url.protocol === 'https:';
         return {
             path: '/',

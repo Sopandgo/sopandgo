@@ -1,8 +1,8 @@
 <script lang="ts">
-    import Alert from '$lib/components/Alert.svelte';
-    import Card from '$lib/components/Card.svelte';
+    import Alert from '#lib/components/Alert.svelte';
+    import Card from '#lib/components/Card.svelte';
     import { enhance } from '$app/forms';
-    import * as m from '$lib/paraglide/messages.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     let { form } = $props();
     let loading = $state(false);

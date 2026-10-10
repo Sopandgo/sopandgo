@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
+import * as m from '#lib/paraglide/messages.js';
 import type { Actions } from './$types';
 
 // The check runs on demand only: each run writes an audit event and may notify integrations.

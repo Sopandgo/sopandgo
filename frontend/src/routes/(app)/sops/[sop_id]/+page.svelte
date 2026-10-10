@@ -1,16 +1,16 @@
 <script lang="ts">
-  import IdBadge from '$lib/components/IdBadge.svelte';
-  import ListSopVersions from '$lib/components/ListSopVersions.svelte';
-  import SopVersionStatusBadge from '$lib/components/SopVersionStatusBadge.svelte';
-  import FavoriteToggle from '$lib/components/FavoriteToggle.svelte';
+  import IdBadge from '#lib/components/IdBadge.svelte';
+  import ListSopVersions from '#lib/components/ListSopVersions.svelte';
+  import SopVersionStatusBadge from '#lib/components/SopVersionStatusBadge.svelte';
+  import FavoriteToggle from '#lib/components/FavoriteToggle.svelte';
   import { BookOpenIcon, NotebookIcon, PlusIcon, XIcon } from '@lucide/svelte';
-  import ListAssociatedAssets from '$lib/components/ListAssociatedAssets.svelte';
-  import Alert from '$lib/components/Alert.svelte';
-  import Card from '$lib/components/Card.svelte';
-  import CardPageHeading from '$lib/components/CardPageHeading.svelte';
+  import ListAssociatedAssets from '#lib/components/ListAssociatedAssets.svelte';
+  import Alert from '#lib/components/Alert.svelte';
+  import Card from '#lib/components/Card.svelte';
+  import CardPageHeading from '#lib/components/CardPageHeading.svelte';
   import { enhance } from '$app/forms';
-  import * as m from '$lib/paraglide/messages.js';
-  import { getLocale } from '$lib/paraglide/runtime';
+  import * as m from '#lib/paraglide/messages.js';
+  import { getLocale } from '#lib/paraglide/runtime.js';
 
   let { data, form } = $props();
 

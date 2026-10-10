@@ -1,7 +1,7 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
-    import * as m from '$lib/paraglide/messages.js';
-    import type { User, UserRole } from '$lib/sdk/types';
+    import * as m from '#lib/paraglide/messages.js';
+    import type { User, UserRole } from '#lib/sdk/types.js';
 
     // Define the interface locally to avoid $types dependency
     interface FormResult {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SdkHttpError } from '$lib/sdk/httpError';
+import { SdkHttpError } from '#lib/sdk/httpError.js';
 import { resolveIntegrityStatus } from './integrity';
 
 describe('resolveIntegrityStatus', () => {

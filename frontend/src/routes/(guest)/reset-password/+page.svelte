@@ -1,6 +1,6 @@
 <script lang="ts">
-    import ResetPasswordForm from '$lib/components/ResetPasswordForm.svelte';
-    import * as m from '$lib/paraglide/messages.js';
+    import ResetPasswordForm from '#lib/components/ResetPasswordForm.svelte';
+    import * as m from '#lib/paraglide/messages.js';
 
     let { data, form } = $props();
 </script>

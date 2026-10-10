@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import * as m from '$lib/paraglide/messages.js';
+import * as m from '#lib/paraglide/messages.js';
 import type { Actions } from './$types';
 
 export const actions: Actions = {

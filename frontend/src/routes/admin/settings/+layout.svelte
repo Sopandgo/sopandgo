@@ -1,7 +1,7 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import * as m from '$lib/paraglide/messages.js';
+    import * as m from '#lib/paraglide/messages.js';
 
     let { children } = $props();
 
@@ -21,7 +21,7 @@
 
 <div class="tabs tabs-lift w-full">
     <a
-        href={resolve('/admin/settings')}
+        href={resolve('admin/settings')}
         class="tab"
         class:tab-active={general}
         role="tab"
@@ -30,7 +30,7 @@
         {m.settings_general()}
     </a>
     <a
-        href={resolve('/admin/settings/email')}
+        href={resolve('admin/settings/email')}
         class="tab"
         class:tab-active={email}
         role="tab"
@@ -39,7 +39,7 @@
         {m.settings_email()}
     </a>
     <a
-        href={resolve('/admin/settings/integrations')}
+        href={resolve('admin/settings/integrations')}
         class="tab"
         class:tab-active={integrations}
         role="tab"
@@ -48,7 +48,7 @@
         {m.settings_integrations()}
     </a>
     <a
-        href={resolve('/admin/settings/backup')}
+        href={resolve('admin/settings/backup')}
         class="tab"
         class:tab-active={backup}
         role="tab"
