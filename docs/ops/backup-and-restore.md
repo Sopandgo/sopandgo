@@ -21,6 +21,7 @@ The data directory contains:
 
 - the SQLite database (`app.db`) — metadata, audit events, acknowledgments, encrypted SMTP and integration settings
 - SOP content — Markdown version files and assets under `sops/`
+- Profile pictures — processed JPEGs under `users/<userID>/` (`avatar-96.jpg`, `avatar-256.jpg`, `avatar-512.jpg`, `avatar-1024.jpg`)
 
 The SMTP password and integration secrets are stored encrypted; recovery still requires the same
 `SECRET_ENCRYPTION_KEY` (or re-entered secrets after key rotation) when
@@ -40,6 +41,7 @@ Sign in as **admin** and open **Settings → Backup**: `/admin/settings/backup`.
 - Downloads a `.zip` containing:
   - `app.db` — consistent SQLite snapshot (via `VACUUM INTO` while a short maintenance lock is held)
   - `sops/` — SOP files on disk (if present)
+  - `users/` — profile pictures on disk (if present)
   - `manifest.json` — format version, optional `APP_VERSION`, schema version, timestamp
 
 Export is also available via the API: `GET /api/admin/backups/export` (admin auth required).

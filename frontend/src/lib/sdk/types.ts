@@ -14,6 +14,10 @@ export interface User {
     locale: string;
     /** light, dark, or system */
     theme: ThemePreference;
+    /** True when the user has uploaded a profile picture */
+    has_avatar: boolean;
+    /** Content hash of the current picture; use as a cache-busting `v` value */
+    avatar_content_hash?: string;
     /** ISO 8601 Timestamp */
     created_at: string;
 }

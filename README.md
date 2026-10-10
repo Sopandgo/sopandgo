@@ -70,6 +70,7 @@ The system implements a **Stateless/Stateful Hybrid** security model:
 - **Unknowable Passwords:** Admins cannot set passwords. Users set their own credentials via email invites.
 - **Authentication:** PASETO (Stateless) for fast API access + Refresh Tokens (Stateful) for session management.
 - **Revocation:** Deactivating a user or changing their role applies on the next request. Revoking a refresh session stops new tokens immediately; an access token already issued lasts at most 5 minutes.
+- **Profile pictures:** Users upload their own picture; the server stores small re-encoded JPEGs. Any signed-in user can view them the same way they see display names.
 - **RBAC:** Role-Based Access Control limits actions (e.g., only "Editors" can create drafts).
 - **Self-Contained:** No external identity providers required.
 

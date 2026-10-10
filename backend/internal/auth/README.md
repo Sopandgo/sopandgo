@@ -6,7 +6,7 @@ It follows a **struct-based service pattern** so all business logic goes through
 ## Core Principles
 
 1. **The Service Struct (`auth.Service`):**
-   * **Single entry point** for business logic; holds `*sql.DB` and `*audit.Logger`.
+   * **Single entry point** for business logic; holds `*sql.DB`, `*audit.Logger`, and `dataDir` for profile pictures.
    * **Concurrency:** Internal `sync.RWMutex` for critical writes.
    * **Transactions:** Owns `Begin` / `Rollback` / `Commit`.
    * **Audit:** Writes compliance logs in the same transaction as the data change.
@@ -25,22 +25,24 @@ Login (password verify + session create) is orchestrated in the **API** layer (`
 
 | File | Purpose | Key methods |
 | --- | --- | --- |
-| **`service.go`** | Constructor | `NewService` |
+| **`service.go`** | Constructor | `NewService(db, logger, dataDir)` |
 | **`user_service.go`** | Users and password reset | `RegisterUser`, `UpdateUserRole`, `SetUserActiveStatus`, `UpdateUserPassword`, `ChangeOwnPassword`, `GeneratePasswordResetToken`, `ResetPassword` |
+| **`avatar_service.go`** | Profile pictures on disk | `SetAvatar`, `RemoveAvatar`, `AvatarAbsolutePath` |
+| **`avatar_image.go`** | Decode / crop / resize / JPEG | `processAvatarSizes` (96/256/512/1024) |
 | **`session_service.go`** | Refresh sessions | `CreateSession`, `ValidateSession`, `RevokeSession`, `RevokeOtherUserSessions`, `RevokeAllUserSessions`, `RevokeAllSessions`, `StartSessionsCleanupTask` |
 | **`store.go`** | Unexported SQL | `createUserRecord`, `getSessionRecord`, … |
 | **`password.go`** | Hashing / rules | `HashPassword`, `ValidatePassword` |
 | **`token.go`** | PASETO access tokens | `GenerateAccessToken` |
 | **`rbac.go`** | Role → scopes | `HasScope` |
 | **`bootstrap.go`** | Default admin | `EnsureAdminUser` |
-| **`model.go`** | Types and constants | `User`, `Session`, `ScopeAdminTools` (`admin:integrity`) |
+| **`model.go`** | Types and constants | `User` (includes `has_avatar`, `avatar_content_hash`), `Session`, `ScopeAdminTools` (`admin:integrity`) |
 
 ## Usage Examples
 
 ### Initialization
 
 ```go
-authService := auth.NewService(db, auditLogger)
+authService := auth.NewService(db, auditLogger, dataDir)
 ```
 
 ### Registering a user (invite-only)

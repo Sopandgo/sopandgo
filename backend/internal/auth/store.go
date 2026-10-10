@@ -3,6 +3,7 @@ package auth
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
@@ -18,18 +19,30 @@ func createUserRecord(db audit.DBTX, id, displayName, email, passwordHash, role,
 	return err
 }
 
+func applyAvatarFields(u *User, avatarPath, avatarHash sql.NullString) {
+	if avatarPath.Valid && strings.TrimSpace(avatarPath.String) != "" {
+		u.HasAvatar = true
+		if avatarHash.Valid {
+			u.AvatarContentHash = avatarHash.String
+		}
+	}
+}
+
 func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {
 	const query = `
-		SELECT id, display_name, email, role_id, is_active, must_change_password, locale, theme, created_at 
+		SELECT id, display_name, email, role_id, is_active, must_change_password, locale, theme,
+			avatar_path, avatar_content_hash, created_at
 		FROM users WHERE id = ?`
 
 	var u User
 	var createdAt string
 	var isActive int
 	var mustChange int
+	var avatarPath, avatarHash sql.NullString
 
 	err := db.QueryRow(query, id).Scan(
-		&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &u.Theme, &createdAt,
+		&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &u.Theme,
+		&avatarPath, &avatarHash, &createdAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("user not found: %s", id)
@@ -40,25 +53,34 @@ func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {
 
 	u.IsActive = isActive == 1
 	u.MustChangePassword = mustChange == 1
+	applyAvatarFields(&u, avatarPath, avatarHash)
 	u.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
 	return &u, nil
 }
 
 func getUserByEmailRecord(db audit.DBTX, email string) (*User, string, error) {
-	const query = `SELECT id, display_name, email, role_id, is_active, must_change_password, locale, theme, password_hash FROM users WHERE email = ?`
+	const query = `
+		SELECT id, display_name, email, role_id, is_active, must_change_password, locale, theme,
+			avatar_path, avatar_content_hash, password_hash
+		FROM users WHERE email = ?`
 
 	var u User
 	var hash string
 	var isActive int
 	var mustChange int
+	var avatarPath, avatarHash sql.NullString
 
-	err := db.QueryRow(query, email).Scan(&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &u.Theme, &hash)
+	err := db.QueryRow(query, email).Scan(
+		&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &u.Theme,
+		&avatarPath, &avatarHash, &hash,
+	)
 	if err != nil {
 		return nil, "", err
 	}
 
 	u.IsActive = isActive == 1
 	u.MustChangePassword = mustChange == 1
+	applyAvatarFields(&u, avatarPath, avatarHash)
 	return &u, hash, nil
 }
 
@@ -121,7 +143,8 @@ func updateUserThemeRecord(db audit.DBTX, userID, theme string) error {
 
 func listUsersRecord(db audit.DBTX) ([]User, error) {
 	const query = `
-		SELECT id, display_name, email, role_id, is_active, must_change_password, locale, theme, created_at 
+		SELECT id, display_name, email, role_id, is_active, must_change_password, locale, theme,
+			avatar_path, avatar_content_hash, created_at
 		FROM users ORDER BY created_at DESC, rowid DESC`
 
 	rows, err := db.Query(query)
@@ -136,15 +159,51 @@ func listUsersRecord(db audit.DBTX) ([]User, error) {
 		var createdAt string
 		var isActive int
 		var mustChange int
-		if err := rows.Scan(&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &u.Theme, &createdAt); err != nil {
+		var avatarPath, avatarHash sql.NullString
+		if err := rows.Scan(
+			&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &u.Theme,
+			&avatarPath, &avatarHash, &createdAt,
+		); err != nil {
 			return nil, err
 		}
 		u.IsActive = isActive == 1
 		u.MustChangePassword = mustChange == 1
+		applyAvatarFields(&u, avatarPath, avatarHash)
 		u.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
 		users = append(users, u)
 	}
 	return users, nil
+}
+
+func getUserAvatarMetaRecord(db audit.DBTX, userID string) (path, hash string, err error) {
+	var pathNS, hashNS sql.NullString
+	err = db.QueryRow(`
+		SELECT avatar_path, avatar_content_hash FROM users WHERE id = ?
+	`, userID).Scan(&pathNS, &hashNS)
+	if err != nil {
+		return "", "", err
+	}
+	if pathNS.Valid {
+		path = pathNS.String
+	}
+	if hashNS.Valid {
+		hash = hashNS.String
+	}
+	return path, hash, nil
+}
+
+func setUserAvatarRecord(db audit.DBTX, userID, path, hash string) error {
+	_, err := db.Exec(`
+		UPDATE users SET avatar_path = ?, avatar_content_hash = ? WHERE id = ?
+	`, path, hash, userID)
+	return err
+}
+
+func clearUserAvatarRecord(db audit.DBTX, userID string) error {
+	_, err := db.Exec(`
+		UPDATE users SET avatar_path = NULL, avatar_content_hash = NULL WHERE id = ?
+	`, userID)
+	return err
 }
 
 // --- Session ---

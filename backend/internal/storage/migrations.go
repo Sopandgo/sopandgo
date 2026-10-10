@@ -519,6 +519,21 @@ var migrations = []migration{
 			return err
 		},
 	},
+	// v26: profile picture directory path and content hash (processed 1024px JPEG)
+	{
+		version: 26,
+		up: func(tx *sql.Tx) error {
+			if _, err := tx.Exec(`
+				ALTER TABLE users ADD COLUMN avatar_path TEXT;
+			`); err != nil {
+				return err
+			}
+			_, err := tx.Exec(`
+				ALTER TABLE users ADD COLUMN avatar_content_hash TEXT;
+			`)
+			return err
+		},
+	},
 }
 
 func LatestSchemaVersion() int {

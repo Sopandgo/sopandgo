@@ -105,7 +105,7 @@ func seed(dataDir, sopsRoot string) error {
 	}
 
 	sopService := sop.NewService(store.DB, auditLogger, dataDir, "1", false, nil)
-	authService := auth.NewService(store.DB, auditLogger)
+	authService := auth.NewService(store.DB, auditLogger, dataDir)
 
 	userIDs, err := ensureDemoUsers(authService)
 	if err != nil {

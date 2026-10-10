@@ -354,6 +354,13 @@ func (s *Service) buildZip(zipPath, dbSnapPath string, manifest Manifest) error 
 		}
 	}
 
+	usersDir := filepath.Join(s.dataDir, "users")
+	if _, err := os.Stat(usersDir); err == nil {
+		if err := addDirToZip(zw, usersDir, "users"); err != nil {
+			return err
+		}
+	}
+
 	manifestBytes, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
 		return err

@@ -238,11 +238,11 @@ An inline message about the page or a form, rendered through `$lib/components/Al
 
 ### Avatar
 
-A person's initials in a neutral circle (`$lib/components/Avatar.svelte`), the same for every role.
+A person's profile picture, or their initials in a neutral circle when they have none (`$lib/components/Avatar.svelte`), the same for every role. Pictures load through the same-origin proxy `/api/users/avatar` (`user_id`, `size`, `v` = content hash for cache busting) and fall back to initials if the image fails to load. Users set or remove their picture in Account settings with `AvatarCropper` (square crop, drag and zoom, exported as JPEG).
 
 **Markup**: `avatar avatar-placeholder` with an inner `rounded-full bg-base-200 text-base-content border border-base-300`. Sizes `sm` 32px (lists, signatures), `md` 40px (navbar), `lg` 48px (profile).
 
-**Consumer provides**: `displayName` and `size`. The `color` prop goes away: role is shown by a `StatusBadge`-style outline badge where it matters (the navbar, user lists), never by avatar colour.
+**Consumer provides**: `displayName` and `size`, plus `userId`, `hasAvatar` and `avatarContentHash` from the `User` to show a picture. The `color` prop goes away: role is shown by a `StatusBadge`-style outline badge where it matters (the navbar, user lists), never by avatar colour.
 
 **Don't**
 - Don't colour avatars red for admins or by any other attribute.

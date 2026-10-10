@@ -135,6 +135,36 @@ export const auth = (client: Client, event: RequestEvent) => {
             return result.sessions_revoked;
         },
 
+        /** Uploads a new profile picture (multipart field "file"). */
+        uploadAvatar: async (file: File | Blob): Promise<User> => {
+            const body = new FormData();
+            body.append('file', file, file instanceof File ? file.name : 'avatar.jpg');
+            const res = await client.fetch('/auth/me/avatar', {
+                method: 'POST',
+                body
+            });
+            if (!res.ok) {
+                if (res.status === 400) throw new Error('INVALID_AVATAR');
+                throw new Error('UPLOAD_AVATAR_FAILED');
+            }
+            return await res.json();
+        },
+
+        /** Removes the profile picture; the UI falls back to initials. */
+        removeAvatar: async (): Promise<User> => {
+            const res = await client.fetch('/auth/me/avatar', {
+                method: 'DELETE'
+            });
+            if (!res.ok) throw new Error('REMOVE_AVATAR_FAILED');
+            // The backend answers 204 if it cannot reload the user; fall back to /auth/me.
+            if (res.status === 204) {
+                const me = await client.fetch('/auth/me', { method: 'GET' });
+                if (!me.ok) throw new Error('USER_FETCH_FAILED');
+                return await me.json();
+            }
+            return await res.json();
+        },
+
         resetPassword: async (token: string, newPassword: string): Promise<void> => {
             const res = await client.fetch('/auth/reset-password', {
                 method: 'PATCH',

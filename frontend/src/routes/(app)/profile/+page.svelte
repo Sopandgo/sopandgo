@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Avatar from '$lib/components/Avatar.svelte';
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
     import ListRow from '$lib/components/ListRow.svelte';
@@ -61,7 +62,17 @@
 <div class="mt-6 flex flex-col gap-6">
     <Card title={m.profile_information()}>
         <ul class="list">
-            <ListRow title={user.display_name} icon={UserIcon} />
+            <ListRow title={user.display_name}>
+                {#snippet leading()}
+                    <Avatar
+                        displayName={user.display_name}
+                        size="lg"
+                        userId={user.id}
+                        hasAvatar={user.has_avatar}
+                        avatarContentHash={user.avatar_content_hash}
+                    />
+                {/snippet}
+            </ListRow>
             <ListRow title={user.email} icon={MailIcon} />
             <ListRow title={m.common_role()} icon={StampIcon}>
                 {#snippet trailing()}<span class="badge badge-outline">{roleLabel(user.role)}</span>{/snippet}

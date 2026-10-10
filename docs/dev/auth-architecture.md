@@ -65,8 +65,21 @@ The Go backend uses a "Chain of Responsibility" for API protection:
     * **General limiter:** Protects other rate-limited endpoints (token bucket: burst 10; refill 20 req/s).
     * **Proxy awareness:** Client IP for rate limits is `RemoteAddr`, unless that peer is the loopback proxy (Caddy on `127.0.0.1`). In that case the last `X-Forwarded-For` hop is used, because Caddy appends the address it observed. Client-supplied prefixes and `X-Real-Ip` are ignored.
 2. **`withAuth`:** Extracts the PASETO from the `Authorization` header, verifies the signature, and injects the `user_id` and token `role` into the Request Context.
-3. **`withPasswordChangeGuard`:** Loads the user. Inactive accounts are rejected. The context role is replaced with the role stored in the database, so a demotion applies before `requireScope` runs. Accounts flagged to change their password may only call `GET /api/auth/me`, `PATCH /api/auth/me/update-password`, `PATCH /api/auth/me/locale`, and `PATCH /api/auth/me/theme`.
+3. **`withPasswordChangeGuard`:** Loads the user. Inactive accounts are rejected. The context role is replaced with the role stored in the database, so a demotion applies before `requireScope` runs. Accounts flagged to change their password may only call `GET /api/auth/me`, `PATCH /api/auth/me/update-password`, `PATCH /api/auth/me/locale`, and `PATCH /api/auth/me/theme`. Avatar upload/delete is **not** on that allow-list.
 4. **`requireScope`:** Checks the context role against a map of required permissions (Scopes). If the role lacks the necessary scope (e.g., a `viewer` trying to access `admin:integrity`), it returns `403 Forbidden`.
+
+
+## 4a. Profile pictures
+
+Signed-in users manage their own picture from Account settings:
+
+| Action | API | Notes |
+| --- | --- | --- |
+| Upload / replace | `POST /api/auth/me/avatar` | Multipart field `file` (JPEG, PNG, or WebP; max 5 MB). The server center-crops to a square, writes four JPEGs under `DATA_DIR/users/<userID>/` (`avatar-96.jpg`, `avatar-256.jpg`, `avatar-512.jpg`, `avatar-1024.jpg`), and stores `avatar_path` + `avatar_content_hash` (hash of the 1024px file). Audited as `user_avatar_updated`. |
+| Remove | `DELETE /api/auth/me/avatar` | Clears columns and deletes the size files. Audited as `user_avatar_removed`. |
+| Fetch | `GET /api/users/{userID}/avatar?size=sm\|md\|lg\|xl` | Any authenticated active user. Default `size=sm` (96). `md`→256, `lg`→512, `xl`→1024. Returns JPEG with `ETag` / `Cache-Control: private`. |
+
+`GET /api/auth/me` and admin user lists include `has_avatar` and `avatar_content_hash` (for cache-busting). The on-disk path is not exposed. The SvelteKit UI crops in the browser, then uploads; images are served through `/api/users/avatar` so the httpOnly access token never goes to `<img>`.
 
 
 ## 5. Audit Logging
@@ -92,6 +105,8 @@ The `audit_events` table is the system's Tamper-Evident "Black Box."
 * `role_id`: String (default roles enforced via migration are: `"admin"`, `"approver"`, `"editor"`, `"viewer"`, and `"auditor"`).
   * **Note on `auditor`:** The role exists and is granted `audit:read` in the RBAC map, but audit-log HTTP endpoints currently require `admin:integrity`. In practice auditors get signed-in SOP **read** access (and a UI badge); they do **not** get the admin Audit Logs screens. Prefer `viewer` unless you are intentionally reserving the role for a future audit UI.
 * `is_active`: Boolean (Integer 0/1). If 0, all authentication and refresh attempts fail.
+* `avatar_path`: Nullable relative directory under `DATA_DIR` (e.g. `users/<id>`). Empty means no picture.
+* `avatar_content_hash`: Nullable SHA-256 of the processed 1024×1024 JPEG (ETag / cache buster).
 
 ### `refresh_tokens` table
 

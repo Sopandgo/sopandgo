@@ -714,7 +714,8 @@ func getSOPAcknowledgmentsWithUserBySOPVersionIDRecord(db audit.DBTX, sopVersion
 	const query = `
         SELECT 
             a.id, a.sop_version_id, a.user_id, a.ack_type, a.created_at,
-            u.id, u.display_name, u.email, u.role_id, u.is_active, u.created_at
+            u.id, u.display_name, u.email, u.role_id, u.is_active,
+            u.avatar_path, u.avatar_content_hash, u.created_at
         FROM sop_acknowledgments a
         JOIN users u ON a.user_id = u.id
         WHERE a.sop_version_id = ? 
@@ -732,6 +733,7 @@ func getSOPAcknowledgmentsWithUserBySOPVersionIDRecord(db audit.DBTX, sopVersion
 		var r SOPAcknowledgmentWithUser
 		var ackCreatedAt string
 		var userCreatedAt string
+		var avatarPath, avatarHash sql.NullString
 
 		err := rows.Scan(
 			// Acknowledgment fields
@@ -747,6 +749,8 @@ func getSOPAcknowledgmentsWithUserBySOPVersionIDRecord(db audit.DBTX, sopVersion
 			&r.User.Email,
 			&r.User.Role,
 			&r.User.IsActive,
+			&avatarPath,
+			&avatarHash,
 			&userCreatedAt,
 		)
 		if err != nil {
@@ -756,6 +760,12 @@ func getSOPAcknowledgmentsWithUserBySOPVersionIDRecord(db audit.DBTX, sopVersion
 		// Parse time strings back to time.Time objects
 		r.CreatedAt, _ = time.Parse(time.RFC3339Nano, ackCreatedAt)
 		r.User.CreatedAt, _ = time.Parse(time.RFC3339Nano, userCreatedAt)
+		if avatarPath.Valid && avatarPath.String != "" {
+			r.User.HasAvatar = true
+			if avatarHash.Valid {
+				r.User.AvatarContentHash = avatarHash.String
+			}
+		}
 
 		results = append(results, r)
 	}

@@ -48,7 +48,7 @@ func New(t *testing.T) *Env {
 		t.Fatalf("failed to initialize audit logger: %v", err)
 	}
 
-	authService := auth.NewService(store.DB, auditLogger)
+	authService := auth.NewService(store.DB, auditLogger, dataDir)
 
 	authService.StartSessionsCleanupTask(ctx, 24*time.Hour)
 

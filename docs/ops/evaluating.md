@@ -73,7 +73,7 @@ Six short sample SOPs, tagged *Molecular Biology*, *Safety*, *Equipment*, and *Q
 
 You do not need real SMTP for a first look: with no email transport switched on, inviting another user gives you a **manual link** to share.
 
-Before sign-in, the top bar has a language menu and a light/dark toggle. Supported locales include English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, Swedish, Czech, and Slovak. The appearance choice stays in the browser until sign-in. After sign-in, the avatar menu at the top right switches appearance (light, dark, or system) and links to **Account settings** (`/profile/settings`), where you can also change your language. Admins set the organization language on **Settings**; that language is used for shared notifications and PDF chrome. The seeded sample SOPs stay in the English Markdown they were written in.
+Before sign-in, the top bar has a language menu and a light/dark toggle. Supported locales include English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, Swedish, Czech, and Slovak. The appearance choice stays in the browser until sign-in. After sign-in, the avatar menu at the top right switches appearance (light, dark, or system) and links to **Account settings** (`/profile/settings`), where you can also change your language and set a profile picture (crop, then upload). Admins set the organization language on **Settings**; that language is used for shared notifications and PDF chrome. The seeded sample SOPs stay in the English Markdown they were written in.
 
 ## After the trial
 

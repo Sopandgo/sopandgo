@@ -25,6 +25,8 @@ const (
 	EventUserRoleUpdated              = "user_role_updated"
 	EventUserStatusChanged            = "user_status_changed"
 	EventUserPasswordUpdated          = "user_password_updated"
+	EventUserAvatarUpdated            = "user_avatar_updated"
+	EventUserAvatarRemoved            = "user_avatar_removed"
 	EventAdminRevokedAllUserSessions  = "admin_revoked_all_user_sessions"
 	EventSystemGlobalRevocation       = "system_global_revocation"
 	EventSOPCreated                   = "sop_created"
@@ -71,6 +73,8 @@ var knownEventTypes = map[string]struct{}{
 	EventUserRoleUpdated:              {},
 	EventUserStatusChanged:            {},
 	EventUserPasswordUpdated:          {},
+	EventUserAvatarUpdated:            {},
+	EventUserAvatarRemoved:            {},
 	EventAdminRevokedAllUserSessions:  {},
 	EventSystemGlobalRevocation:       {},
 	EventSOPCreated:                   {},

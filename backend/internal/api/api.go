@@ -103,8 +103,11 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("POST /api/auth/me/sessions/sign-out-others", protected(s.handleSignOutOtherSessions))
 	s.mux.HandleFunc("PATCH /api/auth/me/locale", protected(s.handleUpdateMyLocale))
 	s.mux.HandleFunc("PATCH /api/auth/me/theme", protected(s.handleUpdateMyTheme))
+	s.mux.HandleFunc("POST /api/auth/me/avatar", protected(s.handleUploadMyAvatar))
+	s.mux.HandleFunc("DELETE /api/auth/me/avatar", protected(s.handleDeleteMyAvatar))
 	s.mux.HandleFunc("GET /api/auth/me", protected(s.handleGetMe))
 	s.mux.HandleFunc("GET /api/auth/me/signature-status", protected(s.handleGetMySignatureStatus))
+	s.mux.HandleFunc("GET /api/users/{userID}/avatar", protected(s.handleGetUserAvatar))
 
 	// sops
 	s.mux.HandleFunc("POST /api/sops", protected(
