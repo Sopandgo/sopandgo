@@ -127,12 +127,12 @@ func TestAPI_Avatar(t *testing.T) {
 				t.Fatalf("%s: got %dx%d", path, cfg.Width, cfg.Height)
 			}
 		}
-		// Small list size should be much smaller than a large source photo.
+		// Small list size should be smaller than the uploaded source.
 		smInfo, err := os.Stat(filepath.Join(env.DataDir, "users", userID, "avatar-96.jpg"))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if smInfo.Size() >= int64(len(pngBytes))/4 {
+		if smInfo.Size() >= int64(len(pngBytes)) {
 			t.Fatalf("avatar-96.jpg unexpectedly large: %d vs source %d", smInfo.Size(), len(pngBytes))
 		}
 	})

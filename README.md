@@ -40,7 +40,7 @@ other regulatory framework. It is a tooling aid, not a regulatory solution.
 The system follows a **layered architecture** pattern to keep transport, services, and storage separable for security and portability.
 
 - **Containerization:** Root **`docker-compose.yml`** (use with a **`.env`** file; start from **`.env.example`**):
-  - **`sopandgo` service (one image):** Caddy (reverse proxy), **Backend:** Go 1.25 (service layer, SQLite, PASETO auth, mail hooks), **Frontend:** Svelte 5 / SvelteKit (Node adapter).
+  - **`sopandgo` service (one image):** Caddy (reverse proxy), **Backend:** Go 1.26 (service layer, SQLite, PASETO auth, mail hooks), **Frontend:** Svelte 5 / SvelteKit (Node adapter).
   - **`gotenberg` service:** PDF rendering sidecar when PDF export is enabled (see compose file and env vars below).
 - **Storage:**
   - **SQLite:** Stores users, sessions, metadata, audit logs, and encrypted secrets for mail and outbound integrations (ciphertext only; the AES key stays in the environment).
