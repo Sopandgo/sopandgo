@@ -6,6 +6,7 @@ import (
 )
 
 var ErrSelfDisable = errors.New("cannot change own active status")
+var ErrSessionNotFound = errors.New("session not found")
 
 type User struct {
 	ID                 string    `json:"id"`

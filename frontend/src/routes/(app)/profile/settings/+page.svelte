@@ -1,13 +1,22 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
+    import { resolve } from '$app/paths';
     import Alert from '$lib/components/Alert.svelte';
     import Card from '$lib/components/Card.svelte';
     import CardPageHeading from '$lib/components/CardPageHeading.svelte';
     import ChangePassword from '$lib/components/ChangePassword.svelte';
     import LocaleSelect from '$lib/components/LocaleSelect.svelte';
     import * as m from '$lib/paraglide/messages.js';
-    import { daisyTheme } from '$lib/theme';
-    import { KeyRoundIcon, LanguagesIcon, SunMoonIcon } from 'lucide-svelte';
+    import { applyTheme } from '$lib/theme';
+    import {
+        KeyRoundIcon,
+        LanguagesIcon,
+        LogOutIcon,
+        MonitorSmartphoneIcon,
+        SettingsIcon,
+        SunMoonIcon,
+        UserIcon
+    } from 'lucide-svelte';
 
     let { data, form } = $props();
 
@@ -15,13 +24,9 @@
     const mustChange = $derived(!!user.must_change_password);
     const localeError = $derived(form?.setLocale?.error);
     const themeError = $derived(form?.setTheme?.error);
+    const signOutResult = $derived(form?.signOutOthers);
+    let signingOut = $state(false);
     let selectedTheme = $derived(data.user.theme);
-
-    function applyTheme(theme: string) {
-        const name = daisyTheme(theme);
-        if (name) document.documentElement.setAttribute('data-theme', name);
-        else document.documentElement.removeAttribute('data-theme');
-    }
 
     function onThemeChange(event: Event) {
         const formEl = event.currentTarget;
@@ -41,10 +46,16 @@
 <div class="flex w-full flex-col gap-6">
     <Card>
         <div class="card-body">
-            <CardPageHeading>
-                <SunMoonIcon class="h-8 w-8" />
-                {m.settings_heading()}
-            </CardPageHeading>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <CardPageHeading>
+                    <SettingsIcon class="h-8 w-8" />
+                    {m.settings_heading()}
+                </CardPageHeading>
+                <a href={resolve('/profile')} class="btn">
+                    <UserIcon class="size-4" />
+                    {m.nav_profile()}
+                </a>
+            </div>
             <p class="text-sm font-medium text-base-content/70">{m.settings_intro()}</p>
         </div>
     </Card>
@@ -52,7 +63,7 @@
     {#snippet passwordCard()}
         <Card>
             <div class="card-body">
-                <h2 class="card-title mb-4 text-xs font-bold tracking-widest uppercase opacity-60">
+                <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold">
                     <KeyRoundIcon class="h-4 w-4" />
                     {m.profile_change_password()}
                 </h2>
@@ -62,33 +73,36 @@
     {/snippet}
 
     {#if mustChange}
-        <Alert variant="warning" message={m.profile_bootstrap_warning()} />
+        <Alert type="warning" message={m.profile_bootstrap_warning()} />
     {/if}
 
     <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <div class="flex flex-col gap-6 {mustChange ? 'order-2 lg:order-1' : ''}">
     <Card>
         <div class="card-body gap-4">
-            <h2 class="card-title text-xs font-bold tracking-widest uppercase opacity-60">
+            <h2 class="flex items-center gap-2 text-lg font-semibold">
                 <LanguagesIcon class="h-4 w-4" />
                 {m.profile_language()}
             </h2>
-            <form method="POST" action="?/setLocale" class="flex flex-col gap-3">
-                <label class="form-control w-full" for="profile-locale">
-                    <span class="label-text">{m.locale_label()}</span>
-                </label>
+            <!-- Saves on change like Appearance. Not enhanced: the full reload renders the page in the new language. -->
+            <form
+                method="POST"
+                action="?/setLocale"
+                class="flex flex-col gap-3"
+                onchange={(event) => event.currentTarget.requestSubmit()}
+            >
+                <label class="sr-only" for="profile-locale">{m.locale_label()}</label>
                 <LocaleSelect id="profile-locale" value={user.locale} />
                 {#if localeError}
-                    <Alert variant="error" message={m.locale_failed()} />
+                    <Alert type="error" message={m.locale_failed()} />
                 {/if}
-                <button type="submit" class="btn btn-primary w-full sm:w-auto">{m.locale_save()}</button>
             </form>
         </div>
     </Card>
 
     <Card>
         <div class="card-body gap-4">
-            <h2 class="card-title text-xs font-bold tracking-widest uppercase opacity-60">
+            <h2 class="flex items-center gap-2 text-lg font-semibold">
                 <SunMoonIcon class="h-4 w-4" />
                 {m.theme_label()}
             </h2>
@@ -113,7 +127,7 @@
                         { value: 'dark', label: m.theme_dark() },
                         { value: 'system', label: m.theme_system() }
                     ] as option (option.value)}
-                        <label class="label cursor-pointer justify-start gap-3 rounded-box border border-base-300 px-3 py-2">
+                        <label class="label cursor-pointer justify-start gap-3 py-1">
                             <input
                                 type="radio"
                                 name="theme"
@@ -126,15 +140,52 @@
                     {/each}
                 </fieldset>
                 {#if themeError}
-                    <Alert variant="error" message={m.theme_failed()} />
+                    <Alert type="error" message={m.theme_failed()} />
                 {/if}
             </form>
         </div>
     </Card>
         </div>
 
-        <div class={mustChange ? 'order-1 lg:order-2' : ''}>
+        <div class="flex flex-col gap-6 {mustChange ? 'order-1 lg:order-2' : ''}">
             {@render passwordCard()}
+
+            {#if !mustChange}
+                <Card>
+                    <div class="card-body gap-4">
+                        <h2 class="flex items-center gap-2 text-lg font-semibold">
+                            <MonitorSmartphoneIcon class="h-4 w-4" />
+                            {m.sessions_heading()}
+                        </h2>
+                        <p class="text-sm text-base-content/70">{m.sessions_help()}</p>
+                        {#if signOutResult?.ok}
+                            <Alert type="success" message={m.sessions_signed_out()} />
+                        {:else if signOutResult?.error}
+                            <Alert type="error" message={m.sessions_sign_out_failed()} />
+                        {/if}
+                        <form
+                            method="POST"
+                            action="?/signOutOthers"
+                            use:enhance={() => {
+                                signingOut = true;
+                                return async ({ update }) => {
+                                    await update();
+                                    signingOut = false;
+                                };
+                            }}
+                        >
+                            <button type="submit" class="btn w-full" disabled={signingOut}>
+                                {#if signingOut}
+                                    <span class="loading loading-spinner"></span>
+                                {:else}
+                                    <LogOutIcon class="size-4" />
+                                {/if}
+                                {m.sessions_sign_out_others()}
+                            </button>
+                        </form>
+                    </div>
+                </Card>
+            {/if}
         </div>
     </div>
 </div>

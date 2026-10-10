@@ -1,7 +1,12 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages.js';
+import { favorite, unfavorite } from '$lib/server/favoriteActions';
+import { verifyAsset, verifyVersion } from '$lib/server/integrityActions';
 import type { PageServerLoad, Actions } from './$types';
 import { env } from '$env/dynamic/private';
+
+// Same limit as the backend (sop.MaxRejectReasonRunes)
+const MAX_REJECT_REASON = 500;
 
 export const load: PageServerLoad = async ({ locals, params, parent }) => {
     const { sop } = await parent();
@@ -49,6 +54,9 @@ export const load: PageServerLoad = async ({ locals, params, parent }) => {
 };
 
 export const actions: Actions = {
+    verifyAsset,
+    verifyVersion,
+
     // --- Existing Reader Acknowledgment ---
     sign: async ({ request, locals, params }) => {
         const formData = await request.formData();
@@ -56,11 +64,12 @@ export const actions: Actions = {
         const versionId = params.version_id;
 
         if (!locals.user) {
-            return fail(401, { error: m.error_unauthorized(), inputName });
+            return fail(401, { action: 'sign', error: m.error_unauthorized(), inputName });
         }
 
         if (inputName !== locals.user.display_name) {
-            return fail(400, { 
+            return fail(400, {
+                action: 'sign',
                 error: m.error_name_mismatch({ name: locals.user.display_name }),
                 inputName
             });
@@ -71,7 +80,8 @@ export const actions: Actions = {
             return { success: true };
         } catch (err) {
             console.error('Sign Action Error:', err);
-            return fail(500, { 
+            return fail(500, {
+                action: 'sign',
                 error: m.error_sign_failed(),
                 inputName 
             });
@@ -81,30 +91,31 @@ export const actions: Actions = {
     // --- Lifecycle Actions ---
 
     promote: async ({ locals, params }) => {
-        if (!locals.user) return fail(401, { error: m.error_unauthorized() });
+        if (!locals.user) return fail(401, { action: 'promote', error: m.error_unauthorized() });
 
         try {
             await locals.api.sops.promoteToRC(params.version_id);
             return { success: true };
         } catch (err) {
             console.error('Promote Action Error:', err);
-            return fail(500, { error: m.error_promote_failed() });
+            return fail(500, { action: 'promote', error: m.error_promote_failed() });
         }
     },
 
     approve: async ({ request, locals, params }) => {
-        if (!locals.user) return fail(401, { error: m.error_unauthorized() });
+        if (!locals.user) return fail(401, { action: 'approve', error: m.error_unauthorized() });
 
         const formData = await request.formData();
         const inputName = formData.get('user_display_name')?.toString().trim();
         const versionId = params.version_id;
 
         if (!locals.user) {
-            return fail(401, { error: m.error_unauthorized(), inputName });
+            return fail(401, { action: 'approve', error: m.error_unauthorized(), inputName });
         }
 
         if (inputName !== locals.user.display_name) {
-            return fail(400, { 
+            return fail(400, {
+                action: 'approve',
                 error: m.error_name_mismatch({ name: locals.user.display_name }),
                 inputName
             });
@@ -115,18 +126,21 @@ export const actions: Actions = {
             return { success: true };
         } catch (err) {
             console.error('Approve Action Error:', err);
-            return fail(500, { error: m.error_approve_failed() });
+            return fail(500, { action: 'approve', error: m.error_approve_failed() });
         }
     },
 
     reject: async ({ request, locals, params }) => {
-        if (!locals.user) return fail(401, { error: m.error_unauthorized() });
+        if (!locals.user) return fail(401, { action: 'reject', error: m.error_unauthorized() });
 
         const formData = await request.formData();
         const reason = formData.get('reason')?.toString().trim();
 
         if (!reason) {
-            return fail(400, { error: m.error_reject_reason() });
+            return fail(400, { action: 'reject', error: m.error_reject_reason() });
+        }
+        if ([...reason].length > MAX_REJECT_REASON) {
+            return fail(400, { action: 'reject', error: m.error_reject_reason_long({ max: String(MAX_REJECT_REASON) }), inputName: reason });
         }
 
         try {
@@ -134,31 +148,10 @@ export const actions: Actions = {
             return { success: true };
         } catch (err) {
             console.error('Reject Action Error:', err);
-            return fail(500, { error: m.error_reject_failed() });
+            return fail(500, { action: 'reject', error: m.error_reject_failed(), inputName: reason });
         }
     },
 
-    favorite: async ({ locals, params }) => {
-        const sopId = params.sop_id;
-        if (!sopId) return fail(400, { error: m.error_missing_sop() });
-        try {
-            await locals.api.sops.favorite(sopId);
-            return { success: true };
-        } catch (err) {
-            console.error('favorite', err);
-            return fail(500, { error: m.error_favorite_failed() });
-        }
-    },
-
-    unfavorite: async ({ locals, params }) => {
-        const sopId = params.sop_id;
-        if (!sopId) return fail(400, { error: m.error_missing_sop() });
-        try {
-            await locals.api.sops.unfavorite(sopId);
-            return { success: true };
-        } catch (err) {
-            console.error('unfavorite', err);
-            return fail(500, { error: m.error_unfavorite_failed() });
-        }
-    }
+    favorite,
+    unfavorite
 };

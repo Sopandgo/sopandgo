@@ -1,8 +1,8 @@
 <script lang="ts">
+    import Alert from '$lib/components/Alert.svelte';
     import { enhance } from '$app/forms';
-    import { HouseIcon, NotebookIcon, NotebookPenIcon, PlusIcon, RocketIcon } from 'lucide-svelte';
+    import { NotebookPenIcon, RocketIcon } from 'lucide-svelte';
     import type { ActionData } from './$types';
-    import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
   import * as m from '$lib/paraglide/messages.js';
@@ -17,30 +17,21 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-    <Breadcrumbs items={[
-        { label: m.page_dashboard(), href: '/sops', icon: HouseIcon},
-        { label: m.page_sops(), href: '/sops', icon: NotebookIcon},
-        { label: m.common_new_sop(), icon: PlusIcon},
-    ]}/>
-
     <Card>
         <div class="card-body">
-            <CardPageHeading color="accent">
+            <CardPageHeading>
                 <NotebookPenIcon class="w-8 h-8" />
                 {m.sops_heading()}
             </CardPageHeading>
 
             <div class="flex items-center gap-2 text-base-content/70 mb-4">
                 <span class="text-sm font-medium">
-                    {m.sops_register_help()}
+                    {m.sops_create_help()}
                 </span> 
             </div>
 
             {#if form?.message}
-                <div role="alert" class="alert alert-error my-4 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <span>{form.message}</span>
-                </div>
+                <Alert type="error" message={form.message} class="my-4" />
             {/if}
 
             <form 
@@ -69,7 +60,7 @@
                         name="title" 
                         type="text" 
                         placeholder={m.sops_title_placeholder()} 
-                        class="input input-bordered w-full {form?.message ? 'input-error' : ''}" 
+                        class="input w-full {form?.message ? 'input-error' : ''}" 
                         value={form?.title ?? ''}
                         required 
                     />
@@ -77,11 +68,11 @@
 
                 <div class="card-actions justify-end mt-4 flex items-center gap-4">
                     <a href="/sops" class="btn btn-ghost">{m.common_cancel()}</a>
-                    <button type="submit" class="btn btn-accent min-w-[120px]" disabled={loading}>
+                    <button type="submit" class="btn min-w-[120px]" disabled={loading}>
                         {#if loading}
                             <span class="loading loading-spinner"></span>
                         {/if}
-                        {m.sops_register()}
+                        {m.sops_create()}
                         <RocketIcon class="w-5 h-5"/>
                     </button>
                 </div>

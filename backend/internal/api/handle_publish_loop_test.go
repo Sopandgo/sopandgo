@@ -234,8 +234,11 @@ func TestAPI_PasswordChangeRequired(t *testing.T) {
 		t.Fatalf("sops should be blocked until password change, got %d", rec.Code)
 	}
 
+	// The bootstrap admin knows the current password (admin), since they just
+	// signed in with it.
 	rec = doJSON(http.MethodPatch, "/api/auth/me/update-password", map[string]string{
-		"new_password": "A-strong-boot1!",
+		"current_password": "admin",
+		"new_password":     "A-strong-boot1!",
 	})
 	if rec.Code != http.StatusNoContent {
 		t.Fatalf("update password: %d %s", rec.Code, rec.Body.String())

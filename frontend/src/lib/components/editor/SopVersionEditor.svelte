@@ -1,4 +1,6 @@
 <script lang="ts">
+    import Alert from '$lib/components/Alert.svelte';
+    import Card from '$lib/components/Card.svelte';
     import { enhance } from '$app/forms';
     import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
     import type { SOPAsset } from '$lib/sdk/types';
@@ -47,15 +49,14 @@
 
 <div class="h-full">
     {#if form?.message}
-        <div role="alert" class="alert alert-error mb-6 shadow-sm">
-            <span class="whitespace-pre-wrap text-sm">{form.message}</span>
-        </div>
+        <Alert type="error" message={form.message} class="mb-6 text-sm" />
     {/if}
 
+    <Card class="h-full">
     <form 
         method="POST" 
         action="?/publish" 
-        class="card bg-base-100 shadow-md border border-base-200 h-full"
+        class="h-full"
         use:enhance={() => {
             publishing = true;
             return async ({ update }) => {
@@ -65,8 +66,8 @@
         }}
     >
         <div class="card-body gap-4 flex flex-col h-full min-h-0">
-            <h3 class="card-title text-sm uppercase tracking-wider opacity-70 flex items-center gap-2 shrink-0">
-                <FilePenIcon class="w-4 h-4" />
+            <h3 class="flex items-center gap-2 text-lg font-semibold shrink-0">
+                <FilePenIcon class="size-4" />
                 {m.editor_document()}
             </h3>
 
@@ -76,12 +77,12 @@
                     id="change_summary"
                     name="change_summary"
                     bind:value={changeSummary}
-                    class="input input-bordered w-full"
+                    class="input w-full"
                     maxlength="500"
                     required
                     placeholder={m.editor_change_placeholder()}
                 />
-                <span class="label-text-alt text-base-content/60 pt-1">
+                <span class="label-text-alt text-base-content/70 pt-1">
                     {m.editor_change_help()}
                 </span>
             </label>
@@ -128,20 +129,20 @@
                     ></textarea>
                     
                     <div class="label pt-2">
-                        <span class="label-text-alt text-base-content/60">
+                        <span class="label-text-alt text-base-content/70">
                             {m.editor_asset_hint()} <code>![Alt Text](assets/filename.png)</code>
                         </span>
                     </div>
                 </div>
 
                 <div
-                    class="flex flex-col flex-grow min-h-0 border border-base-200 rounded-box bg-base-100 overflow-hidden {editorTab === 'preview' ? '' : 'hidden'}"
+                    class="flex flex-col flex-grow min-h-0 border border-base-300 rounded-box bg-base-100 overflow-hidden {editorTab === 'preview' ? '' : 'hidden'}"
                     role="tabpanel"
                     aria-labelledby="sop-editor-tab-preview"
                     id="sop-editor-panel-preview"
                 >
                     <div
-                        class="text-xs opacity-60 tracking-widest uppercase font-bold px-4 py-2 border-b border-base-200 bg-base-200/30 shrink-0"
+                        class="text-sm font-medium text-base-content/70 px-4 py-2 border-b border-base-300 bg-base-200 shrink-0"
                     >
                         {m.editor_preview()}
                     </div>
@@ -152,7 +153,7 @@
                         tabindex="-1"
                     >
                         {#if !previewContent.trim()}
-                            <p class="text-sm text-base-content/50 italic">
+                            <p class="text-sm text-base-content/70 italic">
                                 {m.editor_preview_empty()}
                             </p>
                         {:else}
@@ -162,9 +163,9 @@
                 </div>
             </div>
 
-            <div class="card-actions justify-end mt-auto pt-4 border-t border-base-200">
+            <div class="card-actions justify-end mt-auto pt-4 border-t border-base-300">
                 <a href={`/sops/${sopId}`} class="btn btn-ghost">{m.common_cancel()}</a>
-                <button type="submit" class="btn btn-accent min-w-[150px] flex items-center justify-center gap-2" disabled={publishing}>
+                <button type="submit" class="btn min-w-[150px] flex items-center justify-center gap-2" disabled={publishing}>
                     {#if publishing}
                         <LoaderCircleIcon class="animate-spin w-4 h-4 mr-2"/>
                     {/if}
@@ -174,4 +175,5 @@
             </div>
         </div>
     </form>
+    </Card>
 </div>

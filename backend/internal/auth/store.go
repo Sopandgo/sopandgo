@@ -62,6 +62,12 @@ func getUserByEmailRecord(db audit.DBTX, email string) (*User, string, error) {
 	return &u, hash, nil
 }
 
+func getUserPasswordHashRecord(db audit.DBTX, userID string) (string, error) {
+	var hash string
+	err := db.QueryRow(`SELECT password_hash FROM users WHERE id = ?`, userID).Scan(&hash)
+	return hash, err
+}
+
 func getUserRoleRecord(db audit.DBTX, userID string) (string, error) {
 	var role string
 	err := db.QueryRow(`SELECT role_id FROM users WHERE id = ?`, userID).Scan(&role)
@@ -236,6 +242,19 @@ func revokeRefreshTokenRecord(db audit.DBTX, tokenID string) error {
 func revokeUserRefreshTokensRecord(db audit.DBTX, userID string) error {
 	_, err := db.Exec("UPDATE refresh_tokens SET is_active = 0 WHERE user_id = ?", userID)
 	return err
+}
+
+// revokes every active session for a person except the one they are using.
+// Returns how many sessions were revoked.
+func revokeOtherUserRefreshTokensRecord(db audit.DBTX, userID, keepTokenID string) (int64, error) {
+	res, err := db.Exec(
+		"UPDATE refresh_tokens SET is_active = 0 WHERE user_id = ? AND token_id != ? AND is_active = 1",
+		userID, keepTokenID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }
 
 // globally revokes every active session

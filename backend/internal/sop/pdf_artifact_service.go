@@ -25,6 +25,15 @@ import (
 
 var ErrPDFExportDisabled = fmt.Errorf("pdf export disabled")
 
+// generateVersionPDFArtifactAfterCommit creates the PDF for a version change that is already
+// committed. The change stands either way, so a failure (e.g. renderer unreachable) is logged
+// and left to BackfillPDFArtifactsForGenerator instead of failing the request.
+func (s *Service) generateVersionPDFArtifactAfterCommit(versionID, stage, actorUserID string) {
+	if err := s.ensureVersionPDFArtifact(versionID, stage, actorUserID); err != nil {
+		log.Printf("WARNING: pdf artifact for version %s (%s) not generated, backfill will retry on next start: %v", versionID, stage, err)
+	}
+}
+
 func (s *Service) ensureVersionPDFArtifact(versionID, stage, actorUserID string) error {
 	if !s.IsPDFExportEnabled() {
 		return nil
@@ -232,8 +241,10 @@ func (s *Service) BackfillPDFArtifactsForGenerator(actorUserID string) (int, int
 			if !errors.Is(err, sql.ErrNoRows) {
 				return processed, generated, err
 			}
+			// One failing version must not block the rest of the backfill.
 			if err := s.ensureVersionPDFArtifact(v.ID, stage, actorUserID); err != nil {
-				return processed, generated, err
+				log.Printf("pdf artifact backfill: version %s (%s) failed: %v", v.ID, stage, err)
+				continue
 			}
 			generated++
 		}

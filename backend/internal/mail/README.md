@@ -2,7 +2,7 @@
 
 This package sends operational email (invites, password resets, publish notices, test mail) and persists encrypted SMTP / Resend settings.
 
-Delivery mode and transport are chosen in the admin UI (stored in SQLite), not via `SMTP_HOST`-style env vars. Secrets are encrypted with `SMTP_SECRET_ENCRYPTION_KEY`.
+Delivery mode and transport are chosen in the admin UI (stored in SQLite), not via `SMTP_HOST`-style env vars. Secrets are encrypted with `SECRET_ENCRYPTION_KEY`.
 
 ## Modes and transports
 
@@ -10,11 +10,12 @@ Delivery mode and transport are chosen in the admin UI (stored in SQLite), not v
 | --- | --- | --- |
 | `mail_mode` | `smtp`, `manual_links` | Whether the app sends invite/reset mail, or returns one-time links to admins. |
 | `mail_transport` | `smtp`, `resend` | Which provider sends when `mail_mode` is `smtp`. |
+| `effective_mail_mode` (read-only) | `smtp`, `manual_links` | What invites, resets and publish notices actually use: `smtp` only when `mail_mode` is `smtp` **and** the chosen transport is saved (`SMTPSettingsStore.EffectiveMailMode`). Otherwise manual links, so a fresh install never sends through an empty config. The admin UI shows this as one on/off toggle per transport. |
 | `default_locale` | supported BCP 47 tag | Organization language for the test email. Invite, reset, and publish notices use the recipient's `users.locale` instead. |
 
 Subjects and boilerplate come from `backend/internal/i18n`. SOP titles and change summaries are inserted unchanged. An unknown locale or a missing key falls back to English.
 
-Publish notices (`SendSOPPublishedEmail`) run only when mail mode is not `manual_links`. A failed send does not unpublish the version.
+Publish notices (`SendSOPPublishedEmail`) run only when the effective mail mode is not `manual_links`. A failed send does not unpublish the version.
 
 ## Core Principles
 

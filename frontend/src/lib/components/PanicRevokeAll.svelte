@@ -29,19 +29,19 @@
         <h3 class="card-title text-error">{m.sessions_panic_title()}</h3>
       </div>
       
-      <p class="text-sm opacity-70 mt-2">
+      <p class="text-sm text-base-content/70 mt-2">
         {m.sessions_panic_body()}
       </p>
 
       {#if result?.error}
         <div class="mt-4">
-          <Alert variant="error" message={result.error} class="shadow-md" />
+          <Alert type="error" message={result.error} />
         </div>
       {/if}
 
       {#if result?.ok}
         <div class="mt-4">
-          <Alert variant="success" message={m.sessions_panic_ok()} class="shadow-md" />
+          <Alert type="success" message={m.sessions_panic_ok()} />
         </div>
       {/if}
 
@@ -71,7 +71,7 @@
             id="reason"
             name="reason"
             type="text"
-            class="input input-bordered input-error w-full focus:outline-error"
+            class="input w-full"
             placeholder={m.sessions_reason_placeholder()}
             required
             disabled={loading}
@@ -80,7 +80,7 @@
 
         <div class="card-actions justify-end mt-4">
           <button 
-            class="btn btn-error text-white font-bold px-8" 
+            class="btn btn-error"
             type="submit" 
             disabled={loading}
           >

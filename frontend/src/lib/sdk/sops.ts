@@ -2,13 +2,15 @@ import type { Client } from './client';
 import { sdkHttpErrorFromResponse } from './httpError';
 import type { 
     SOP, 
+    SOPDetail,
     SOPVersion, 
     SOPVersionSummary, 
     Acknowledgment, 
     SOPListResponse,
     VersionDiff,
     PublishedActivity,
-    SOPTrainingCoverage
+    SOPTrainingCoverage,
+    Integrity
 } from './types';
 
 export const sops = (client: Client) => ({
@@ -59,7 +61,7 @@ export const sops = (client: Client) => ({
     /**
      * Get metadata for a specific SOP.
      */
-    getById: async (id: string): Promise<SOP> => {
+    getById: async (id: string): Promise<SOPDetail> => {
         const res = await client.fetch(`/sops/${id}`, { 
             method: 'GET'
         });
@@ -173,14 +175,14 @@ export const sops = (client: Client) => ({
 
     /**
      * Manual Integrity Check.
+     * Throws SdkHttpError: 404 `file_missing` when the file is gone from disk,
+     * 404 `version_not_found` when the version does not belong to `sopId`.
      */
-    checkIntegrity: async (id: string): Promise<{ hash_valid: boolean }> => {
-        //todo: replace "not-in-use-yet" with sopId in the future for more granular sop access
-        const sopId = "not-in-use-yet";
+    checkIntegrity: async (sopId: string, id: string): Promise<Integrity> => {
         const res = await client.fetch(`/sops/${sopId}/versions/${id}/integrity`, {
             method: 'GET'
         });
-        if (!res.ok) throw new Error('INTEGRITY_CHECK_FAILED');
+        if (!res.ok) throw await sdkHttpErrorFromResponse(res);
         return await res.json();
     },
 

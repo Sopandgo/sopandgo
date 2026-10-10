@@ -1,11 +1,11 @@
-<script>
+<script lang="ts">
   import * as m from '$lib/paraglide/messages.js';
 
   const raw = String(__APP_VERSION__ || 'dev').replace(/^v/, '');
   const versionLabel = raw === 'dev' ? 'dev' : `v${raw}`;
 </script>
 
-<footer class="footer sm:footer-horizontal bg-base-100 items-center p-4">
+<footer class="footer sm:footer-horizontal items-center border-t border-base-300 bg-base-100 p-4">
   <aside class="grid-flow-col items-center">
     <img
       src="/favicon.svg"

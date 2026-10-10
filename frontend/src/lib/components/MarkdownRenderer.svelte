@@ -2,6 +2,7 @@
     import { marked } from 'marked';
     import type { SOPAsset } from '$lib/sdk/types';
     import { sanitizeSopHtml } from '$lib/security/sanitizeSopHtml';
+    import { assetUrl, findAsset } from '$lib/sopAssets';
     import * as m from '$lib/paraglide/messages.js';
 
     interface Props {
@@ -21,26 +22,23 @@
             
             // Match "assets/filename.png"
             if (safeHref.startsWith('assets/')) {
-                // Decode and clean the filename from the markdown link
-                const targetName = decodeURIComponent(safeHref.replace('assets/', '')).toLowerCase();
-                
-                // Simple, direct lookup in the SDK-provided list
-                const asset = (assets ?? []).find(a => a.file_name.toLowerCase() === targetName);
-                
+                // Same lookup as the Changes tab, so both show the same file
+                const asset = findAsset(safeHref, assets);
+
                 if (asset) {
                     return `
                         <figure class="not-prose my-10 flex flex-col items-center">
                             <img 
-                                src="/api/assets/download?id=${asset.id}" 
+                                src="${assetUrl(asset)}" 
                                 alt="${text || asset.file_name}" 
                                 title="${title || ''}"
-                                class="rounded-xl border border-base-300 shadow-lg" 
+                                class="rounded-box border border-base-300" 
                             />
-                            ${text ? `<figcaption class="mt-4 text-sm opacity-60 italic">${m.figure_caption({ text })}</figcaption>` : ''}
+                            ${text ? `<figcaption class="mt-4 text-sm text-base-content/70 italic">${m.figure_caption({ text })}</figcaption>` : ''}
                         </figure>
                     `;
                 }
-                console.warn(`Asset not found for filename: ${targetName}`);
+                console.warn(`Asset not found for: ${safeHref}`);
             }
 
             return `<img src="${safeHref}" alt="${text || ''}" />`;
@@ -51,6 +49,6 @@
     });
 </script>
 
-<div class="prose prose-slate max-w-none">
+<div class="prose max-w-none prose-headings:font-semibold">
     {@html html}
 </div>

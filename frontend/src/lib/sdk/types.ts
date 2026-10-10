@@ -82,9 +82,32 @@ export interface SOP {
     title: string;
     created_at: string;
     tags: Tag[];
-    latest_published_version_id: string | null;
     /** Present on list/detail when the backend includes per-user favorite state */
     is_favorite?: boolean;
+}
+
+/** A version as an SOP row or detail points at it: no content, just where it stands. */
+export interface SOPVersionPointer {
+    id: string;
+    version: number;
+    status: SOPVersionStatus;
+    created_at: string;
+}
+
+/** A row of `GET /sops`: the SOP plus a summary of its versions. */
+export interface SOPListItem extends SOP {
+    /** Highest version number in its current state; null before the first version. */
+    latest_version: SOPVersionPointer | null;
+    /** Number of the version readers see; null until one is published. */
+    published_version: number | null;
+}
+
+/** `GET /sops/{id}`: the SOP plus pointers to its newest and its published version. */
+export interface SOPDetail extends SOP {
+    latest_version: SOPVersionPointer | null;
+    /** Number and id of the version readers see; both null until one is published. */
+    published_version: number | null;
+    published_version_id: string | null;
 }
 
 export interface Tag {
@@ -96,7 +119,7 @@ export interface Tag {
 
 // Add this near your other SOP interfaces
 export interface SOPListResponse {
-    sops: SOP[];
+    sops: SOPListItem[];
     total: number;
 }
 
@@ -131,6 +154,16 @@ export interface SOPVersionSummary {
     assets: SOPAsset[];
     acknowledgments: AcknowledgmentWithUser[];
     tags: Tag[];
+    /** Who rejected the version, when and why; null unless it is rejected. */
+    rejection: VersionRejection | null;
+}
+
+export interface VersionRejection {
+    /** Null for rejections recorded before reasons were stored. */
+    reason: string | null;
+    actor_user_id: string;
+    actor_name: string;
+    created_at: string;
 }
 
 export interface AuditEvent {
@@ -165,6 +198,8 @@ export interface PublicSmtpSettings {
     username: string;
     from_address: string;
     mail_mode: 'smtp' | 'manual_links';
+    /** What invites and resets actually use: email only when it is on and the chosen transport is saved. */
+    effective_mail_mode: 'smtp' | 'manual_links';
     mail_transport: 'smtp' | 'resend';
     default_locale: string;
     password_configured: boolean;
@@ -219,7 +254,42 @@ export interface BackupManifest {
     data_layout_version: number;
 }
 
-/** Admin backup status: automatic S3 uploads (when BACKUP_S3_ENABLED). */
+/** Saved scheduled S3 backup settings (Settings → Backup). The secret is never returned. */
+export interface BackupS3Settings {
+    encryption_key_set: boolean;
+    enabled: boolean;
+    /** A bucket is saved. */
+    configured: boolean;
+    bucket: string;
+    region: string;
+    key_prefix: string;
+    endpoint: string;
+    use_path_style: boolean;
+    /** Empty = the server's default AWS credential chain. */
+    access_key_id: string;
+    secret_configured: boolean;
+    /** Go duration, e.g. `24h0m0s`. */
+    interval: string;
+    retention_max: number;
+    retention_days: number;
+}
+
+/** PUT body: an empty `secret_access_key` keeps the stored secret. */
+export interface BackupS3SettingsInput {
+    enabled: boolean;
+    bucket: string;
+    region: string;
+    key_prefix: string;
+    endpoint: string;
+    use_path_style: boolean;
+    access_key_id: string;
+    secret_access_key: string;
+    interval: string;
+    retention_max: number;
+    retention_days: number;
+}
+
+/** Admin backup status: automatic S3 uploads (when switched on under Settings → Backup). */
 export interface S3ScheduledBackupStatus {
     enabled: boolean;
     bucket?: string;

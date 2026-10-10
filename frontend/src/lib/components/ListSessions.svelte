@@ -68,39 +68,36 @@
 </script>
 
 {#if revokeResult?.error}
-  <Alert variant="error" message={revokeResult.error} class="shadow-lg" />
+  <Alert type="error" message={revokeResult.error} />
 {/if}
 
 {#if revokeOkFor}
-  <Alert variant="success" message={m.sessions_revoked()} class="shadow-lg" />
+  <Alert type="success" message={m.sessions_revoked()} />
 {/if}
 
-<Card>
+<Card title={m.sessions_count({ count: String(sessions.length) })}>
   <ul class="list">
-    <li class="p-4 pb-2 text-xs opacity-60 tracking-widest uppercase font-bold">
-      {m.sessions_count({ count: String(sessions.length) })}
-    </li>
 
     {#each sessions as s, i (s.session_id ?? s.id ?? `${sessionUserId(s)}-${i}`)}
-      <li class="list-row items-center hover:bg-base-200/50 transition-colors flex">
+      <li class="list-row flex items-center border-b border-base-300 after:hidden last:border-b-0">
         <div class="flex-1">
-          <div class="font-bold text-sm lg:text-base">
+          <div class="text-sm font-medium">
             {sessionUserLabel(s)}
           </div>
 
           {#if sessionEmail(s)}
-            <div class="text-xs opacity-50 font-mono uppercase tracking-tighter">
+            <div class="text-xs text-base-content/70">
               {sessionEmail(s)}
             </div>
           {/if}
 
           {#if sessionUserId(s)}
-            <div class="text-xs opacity-50 font-mono uppercase tracking-tighter">
+            <div class="text-xs text-base-content/70 font-mono">
               {m.sessions_user_id({ id: sessionUserId(s) })}
             </div>
           {/if}
 
-          <div class="text-xs opacity-50 font-mono uppercase tracking-tighter">
+          <div class="text-xs text-base-content/70">
             {m.sessions_expires({ when: fmtDate(sessionExpires(s)) })}
           </div>
         </div>
@@ -123,12 +120,12 @@
 
             <button
               type="submit"
-              class="btn btn-error"
+              class="btn btn-sm text-error"
               disabled={!sessionUserId(s) || revokingUserId === sessionUserId(s)}
               title={m.sessions_revoke_title()}
             >
               {#if revokingUserId === sessionUserId(s)}
-                <span class="loading loading-spinner"></span>
+                <span class="loading loading-spinner loading-xs"></span>
               {/if}
               {m.sessions_revoke()}
             </button>
@@ -136,9 +133,7 @@
         </div>
       </li>
     {:else}
-      <li class="p-12 text-center">
-        <div class="text-sm opacity-40">{m.sessions_empty()}</div>
-      </li>
+      <li class="p-6 text-sm text-base-content/70">{m.sessions_empty()}</li>
     {/each}
   </ul>
 </Card>

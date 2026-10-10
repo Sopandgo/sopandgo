@@ -1,22 +1,13 @@
 <script lang="ts">
-    interface Props {
-        children: import('svelte').Snippet;
-        color?: 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error';
-    }
+    import type { Snippet } from 'svelte';
 
-    let { children, color = 'primary' }: Props = $props();
-
-    // Mapping ensures Tailwind's scanner sees the full class names
-    const colorClasses = {
-        primary: 'text-primary',
-        secondary: 'text-secondary',
-        accent: 'text-accent',
-        success: 'text-success',
-        warning: 'text-warning',
-        error: 'text-error'
-    };
+    /*
+     * The page title (style guide: page-title, one per page): 24px semibold in
+     * body colour. A leading icon is sized and muted here so pages need not style it.
+     */
+    let { children }: { children: Snippet } = $props();
 </script>
 
-<h1 class="card-title text-3xl font-bold flex gap-x-2 mb-2 {colorClasses[color]}">
+<h1 class="flex items-center gap-2 text-2xl font-semibold [&>svg]:size-6 [&>svg]:shrink-0 [&>svg]:text-base-content/70">
     {@render children()}
 </h1>

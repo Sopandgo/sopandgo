@@ -28,7 +28,7 @@ var (
 	ErrInvalidBackupArchive    = errors.New("invalid backup archive")
 	ErrUnsupportedBackupFormat = errors.New("unsupported backup format version")
 	ErrSchemaTooNew            = errors.New("backup schema is newer than this app supports")
-	ErrApplyConfirmation       = errors.New(`confirmation must equal "APPLY BACKUP"`)
+	ErrApplyConfirmation       = errors.New(`confirmation must equal "RESTORE BACKUP"`)
 	ErrPendingRestore          = errors.New("a backup restore is already staged and waiting for restart")
 )
 
@@ -148,7 +148,7 @@ func (s *Service) ValidateImportArchive(file multipart.File) (ImportResult, erro
 }
 
 func (s *Service) StageImportApply(file multipart.File, confirmation string) (ApplyResult, error) {
-	if strings.TrimSpace(confirmation) != "APPLY BACKUP" {
+	if strings.TrimSpace(confirmation) != "RESTORE BACKUP" {
 		return ApplyResult{}, ErrApplyConfirmation
 	}
 	if s.HasPendingRestore() {
@@ -207,6 +207,10 @@ func (s *Service) StageImportApply(file multipart.File, confirmation string) (Ap
 	if err := copyFile(stagedDB, filepath.Join(pendingDir, "app.db")); err != nil {
 		return ApplyResult{}, err
 	}
+	// Keep this instance's S3 backup settings, not the archive's (see s3_settings.go).
+	if err := writeS3SettingsCarryOver(s.db, filepath.Join(pendingDir, stagedS3SettingsFile)); err != nil {
+		return ApplyResult{}, err
+	}
 	stagedSops := filepath.Join(extractDir, "sops")
 	if st, err := os.Stat(stagedSops); err == nil && st.IsDir() {
 		if err := copyDir(stagedSops, filepath.Join(pendingDir, "sops")); err != nil {
@@ -256,6 +260,14 @@ func ApplyPendingRestoreAtStartup(dataDir string) error {
 		}
 		if err := copyDir(srcSops, dstSops); err != nil {
 			return fmt.Errorf("failed to restore sops directory: %w", err)
+		}
+	}
+
+	// Picked up by ApplyCarriedS3Settings once the restored database is migrated.
+	srcSettings := filepath.Join(pendingDir, stagedS3SettingsFile)
+	if _, err := os.Stat(srcSettings); err == nil {
+		if err := copyFile(srcSettings, filepath.Join(dataDir, carriedS3SettingsFile)); err != nil {
+			return fmt.Errorf("failed to keep s3 backup settings: %w", err)
 		}
 	}
 

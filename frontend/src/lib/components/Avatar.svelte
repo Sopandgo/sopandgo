@@ -1,31 +1,28 @@
-<script>
+<script lang="ts">
     import { getInitials } from '$lib/utils/getInitials';
 
-    /** @type {{ displayName?: string, color?: 'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'error' | 'warning' , size?: 'sm' | 'md' | 'lg' }} */
-    let { displayName = '', color = 'neutral', size = 'md' } = $props();
+    /*
+     * A person's initials in a neutral circle, the same for every role
+     * (docs/design/style-guide.md → Avatar). Role is shown by a badge, never by colour.
+     */
+    type Size = 'sm' | 'md' | 'lg';
 
-    const sizeClasses = {
-        sm: 'w-8',
-        md: 'w-10',
-        lg: 'w-12'
-    };
+    interface Props {
+        displayName?: string;
+        size?: Size;
+    }
 
-    const colorClasses = {
-        neutral: 'bg-neutral text-neutral-content',
-        primary: 'bg-primary text-primary-content',
-        secondary: 'bg-secondary text-secondary-content',
-        accent: 'bg-accent text-accent-content',
-        info: 'bg-info text-info-content',
-        error: 'bg-error text-error-content',
-        warning: 'bg-warning text-warning-content'
+    let { displayName = '', size = 'sm' }: Props = $props();
+
+    const sizeClasses: Record<Size, string> = {
+        sm: 'w-8 text-xs',
+        md: 'w-10 text-sm',
+        lg: 'w-12 text-base'
     };
-    
-    const selectedColorClass = $derived(colorClasses[color] || colorClasses.neutral);
-    const selectedSizeClass = $derived(sizeClasses[size] || sizeClasses.md);
 </script>
 
-<div class="avatar avatar-placeholder">
-    <div class={`rounded-full ${selectedColorClass} ${selectedSizeClass}`}>
+<div class="avatar avatar-placeholder" aria-hidden="true">
+    <div class="rounded-full border border-base-300 bg-base-200 text-base-content {sizeClasses[size]}">
         <span>{getInitials(displayName)}</span>
     </div>
 </div>

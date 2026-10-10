@@ -7,11 +7,16 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 )
 
-const MaxChangeSummaryRunes = 500
+const (
+	MaxChangeSummaryRunes = 500
+	MaxRejectReasonRunes  = 500
+)
 
 var (
 	ErrChangeSummaryRequired = errors.New("change summary is required")
 	ErrChangeSummaryTooLong  = errors.New("change summary must be 500 characters or fewer")
+	ErrRejectReasonRequired  = errors.New("a reason for rejecting is required")
+	ErrRejectReasonTooLong   = errors.New("the reason for rejecting must be 500 characters or fewer")
 )
 
 type SOP struct {
@@ -26,12 +31,29 @@ type SOPWithTags struct {
 	CreatedAt  time.Time `json:"created_at"`
 	Tags       []Tag     `json:"tags"`
 	IsFavorite bool      `json:"is_favorite"`
+	// LatestVersion is the highest version number in its current state; nil before the first version.
+	LatestVersion *SOPListVersion `json:"latest_version"`
+	// PublishedVersion and PublishedVersionID name the version readers see; nil until one is published.
+	// Both are read from the version states each time, never stored on the SOP.
+	PublishedVersion   *int    `json:"published_version"`
+	PublishedVersionID *string `json:"published_version_id"`
 }
 
 type SOPListItem struct {
 	SOP
 	Tags       []Tag `json:"tags"`
 	IsFavorite bool  `json:"is_favorite"`
+	// LatestVersion is the highest version number in its current state; nil before the first version.
+	LatestVersion *SOPListVersion `json:"latest_version"`
+	// PublishedVersion is the number of the version readers see; nil until one is published.
+	PublishedVersion *int `json:"published_version"`
+}
+
+type SOPListVersion struct {
+	ID        string    `json:"id"`
+	Version   int       `json:"version"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type Tag struct {
@@ -81,6 +103,17 @@ type SOPVersionSummary struct {
 	CreatedAt       time.Time                   `json:"created_at"`
 	HashValid       bool                        `json:"hash_valid"`
 	Tags            []Tag                       `json:"tags"`
+	// Rejection says who rejected the version, when and why; nil unless it is rejected.
+	Rejection *VersionRejection `json:"rejection"`
+}
+
+// VersionRejection is the state row that rejected a version.
+type VersionRejection struct {
+	// Reason is nil for rejections recorded before reasons were stored.
+	Reason      *string   `json:"reason"`
+	ActorUserID string    `json:"actor_user_id"`
+	ActorName   string    `json:"actor_name"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type SOPVersionPDFArtifact struct {

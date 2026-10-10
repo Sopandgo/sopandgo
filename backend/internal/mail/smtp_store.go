@@ -41,6 +41,9 @@ type PublicSMTPSettings struct {
 	Username           string `json:"username"`
 	FromAddress        string `json:"from_address"`
 	MailMode           string `json:"mail_mode"`
+	// EffectiveMailMode is what invites and resets use: "smtp" (email) only when
+	// mail_mode is "smtp" and the chosen transport is saved, else "manual_links".
+	EffectiveMailMode string `json:"effective_mail_mode"`
 	MailTransport      string `json:"mail_transport"`
 	DefaultLocale      string `json:"default_locale"`
 	PasswordConfigured bool   `json:"password_configured"`
@@ -113,7 +116,30 @@ func (s *SMTPSettingsStore) GetPublic() (*PublicSMTPSettings, error) {
 		pub.ResendAPIKeyConfigured = keyLen > 0
 	}
 
+	pub.EffectiveMailMode = effectiveMailMode(mailMode, transport, pub.Configured, pub.ResendConfigured && pub.ResendAPIKeyConfigured)
 	return pub, nil
+}
+
+// effectiveMailMode sends email only when email delivery is on and the chosen
+// transport is saved; otherwise invites, resets and publish notices fall back to
+// manual links, so a fresh install never tries to send through an empty config.
+func effectiveMailMode(mode, transport string, smtpReady, resendReady bool) string {
+	if mode != MailModeSMTP {
+		return MailModeManualLinks
+	}
+	if transport == MailTransportResend && resendReady || transport != MailTransportResend && smtpReady {
+		return MailModeSMTP
+	}
+	return MailModeManualLinks
+}
+
+// EffectiveMailMode is the delivery the app actually uses (see effectiveMailMode).
+func (s *SMTPSettingsStore) EffectiveMailMode() (string, error) {
+	pub, err := s.GetPublic()
+	if err != nil {
+		return "", err
+	}
+	return pub.EffectiveMailMode, nil
 }
 
 func (s *SMTPSettingsStore) GetMailMode() (string, error) {
@@ -284,7 +310,7 @@ func (s *SMTPSettingsStore) loadResendDecrypted() (apiKey, from string, err erro
 	}
 	raw, err := secrets.Open(s.key, keyEnc)
 	if err != nil {
-		return "", "", fmt.Errorf("decrypt resend api key (wrong SMTP_SECRET_ENCRYPTION_KEY?): %w", err)
+		return "", "", fmt.Errorf("decrypt resend api key (wrong SECRET_ENCRYPTION_KEY?): %w", err)
 	}
 	return string(raw), from, nil
 }
@@ -395,7 +421,7 @@ func (s *SMTPSettingsStore) loadDecrypted() (host, port, user, pass, from string
 	}
 	raw, err := secrets.Open(s.key, pwdEnc)
 	if err != nil {
-		return "", "", "", "", "", fmt.Errorf("decrypt smtp password (wrong SMTP_SECRET_ENCRYPTION_KEY?): %w", err)
+		return "", "", "", "", "", fmt.Errorf("decrypt smtp password (wrong SECRET_ENCRYPTION_KEY?): %w", err)
 	}
 	return host, port, user, string(raw), from, nil
 }

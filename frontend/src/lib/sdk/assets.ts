@@ -1,6 +1,6 @@
 import type { Client } from './client';
 import { sdkHttpErrorFromResponse } from './httpError';
-import type { SOPAsset } from './types';
+import type { Integrity, SOPAsset } from './types';
 
 export const assets = (client: Client) => ({
     
@@ -59,15 +59,15 @@ export const assets = (client: Client) => ({
     
     /**
      * Check asset integrity (Hash check).
-    */
-   checkIntegrity: async (sopId: string, assetId: string): Promise<{ hash_valid: boolean }> => {
-        //todo: replace "not-in-use-yet" with sopId in the future for more granular sop access
-        sopId = "not-in-use-yet";
+     * Throws SdkHttpError: 404 `file_missing` when the file is gone from disk,
+     * 404 `asset_not_found` when the asset does not belong to `sopId`.
+     */
+    checkIntegrity: async (sopId: string, assetId: string): Promise<Integrity> => {
         const res = await client.fetch(`/sops/${sopId}/assets/${assetId}/integrity`, {
             method: 'GET'
         });
-        
-        if (!res.ok) throw new Error('INTEGRITY_CHECK_FAILED');
+
+        if (!res.ok) throw await sdkHttpErrorFromResponse(res);
         return await res.json();
     }
 });

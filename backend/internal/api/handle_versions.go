@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/sopandgo/sopandgo/backend/internal/markdown"
@@ -75,6 +77,7 @@ func (s *Server) handleRegisterSOPVersion(w http.ResponseWriter, r *http.Request
 			return
 		}
 
+		log.Printf("ERROR: create version for SOP %s failed: %v", sopId, err)
 		http.Error(w, "Failed to create version", http.StatusInternalServerError)
 		return
 	}
@@ -178,7 +181,6 @@ func (s *Server) handleGetSOPVersionSummaryLatest(w http.ResponseWriter, r *http
 }
 
 func (s *Server) handleCheckVersionIntegrity(w http.ResponseWriter, r *http.Request) {
-	// Currently ignored, could be reused to add more granular access
 	sopId := r.PathValue("sopID")
 	if sopId == "" {
 		http.Error(w, "missing id", http.StatusBadRequest)
@@ -191,15 +193,23 @@ func (s *Server) handleCheckVersionIntegrity(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	version, err := s.sopService.GetSOPVersionByID(sopVersionId)
+	if err != nil || version.SOPID != sopId {
+		writeJSONError(w, http.StatusNotFound, "version_not_found", "Version not found for this SOP.")
+		return
+	}
+
 	valid, err := s.sopService.VerifyVersionIntegrity(sopVersionId)
 	if err != nil {
-		// Log the error internally
-		http.Error(w, "Integrity check failed", http.StatusInternalServerError)
+		if os.IsNotExist(err) {
+			writeJSONError(w, http.StatusNotFound, "file_missing", "File missing on disk.")
+			return
+		}
+		writeJSONError(w, http.StatusInternalServerError, "integrity_check_failed", "Integrity check failed.")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	// Return a simple boolean JSON
 	json.NewEncoder(w).Encode(map[string]bool{"hash_valid": valid})
 }
 
@@ -283,6 +293,7 @@ func (s *Server) handlePromoteSOPVersion(w http.ResponseWriter, r *http.Request)
 	// 2. Transition State
 	err = s.sopService.TransitionVersionState(versionID, sop.StateRC, actorID)
 	if err != nil {
+		log.Printf("ERROR: promote version %s failed: %v", versionID, err)
 		http.Error(w, "Failed to promote version", http.StatusInternalServerError)
 		return
 	}
@@ -304,6 +315,7 @@ func (s *Server) handleApproveSOPVersion(w http.ResponseWriter, r *http.Request)
 	// The Service layer handles the transaction, the state check, AND the signature
 	ackID, err := s.sopService.ApproveSOPVersion(versionID, actorID)
 	if err != nil {
+		log.Printf("ERROR: approve version %s failed: %v", versionID, err)
 		http.Error(w, "Failed to approve and publish SOP", http.StatusInternalServerError)
 		return
 	}
@@ -329,10 +341,11 @@ func (s *Server) handleRejectSOPVersion(w http.ResponseWriter, r *http.Request) 
 	var req struct {
 		Reason string `json:"reason"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Reason == "" {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.Reason) == "" {
 		http.Error(w, "invalid request or missing reason", http.StatusBadRequest)
 		return
 	}
+	reason := strings.TrimSpace(req.Reason)
 
 	// 1. Enforce State Machine: Document must currently be an 'rc'
 	v, err := s.sopService.GetSOPVersionByID(versionID)
@@ -347,14 +360,24 @@ func (s *Server) handleRejectSOPVersion(w http.ResponseWriter, r *http.Request) 
 
 	actorID := GetUserID(r.Context())
 
-	// 2. Transition State
-	err = s.sopService.TransitionVersionState(versionID, sop.StateRejected, actorID)
+	// 2. Transition State; the reason is stored with it
+	err = s.sopService.RejectSOPVersion(versionID, actorID, reason)
+	if errors.Is(err, sop.ErrRejectReasonRequired) || errors.Is(err, sop.ErrRejectReasonTooLong) {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil && strings.HasPrefix(err.Error(), "conflict:") {
+		// The version changed state after the check above
+		http.Error(w, "Only release candidates can be rejected", http.StatusConflict)
+		return
+	}
 	if err != nil {
+		log.Printf("ERROR: reject version %s failed: %v", versionID, err)
 		http.Error(w, "Failed to reject version", http.StatusInternalServerError)
 		return
 	}
 
-	s.notifyLifecycle(notify.EventSOPRejected, versionID, actorID, req.Reason)
+	s.notifyLifecycle(notify.EventSOPRejected, versionID, actorID, reason)
 
 	w.WriteHeader(http.StatusOK)
 }

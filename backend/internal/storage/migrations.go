@@ -484,6 +484,41 @@ var migrations = []migration{
 			return err
 		},
 	},
+	// v24: scheduled S3 backups, configured in the admin UI instead of BACKUP_S3_* env vars
+	{
+		version: 24,
+		up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`
+				CREATE TABLE backup_s3_settings (
+					id INTEGER PRIMARY KEY CHECK (id = 1),
+					enabled INTEGER NOT NULL DEFAULT 0,
+					bucket TEXT NOT NULL DEFAULT '',
+					region TEXT NOT NULL DEFAULT '',
+					key_prefix TEXT NOT NULL DEFAULT '',
+					endpoint TEXT NOT NULL DEFAULT '',
+					use_path_style INTEGER NOT NULL DEFAULT 0,
+					access_key_id TEXT NOT NULL DEFAULT '',
+					secret_access_key_enc BLOB,
+					interval TEXT NOT NULL DEFAULT '24h',
+					retention_max INTEGER NOT NULL DEFAULT 14,
+					retention_days INTEGER NOT NULL DEFAULT 30,
+					updated_at TEXT NOT NULL
+				);
+			`)
+			return err
+		},
+	},
+	// v25: the reason given when a version changes state. Set for rejections from
+	// this version on; NULL on every earlier row, whose reasons were never stored.
+	{
+		version: 25,
+		up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`
+				ALTER TABLE sop_version_states ADD COLUMN reason TEXT;
+			`)
+			return err
+		},
+	},
 }
 
 func LatestSchemaVersion() int {

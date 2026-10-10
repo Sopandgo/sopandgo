@@ -166,6 +166,50 @@ func (s *Service) RevokeAllUserSessions(targetUserID string, actorUserID *string
 	return tx.Commit()
 }
 
+// RevokeOtherUserSessions signs a person out everywhere except the session
+// identified by keepTokenID, which must be one of their active sessions.
+// Returns how many sessions were revoked.
+func (s *Service) RevokeOtherUserSessions(userID, keepTokenID string) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ownerID, err := getActiveTokenOwnerRecord(s.db, keepTokenID)
+	if err == sql.ErrNoRows || (err == nil && ownerID != userID) {
+		return 0, ErrSessionNotFound
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	revoked, err := revokeOtherUserRefreshTokensRecord(tx, userID, keepTokenID)
+	if err != nil {
+		return 0, err
+	}
+
+	err = s.auditLogger.Log(
+		tx,
+		audit.EventLogout,
+		audit.EntityUser,
+		userID,
+		&userID,
+		map[string]any{
+			"scope":            "other_sessions",
+			"sessions_revoked": revoked,
+		},
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	return revoked, tx.Commit()
+}
+
 // RevokeAllSessions is the global kill-switch
 // reason strictly required
 func (s *Service) RevokeAllSessions(reason string, actorUserID *string) error {

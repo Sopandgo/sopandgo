@@ -18,11 +18,11 @@
     {#if isSelf}
         <input
             type="checkbox"
-            class="toggle"
+            class="toggle toggle-success"
             checked={user.is_active}
             disabled={true}
         />
-        <span class="text-xs opacity-60">
+        <span class="text-xs text-base-content/70">
             {user.is_active ? m.common_active() : m.common_disabled()}
         </span>
     {:else}
@@ -52,11 +52,11 @@
             >
                 <input
                     type="checkbox"
-                    class="toggle toggle-secondary pointer-events-none"
+                    class="toggle toggle-success pointer-events-none"
                     checked={user.is_active}
                     disabled={loading}
                 />
-                <span class="text-xs opacity-60 group-hover:opacity-100 transition-opacity">
+                <span class="text-xs text-base-content/70 group-hover:opacity-100 transition-opacity">
                     {user.is_active ? m.common_active() : m.common_disabled()}
                 </span>
             </button>

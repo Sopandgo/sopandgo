@@ -15,6 +15,7 @@ import (
 )
 
 var ErrInvalidLocale = errors.New("unsupported locale")
+var ErrWrongCurrentPassword = errors.New("current password is incorrect")
 var ErrInvalidTheme = errors.New("unsupported theme")
 
 const (
@@ -301,6 +302,25 @@ func (s *Service) UpdateUserPassword(
 	}
 
 	return tx.Commit()
+}
+
+// ChangeOwnPassword is the signed-in self-service change. It requires the
+// current password, so a session left open on a shared PC cannot be used to
+// take over the account. Reset links and bootstrap call UpdateUserPassword
+// directly and do not need it.
+func (s *Service) ChangeOwnPassword(userID, currentPassword, newPlainPassword string) error {
+	s.mu.RLock()
+	hash, err := getUserPasswordHashRecord(s.db, userID)
+	s.mu.RUnlock()
+	if err != nil {
+		return fmt.Errorf("failed to load password: %w", err)
+	}
+
+	if err := VerifyPassword(currentPassword, hash); err != nil {
+		return ErrWrongCurrentPassword
+	}
+
+	return s.UpdateUserPassword(userID, newPlainPassword, &userID)
 }
 
 // GeneratePasswordResetToken creates a secure token for a specific user.

@@ -43,7 +43,7 @@ Initial Credentials:
 
 - User: `admin`
 - Password: `admin`
-- **Forced change:** the bootstrap admin must set a new password on first login before other routes unlock.
+- **Forced change:** the bootstrap admin must set a new password on first login before other routes unlock. The form asks for the current password, which is `admin`.
 
 Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left on (default `true`). They use weak passwords such as `12345` for exploration only. Set `SEED_DEMO_DATA=false` before the first start to skip them. Changing the flag later does not remove data that was already seeded.
 
@@ -63,49 +63,37 @@ Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left o
 | `BODY_SIZE_LIMIT` | `52428800` | Max request size (bytes). Default is ~50MB. |
 | `AUDIT_STRICT_TYPES` | `false` | If `true`, audit writes reject unknown `event_type`/`entity_type` values (recommended once all extensions use canonical types). |
 | `AUDIT_BUSY_TIMEOUT` | `5s` | Maximum SQLite lock wait for standalone audit writes, as a Go duration. A timeout is reported in the application log; increase this only if legitimate write transactions regularly exceed five seconds. |
-| `SMTP_SECRET_ENCRYPTION_KEY` | - | **Required to save outbound secrets in the UI** (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer) **and to send mail or integration notifications that need those secrets.** A 32-byte AES-256 key, provided as **base64** or **hex** (64 hex chars, optional `0x` prefix). Used only to encrypt secrets stored in SQLite—not for signing JWTs. Generate: `openssl rand -base64 32`. If unset, the server starts, but the admin UI cannot persist those credentials until this is set and the process is restarted. |
-| `APP_VERSION` | baked into the image | Label in the footer and in admin **export** `manifest.json`. Release images set this at build time (for example `1.0.1`). Labs do not set it. Contributor source builds and `go run` use `dev`. Local `npm run dev` ignores this and shows `git describe` instead. The root `package.json` version is not used. |
-| `PDF_EXPORT_ENABLED` | `true` | When `true`, PDF artifact generation/download is enabled (requires a renderer when not `none`). |
+| `SECRET_ENCRYPTION_KEY` | - | **Required to save outbound secrets in the UI** (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key) **and to send mail or integration notifications that need those secrets.** A 32-byte AES-256 key, provided as **base64** or **hex** (64 hex chars, optional `0x` prefix). Used only to encrypt secrets stored in SQLite—not for signing JWTs. Generate: `openssl rand -base64 32`. If unset, the server starts, but the admin UI cannot persist those credentials until this is set and the process is restarted. |
+| `APP_VERSION` | baked into the image | Label on the public footer, in the signed-in sidebar, and in admin **export** `manifest.json`. Release images set this at build time (for example `1.0.1`). Labs do not set it. Contributor source builds and `go run` use `dev`. Local `npm run dev` ignores this and shows `git describe` instead. The root `package.json` version is not used. |
+| `PDF_EXPORT_ENABLED` | `true` | When `true`, PDF artifact generation/download is enabled (requires a renderer when not `none`). A renderer failure never fails a version create or lifecycle change; it is logged, and the startup backfill generates the missing PDFs. Set `false` for local `go run` / `air` without Gotenberg. |
 | `PDF_RENDERER` | `gotenberg` | `gotenberg` or `none`. |
 | `GOTENBERG_URL` | `http://gotenberg:3000` | Base URL of the Gotenberg service (default compose service name: `gotenberg`). |
 | `PDF_GENERATOR_VERSION` | `1` | Integer version for PDF pipeline/backfill; bump when output format changes. |
-| `BACKUP_S3_ENABLED` | `false` | When `true`, schedule automatic full-data `.zip` uploads to S3 (same archive as Admin → Export). See `docs/ops/backup-and-restore.md`. |
-| `BACKUP_S3_BUCKET` | - | Target bucket (required when S3 backups are enabled). |
-| `BACKUP_S3_REGION` | `us-east-1` | AWS region (or compatible). |
-| `BACKUP_S3_PREFIX` | - | Optional key prefix (e.g. `myorg/prod`). |
-| `BACKUP_S3_INTERVAL` | `24h` | How often to upload (Go duration). |
-| `BACKUP_S3_RETENTION_MAX` | `14` | Max number of remote backups to keep (0 = unlimited by count). |
-| `BACKUP_S3_RETENTION_DAYS` | `30` | Delete remote backups older than this many days (0 = unlimited by age). |
-| `BACKUP_S3_ENDPOINT` | - | Optional custom endpoint (MinIO / S3-compatible). |
-| `BACKUP_S3_USE_PATH_STYLE` | `false` | Path-style addressing for compatible endpoints. |
-| `BACKUP_S3_ACCESS_KEY_ID` / `BACKUP_S3_SECRET_ACCESS_KEY` | - | Optional static credentials; if both empty, the AWS SDK default chain is used (e.g. IAM role). |
 
 The Go backend does **not** read a `.env` file on its own. With **Docker Compose**, put values in a root **`.env`** (substituted into `docker-compose.yml`) and/or under `environment:` in the compose file. For local **`go run`**, export variables in your shell or IDE run configuration.
 
 ### Email (SMTP, Resend, or manual links)
 
-Outgoing mail (user invites, password resets) is **not** configured via `SMTP_HOST` / `SMTP_USER` style environment variables. Credentials live in SQLite and are encrypted with `SMTP_SECRET_ENCRYPTION_KEY`.
+Outgoing mail (user invites, password resets) is **not** configured via `SMTP_HOST` / `SMTP_USER` style environment variables. Credentials live in SQLite and are encrypted with `SECRET_ENCRYPTION_KEY`.
 
-**Mail delivery mode** (admin UI, **Mail delivery mode** on `/admin/settings`):
+**How mail is delivered** (`/admin/settings/email`): the **SMTP** and **Resend** cards each get an on/off toggle in their header once their settings are saved, like the integration channels. At most one is on; switching one on switches the other off.
 
-- `smtp` (default): invite/reset links are sent by email when a transport is configured and working.
-- `manual_links`: invite/reset links are returned to admins in the UI/API for manual sharing over a trusted channel.
+- **A transport is on:** invite/reset links (and publish notices) are sent by email through it. **Send test email** uses it too.
+- **Neither is on, or none is saved (the default on a fresh install):** invite/reset links are returned to admins in the UI/API for manual sharing over a trusted channel (**manual links**), and the Email page says so. Nothing tries to send through an empty configuration.
 
-**Outbound transport** (when not in `manual_links`): choose **SMTP** (your own server) or **Resend** ([resend.com](https://resend.com) API). Only the selected transport is used for sends and for **Send test email**.
-
-1. Set `SMTP_SECRET_ENCRYPTION_KEY` as above (required to save any stored secret and to send).
-2. Sign in as **admin**, open **Settings** (`/admin/settings`).
+1. Set `SECRET_ENCRYPTION_KEY` as above (required to save any stored secret and to send).
+2. Sign in as **admin**, open **Settings → Email** (`/admin/settings/email`).
 3. For **SMTP**: enter host, port, username, password, and from-address, then save.
-4. For **Resend**: create an API key in the Resend dashboard, set **Outbound transport** to Resend, enter from-address and API key, then save. Use a verified domain (or Resend’s test sender for trials).
-5. Use **Send test email** to verify connectivity.
+4. For **Resend**: create an API key in the Resend dashboard, enter from-address and API key, then save. Use a verified domain (or Resend’s test sender for trials).
+5. Switch the transport on in its card header, then use **Send test email** to verify connectivity.
 
-If you use `manual_links`, SMTP and Resend fields are optional until you switch back to email delivery.
+To go back to manual links, switch the transport off; its saved settings stay. The API still exposes `mail_mode` and `mail_transport`; `effective_mail_mode` in `GET /api/admin/settings/email` is what invites and resets actually use.
 
 **What mail does in 1.0:** invites, password resets, test email, and **optional notices when a version is published** (to other active users who can reader-sign). Publish notices are skipped in `manual_links` mode; a failed send does **not** unpublish the version. Pending-acknowledgment reminder digests and emails for RC/reject/archive are **not** included — use the home dashboard and training coverage views instead.
 
 ### Outbound integrations (Slack, Gotify, webhook)
 
-Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTIFY_*` feature flags). Configure them under **Settings → Integrations** on `/admin/settings`, encrypted with the same `SMTP_SECRET_ENCRYPTION_KEY`.
+Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTIFY_*` feature flags). Configure them under **Settings → Integrations** (`/admin/settings/integrations`), encrypted with the same `SECRET_ENCRYPTION_KEY`.
 
 | Channel | What you configure | Delivery |
 | --- | --- | --- |
@@ -115,7 +103,7 @@ Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTI
 
 **Events:** `sop_published`, `sop_rc`, `sop_rejected`, `backup_s3_failed`, `integrity_check_failed`. Use **Send test** per channel to verify. Delivery failures are audited and never roll back SOP publish/promote/reject.
 
-If you **rotate** `SMTP_SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save.
+If you **rotate** `SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save.
 
 ### Audit Taxonomy Hardening
 
@@ -145,7 +133,7 @@ The application does not enforce network-level restrictions. Operators should:
 
 ### Backup
 
-**Recommended:** Sign in as **admin** and use **Backup** (`/admin/backup`) to **export** a `.zip` (consistent DB snapshot plus `sops/` and `manifest.json`). You can **validate** archives and **stage** a restore; staged restores apply on the **next backend restart**. See `docs/ops/backup-and-restore.md`.
+**Recommended:** Sign in as **admin** and use **Settings → Backup** (`/admin/settings/backup`) to **export** a `.zip` (consistent DB snapshot plus `sops/` and `manifest.json`). You can **validate** archives and **stage** a restore; staged restores apply on the **next backend restart**. See `docs/ops/backup-and-restore.md`.
 
 **Manual:** Stop the container and copy the entire mounted data directory, or at minimum `app.db` and the `sops/` tree together (SQLite may use `app.db-wal` / `app.db-shm` while running—stopping the container avoids inconsistent copies).
 
@@ -158,7 +146,7 @@ From **1.0.0** onward, the image tag in `docker-compose.yml` is `ghcr.io/sopandg
 1. Export a backup (admin UI) or stop the container and copy the data directory.
 2. `docker compose pull` and `docker compose up -d`.
 3. Append-only migrations in `backend/internal/storage/migrations.go` apply automatically on startup.
-4. Verify login and a published SOP. The footer shows the exact release, such as `v1.0.1`.
+4. Verify login and a published SOP. After sign-in, the sidebar shows the exact release, such as `v1.0.1`. Public pages still show it in the footer.
 
 ### Rollback and a future major version
 

@@ -1,6 +1,6 @@
 #:schema https://json.schemastore.org/any.json
 
-env_files = []
+env_files = [".env"]
 root = "."
 testdata_dir = "testdata"
 tmp_dir = "tmp"
@@ -26,7 +26,7 @@ tmp_dir = "tmp"
   poll = false
   poll_interval = 0
   post_cmd = []
-  pre_cmd = []
+  pre_cmd = ["go run ./cmd/seed-demo-data"]
   rerun = false
   rerun_delay = 500
   send_interrupt = false

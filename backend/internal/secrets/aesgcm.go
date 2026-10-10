@@ -61,10 +61,18 @@ func Open(key, blob []byte) ([]byte, error) {
 	return gcm.Open(nil, nonce, ct, nil)
 }
 
-// KeyFromEnv reads SMTP_SECRET_ENCRYPTION_KEY: base64 or hex-encoded 32 bytes.
-// Returns (nil, false) when unset.
+// KeyEnv names the environment variable that holds the key.
+const KeyEnv = "SECRET_ENCRYPTION_KEY"
+
+// KeySet reports whether KeyEnv is set at all, valid or not.
+func KeySet() bool {
+	return strings.TrimSpace(os.Getenv(KeyEnv)) != ""
+}
+
+// KeyFromEnv reads SECRET_ENCRYPTION_KEY: base64 or hex-encoded 32 bytes.
+// Returns (nil, false) when unset or invalid.
 func KeyFromEnv() ([]byte, bool) {
-	s := strings.TrimSpace(os.Getenv("SMTP_SECRET_ENCRYPTION_KEY"))
+	s := strings.TrimSpace(os.Getenv(KeyEnv))
 	if s == "" {
 		return nil, false
 	}

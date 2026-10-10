@@ -16,6 +16,10 @@ import (
 
 func TestAPI_SMTPSettings(t *testing.T) {
 	env := testenv.New(t)
+	// testenv saves an SMTP row so email mode can send; this test starts from nothing.
+	if _, err := env.Store.DB.Exec(`DELETE FROM smtp_settings`); err != nil {
+		t.Fatal(err)
+	}
 
 	var fwdSeq atomic.Uint64
 

@@ -1,20 +1,36 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { page } from '$app/state';
-  import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
+  import Combobox from '$lib/components/Combobox.svelte';
   import ListSops from '$lib/components/ListSops.svelte';
-  import { HouseIcon, NotebookIcon, PlusIcon, SearchIcon, XIcon } from 'lucide-svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
+  import {
+    NotebookIcon,
+    NotebookPenIcon,
+    PlusIcon,
+    SearchIcon,
+    SearchXIcon,
+    StarIcon,
+    XIcon
+  } from 'lucide-svelte';
   import * as m from '$lib/paraglide/messages.js';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
 
+  const SEARCH_DELAY_MS = 300;
+
+  let canCreate = $derived(['admin', 'approver', 'editor'].includes(data.user!.role));
+
   // Local UI state mirrors URL-backed filters (avoid capturing only initial `data`)
   let searchTerm = $state('');
+  // The query this page last navigated with; not reactive, so typing ahead is never overwritten
+  let sentQuery: string | null = null;
   $effect(() => {
-    searchTerm = data.filters.q;
+    const q = data.filters.q;
+    if (q !== sentQuery) searchTerm = q;
+    sentQuery = null;
   });
 
   // Helper: update query params and reset offset when filters change
@@ -27,34 +43,63 @@
     }
 
     if (resetOffset) url.searchParams.set('offset', '0');
-    goto(url.toString());
+    // Filters change the list, not the page: keep focus and scroll where the user is
+    goto(url.toString(), { keepFocus: true, noScroll: true });
   }
 
+  let searchTimer: ReturnType<typeof setTimeout> | undefined;
+
   function handleSearch() {
-    updateQuery({ q: searchTerm ?? '' }, true);
+    clearTimeout(searchTimer);
+    const q = searchTerm.trim();
+    if (q === data.filters.q) return;
+    sentQuery = q;
+    updateQuery({ q }, true);
+  }
+
+  function queueSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(handleSearch, SEARCH_DELAY_MS);
+  }
+
+  function setTag(tagId: string) {
+    updateQuery({ tag_id: tagId || null }, true);
   }
 
   function toggleTag(tagId: string) {
-    const current = page.url.searchParams.get('tag_id') ?? '';
-    updateQuery({ tag_id: current === tagId ? null : tagId }, true);
+    setTag(data.filters.tag_id === tagId ? '' : tagId);
+  }
+
+  type FavoritesMode = 'all' | 'first' | 'only';
+
+  const favoritesOptions: { mode: FavoritesMode; label: () => string }[] = [
+    { mode: 'all', label: m.sops_favorites_all },
+    { mode: 'first', label: m.sops_favorites_first },
+    { mode: 'only', label: m.sops_favorites_only }
+  ];
+
+  let favoritesMode = $derived<FavoritesMode>(
+    data.filters.favorites_only ? 'only' : data.filters.favorites_first ? 'first' : 'all'
+  );
+
+  function setFavoritesMode(mode: FavoritesMode) {
+    updateQuery(
+      {
+        favorites_only: mode === 'only' ? 'true' : null,
+        favorites_first: mode === 'first' ? 'true' : null
+      },
+      true
+    );
   }
 
   function clearFilters() {
+    clearTimeout(searchTimer);
+    searchTerm = '';
     // Keep the user on the same route but strip filter params (and reset offset)
     updateQuery(
       { q: null, tag_id: null, favorites_only: null, favorites_first: null },
       true
     );
-  }
-
-  function toggleFavoritesOnly() {
-    const cur = page.url.searchParams.get('favorites_only') === 'true';
-    updateQuery({ favorites_only: cur ? null : 'true' }, true);
-  }
-
-  function toggleFavoritesFirst() {
-    const cur = page.url.searchParams.get('favorites_first') === 'true';
-    updateQuery({ favorites_first: cur ? null : 'true' }, true);
   }
 
   // Derived for UI
@@ -66,7 +111,18 @@
         data.filters.favorites_first
     )
   );
-  let activeTagId = $derived(data.filters.tag_id);
+
+  // "Favorites first" only reorders; these are the filters that can hide SOPs
+  let isNarrowed = $derived(
+    Boolean(data.filters.q || data.filters.tag_id || data.filters.favorites_only)
+  );
+  // Nothing to search yet: the empty state replaces the toolbar and the header action
+  let isLibraryEmpty = $derived(data.total === 0 && !isNarrowed);
+  let isFavoritesEmpty = $derived(
+    data.filters.favorites_only && !data.filters.q && !data.filters.tag_id
+  );
+
+  let tagOptions = $derived(data.tags.map((t) => ({ value: t.id, label: t.title })));
 </script>
 
 <svelte:head>
@@ -74,28 +130,26 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-  <Breadcrumbs
-    items={[
-      { label: m.page_dashboard(), href: '/dashboard', icon: HouseIcon },
-      { label: m.page_sops(), icon: NotebookIcon }
-    ]}
-  />
-
   <Card>
     <div class="card-body">
-      <div class="flex flex-col gap-1">
-        <CardPageHeading>
-          <NotebookIcon class="w-8 h-8" />
-          {m.sops_heading()}
-        </CardPageHeading>
-        <span class="text-sm font-medium text-base-content/70">
-          {m.sops_intro()}
-        </span>
-      </div>
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex min-w-0 flex-col gap-1">
+          <CardPageHeading>
+            <NotebookIcon class="w-8 h-8" />
+            {m.sops_heading()}
+          </CardPageHeading>
+          <span class="text-sm font-medium text-base-content/70">
+            {m.sops_intro()}
+          </span>
+        </div>
 
-      <div class="card-actions justify-end pt-4 border-t border-base-200">
-        {#if ['admin', 'approver', 'editor'].includes(data.user!.role)}
-          <a href="/sops/new" class="btn btn-primary ml-2">
+        {#if canCreate && !isLibraryEmpty}
+          <a
+            href="/sops/new"
+            class="btn btn-primary shrink-0"
+            aria-label={m.common_new_sop()}
+            title={m.common_new_sop()}
+          >
             <PlusIcon class="w-5 h-5" />
             <span class="hidden sm:inline">{m.common_new_sop()}</span>
           </a>
@@ -104,115 +158,129 @@
     </div>
   </Card>
 
-  <Card>
-    <div class="card-body">
-      <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
-        {m.sops_search_filters()}
-      </span>
-
-      <div class="flex flex-col gap-3 pt-4 border-t border-base-200">
-        <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-          <div class="join w-full md:w-auto">
-            <input
-              type="text"
-              placeholder={m.sops_search_placeholder()}
-              class="input input-bordered join-item flex-1 md:w-80"
-              bind:value={searchTerm}
-              onkeydown={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <button
-              class="btn btn-primary join-item"
-              onclick={handleSearch}
-              aria-label={m.sops_submit_search()}
-            >
-              <SearchIcon class="w-5 h-5" />
-            </button>
-          </div>
-
-          {#if hasActiveFilters}
-            <button
-              class="btn btn-error text-error-content md:self-auto"
-              onclick={clearFilters}
-              aria-label={m.sops_clear_filters_aria()}
-            >
-              <XIcon class="w-4 h-4" />
-              {m.sops_clear_filters()}
-            </button>
-          {/if}
-        </div>
-
-          <div class="flex flex-col gap-2 pt-2 border-t border-base-200/80">
-            <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
-              {m.common_favorites()}
-            </span>
-            <div class="flex flex-wrap gap-3">
-              <label class="label cursor-pointer gap-2 justify-start py-1">
-                <input
-                  type="checkbox"
-                  class="checkbox checkbox-sm checkbox-primary"
-                  checked={data.filters.favorites_only}
-                  onchange={toggleFavoritesOnly}
-                  aria-label={m.sops_favorites_only_aria()}
-                />
-                <span class="label-text text-sm">{m.sops_favorites_only()}</span>
-              </label>
-              <label class="label cursor-pointer gap-2 justify-start py-1">
-                <input
-                  type="checkbox"
-                  class="checkbox checkbox-sm checkbox-primary"
-                  checked={data.filters.favorites_first}
-                  onchange={toggleFavoritesFirst}
-                  aria-label={m.sops_favorites_first_aria()}
-                />
-                <span class="label-text text-sm">{m.sops_favorites_first()}</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs opacity-60 tracking-widest uppercase font-bold">
-              {m.common_tags()}
-            </span>
-
-            {#if activeTagId}
-              <button
-                type="button"
-                class="btn btn-xs btn-ghost"
-                onclick={() => toggleTag(activeTagId)}
-                aria-label={m.sops_clear_tag_aria()}
-              >
-                {m.sops_clear_tag()}
-              </button>
-            {/if}
-          </div>
-
-          <div class="flex flex-wrap gap-2">
-            {#each data.tags as t (t.id)}
-              <button
-                type="button"
-                onclick={() => toggleTag(t.id)}
-                class="badge badge-sm cursor-pointer hover:badge-outline transition-all {activeTagId === t.id
-                  ? 'badge-primary'
-                  : 'badge-ghost opacity-70'}"
-                aria-pressed={activeTagId === t.id}
-                aria-label={m.sops_filter_tag({ title: t.title })}
-                title={activeTagId === t.id ? m.sops_click_remove() : m.sops_click_filter()}
-              >
-                {t.title}
-              </button>
-            {:else}
-              <span class="text-sm opacity-60">{m.sops_no_tags()}</span>
-            {/each}
-          </div>
-        </div>
-      </div>
-    </div>
-  </Card>
-
   <ListSops
     items={{ sops: data.sops, total: data.total }}
     activeFilters={data.filters}
     onTagClick={toggleTag}
+    toolbar={isLibraryEmpty ? undefined : toolbar}
+    {empty}
   />
 </div>
+
+{#snippet toolbar()}
+  <div class="flex flex-wrap items-center gap-3">
+    <form
+      role="search"
+      class="relative w-full sm:w-72"
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleSearch();
+      }}
+    >
+      <SearchIcon
+        class="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-base-content/70"
+        aria-hidden="true"
+      />
+      <input
+        type="search"
+        placeholder={m.sops_search_placeholder()}
+        aria-label={m.sops_search_placeholder()}
+        class="input w-full pl-9"
+        bind:value={searchTerm}
+        oninput={queueSearch}
+      />
+    </form>
+
+    {#if tagOptions.length > 0}
+      <Combobox
+        class="w-full sm:w-56"
+        label={m.common_tags()}
+        hideLabel
+        placeholder={m.sops_tag_placeholder()}
+        options={tagOptions}
+        bind:value={() => data.filters.tag_id, setTag}
+        allLabel={m.sops_all_tags()}
+        emptyLabel={m.sops_no_matching_tags()}
+        clearLabel={m.sops_clear_tag_aria()}
+      />
+    {/if}
+
+    <div class="join w-full sm:w-auto" role="group" aria-label={m.common_favorites()}>
+      {#each favoritesOptions as option (option.mode)}
+        <button
+          type="button"
+          class="btn join-item btn-sm flex-1 sm:btn-md sm:flex-none {favoritesMode === option.mode ? 'btn-active' : ''}"
+          aria-pressed={favoritesMode === option.mode}
+          onclick={() => setFavoritesMode(option.mode)}
+        >
+          {option.label()}
+        </button>
+      {/each}
+    </div>
+
+    {#if hasActiveFilters}
+      <button
+        type="button"
+        class="btn btn-ghost sm:ml-auto"
+        onclick={clearFilters}
+        aria-label={m.sops_clear_filters_aria()}
+      >
+        <XIcon class="size-4" />
+        {m.sops_clear_filters()}
+      </button>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet empty()}
+  {#if isLibraryEmpty}
+    {#if canCreate}
+      <EmptyState
+        icon={NotebookPenIcon}
+        tone="primary"
+        title={m.sops_empty_new_title()}
+        description={m.sops_empty_new_body()}
+      >
+        {#snippet actions()}
+          <a href="/sops/new" class="btn btn-primary">
+            <PlusIcon class="size-4" />
+            {m.common_new_sop()}
+          </a>
+        {/snippet}
+      </EmptyState>
+    {:else}
+      <EmptyState
+        icon={NotebookIcon}
+        title={m.sops_empty_none_title()}
+        description={m.sops_empty_none_body()}
+      />
+    {/if}
+  {:else if isFavoritesEmpty}
+    <EmptyState
+      icon={StarIcon}
+      title={m.sops_empty_fav_title()}
+      description={m.sops_empty_fav_body()}
+    >
+      {#snippet actions()}
+        <button type="button" class="btn" onclick={() => setFavoritesMode('all')}>
+          {m.common_all_sops()}
+        </button>
+      {/snippet}
+    </EmptyState>
+  {:else}
+    <EmptyState
+      icon={SearchXIcon}
+      title={m.sops_empty_match_title()}
+      description={data.filters.q
+        ? m.sops_empty_match_query({ query: data.filters.q })
+        : m.sops_empty_match_filters()}
+    >
+      {#snippet actions()}
+        <button type="button" class="btn" onclick={clearFilters}>
+          <XIcon class="size-4" />
+          {m.sops_clear_filters()}
+        </button>
+      {/snippet}
+    </EmptyState>
+  {/if}
+{/snippet}

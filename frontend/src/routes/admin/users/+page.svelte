@@ -32,14 +32,14 @@
     <ListUsers
         items={data.users}
         currentUserId={data.user?.id ?? null}
-        mailMode={data.smtp?.mail_mode ?? 'smtp'}
+        mailMode={data.smtp?.effective_mail_mode ?? 'manual_links'}
         {form}
     />
 
     <Card>
         <div class="card-body">
-            <h2 class="card-title text-xs opacity-60 tracking-widest uppercase font-bold mb-4">{m.users_register()}</h2>
-            <RegisterUser mailMode={data.smtp?.mail_mode ?? 'smtp'} defaultLocale={data.smtp?.default_locale ?? 'en'} {form} />
+            <h2 class="text-lg font-semibold mb-4">{m.users_register()}</h2>
+            <RegisterUser mailMode={data.smtp?.effective_mail_mode ?? 'manual_links'} defaultLocale={data.smtp?.default_locale ?? 'en'} {form} />
         </div>
     </Card>
 </div>

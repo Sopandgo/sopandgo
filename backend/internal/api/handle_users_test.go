@@ -62,7 +62,10 @@ func TestAPI_PasswordUpdates(t *testing.T) {
 	// --- RUN TEST CASES ---
 
 	t.Run("Update Password (Authenticated) - Validation Failure", func(t *testing.T) {
-		payload := map[string]any{"new_password": "weak"} // Fails complexity check
+		payload := map[string]any{
+			"current_password": "InitialPass123!",
+			"new_password":     "weak", // Fails complexity check
+		}
 		rec := doRequest(http.MethodPatch, "/api/auth/me/update-password", accessToken, payload)
 
 		if rec.Code != http.StatusBadRequest {
@@ -70,8 +73,39 @@ func TestAPI_PasswordUpdates(t *testing.T) {
 		}
 	})
 
-	t.Run("Update Password (Authenticated) - Happy Path", func(t *testing.T) {
+	t.Run("Update Password (Authenticated) - Missing Current Password", func(t *testing.T) {
 		payload := map[string]any{"new_password": "NewValidPassword123!"}
+		rec := doRequest(http.MethodPatch, "/api/auth/me/update-password", accessToken, payload)
+
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden without current password, got %d", rec.Code)
+		}
+	})
+
+	t.Run("Update Password (Authenticated) - Wrong Current Password", func(t *testing.T) {
+		payload := map[string]any{
+			"current_password": "NotMyPassword123!",
+			"new_password":     "NewValidPassword123!",
+		}
+		rec := doRequest(http.MethodPatch, "/api/auth/me/update-password", accessToken, payload)
+
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for wrong current password, got %d", rec.Code)
+		}
+
+		// The old password must still work
+		loginPayload := map[string]any{"email": userEmail, "password": "InitialPass123!"}
+		loginRec := doRequest(http.MethodPost, "/api/auth/login", "", loginPayload)
+		if loginRec.Code != http.StatusOK {
+			t.Error("Password changed despite a wrong current password!")
+		}
+	})
+
+	t.Run("Update Password (Authenticated) - Happy Path", func(t *testing.T) {
+		payload := map[string]any{
+			"current_password": "InitialPass123!",
+			"new_password":     "NewValidPassword123!",
+		}
 		rec := doRequest(http.MethodPatch, "/api/auth/me/update-password", accessToken, payload)
 
 		if rec.Code != http.StatusNoContent {
@@ -107,6 +141,8 @@ func TestAPI_PasswordUpdates(t *testing.T) {
 		}
 	})
 
+	// Reset links prove identity with the token, so they never ask for the
+	// current password.
 	t.Run("Reset Password - Happy Path", func(t *testing.T) {
 		payload := map[string]any{
 			"token":        validResetToken,
@@ -149,6 +185,69 @@ func TestAPI_PasswordUpdates(t *testing.T) {
 
 		if rec.Code != http.StatusUnauthorized {
 			t.Errorf("Expected 401 Unauthorized for fake token, got %d", rec.Code)
+		}
+	})
+}
+
+func TestAPI_SignOutOtherSessions(t *testing.T) {
+	env := testenv.New(t)
+
+	userID := "user-sessions-1"
+	env.SeedTestUser(t, userID, "sessions_test@api.local", auth.RoleEditor)
+	otherID := "user-sessions-2"
+	env.SeedTestUser(t, otherID, "sessions_other@api.local", auth.RoleEditor)
+
+	current, _ := env.AuthService.CreateSession(userID)
+	labPC, _ := env.AuthService.CreateSession(userID)
+	otherUser, _ := env.AuthService.CreateSession(otherID)
+
+	accessToken, _ := auth.GenerateAccessToken(userID, auth.RoleEditor)
+
+	var ipCounter int
+	signOutOthers := func(refreshToken string) *httptest.ResponseRecorder {
+		b, _ := json.Marshal(map[string]string{"refresh_token": refreshToken})
+		req, _ := http.NewRequest(http.MethodPost, "/api/auth/me/sessions/sign-out-others", bytes.NewReader(b))
+		ipCounter++
+		req.RemoteAddr = fmt.Sprintf("198.51.100.%d:1234", ipCounter)
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		env.API.ServeHTTP(rec, req)
+		return rec
+	}
+
+	t.Run("Rejects a session that belongs to someone else", func(t *testing.T) {
+		rec := signOutOthers(otherUser)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Expected 400, got %d", rec.Code)
+		}
+		if _, _, err := env.AuthService.ValidateSession(labPC); err != nil {
+			t.Error("Sessions were revoked for a request with a foreign token")
+		}
+	})
+
+	t.Run("Revokes other sessions and keeps the current one", func(t *testing.T) {
+		rec := signOutOthers(current)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("Expected 200, got %d. Body: %s", rec.Code, rec.Body.String())
+		}
+
+		var body struct {
+			SessionsRevoked int `json:"sessions_revoked"`
+		}
+		json.NewDecoder(rec.Body).Decode(&body)
+		if body.SessionsRevoked != 1 {
+			t.Errorf("Expected 1 revoked session, got %d", body.SessionsRevoked)
+		}
+
+		if _, _, err := env.AuthService.ValidateSession(current); err != nil {
+			t.Errorf("Current session was revoked: %v", err)
+		}
+		if _, _, err := env.AuthService.ValidateSession(labPC); err == nil {
+			t.Error("Other session is still active")
+		}
+		if _, _, err := env.AuthService.ValidateSession(otherUser); err != nil {
+			t.Errorf("Another person's session was revoked: %v", err)
 		}
 	})
 }

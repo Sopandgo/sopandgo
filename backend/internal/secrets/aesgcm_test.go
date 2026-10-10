@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 )
 
@@ -31,5 +32,31 @@ func TestOpen_WrongKey(t *testing.T) {
 	_, err = Open(wrong, enc)
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestKeyFromEnv(t *testing.T) {
+	raw := strings.Repeat("a", 32)
+
+	cases := []struct {
+		name, env string
+		wantSet   bool
+		wantKey   string
+	}{
+		{"unset", "", false, ""},
+		{"valid", raw, true, raw},
+		{"wrong length", "too-short", true, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv(KeyEnv, tc.env)
+			if got := KeySet(); got != tc.wantSet {
+				t.Fatalf("KeySet() = %v, want %v", got, tc.wantSet)
+			}
+			key, ok := KeyFromEnv()
+			if ok != (tc.wantKey != "") || string(key) != tc.wantKey {
+				t.Fatalf("KeyFromEnv() = %q, %v; want %q", key, ok, tc.wantKey)
+			}
+		})
 	}
 }
