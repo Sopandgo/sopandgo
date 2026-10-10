@@ -33,7 +33,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 - `secondary` is a near-neutral; use it rarely. `accent` (sand) is decorative only.
 - Status colours appear as soft badges and alerts: `success` text on `success-soft`, and so on. Solid status fills (`btn-error`) are only for destructive confirmations.
 - `base-300` is for hairlines, never a text ground.
-- `brand-sky`, `brand-sand` and `brand-deep` are the logo's colours for the landing page, the cover and PDF exports, not for UI state. `info` is the only blue left in UI state, and only for informational alerts.
+- `brand-sky`, `brand-sand` and `brand-deep` are the logo's colours for the cover and PDF exports, not for UI state. `info` is the only blue left in UI state, and only for informational alerts.
 
 ### Status mapping
 

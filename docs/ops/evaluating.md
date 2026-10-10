@@ -35,7 +35,7 @@ docker compose pull
 docker compose up -d
 ```
 
-4. Open **`ORIGIN`** (default [http://localhost:8087](http://localhost:8087)).
+4. Open **`ORIGIN`** (default [http://localhost:8087](http://localhost:8087)). It opens on the sign-in form.
 
 ## Who to sign in as
 

@@ -162,6 +162,10 @@ export const load = async ({ locals, params }) => {
 
 ```
 
+### Entry point (`/`)
+
+There is no public landing page. The root route **`/`** only redirects: signed-in users go to **`/dashboard`**, everyone else to the sign-in form at **`/login`**. Pages that need a session also send signed-out visitors to `/login`.
+
 ### Home dashboard (signed-in landing)
 
 The route **`/dashboard`** is the default post-login destination in the SvelteKit app. It loads signature status, recent publishes, a favorites slice, and (for admin and approver) training coverage from the SDK, surfaces **All SOPs** (`/sops`), and deep-links pending acknowledgments to **`/sops/{id}/v/latest`**. Conceptual overview: `docs/concepts/home-dashboard.md`.

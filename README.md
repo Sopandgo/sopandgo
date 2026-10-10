@@ -130,7 +130,7 @@ The compose file uses the published image `ghcr.io/sopandgo/sopandgo:1`. You do 
 
 4. **Access the app**
 
-Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`HOST_WEB_PORT`** if you changed it).
+Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`HOST_WEB_PORT`** if you changed it). It opens on the sign-in form.
 
 **Default Admin:** `admin` / `admin`
 
