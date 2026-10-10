@@ -9,6 +9,12 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 )
 
+// currentVersionStateSQL is a version's current state: its newest state row, with
+// rowid breaking ties between rows written at the same instant. Every query that
+// asks "which version is published" uses it, so the list, the SOP detail and
+// /version-latest cannot disagree. Expects the version aliased as v.
+const currentVersionStateSQL = `COALESCE((SELECT state FROM sop_version_states WHERE sop_version_id = v.id ORDER BY created_at DESC, rowid DESC LIMIT 1), '')`
+
 // --- SOP ---
 
 func createSOPRecord(db audit.DBTX, id, title, createdAt string) error {
@@ -172,8 +178,7 @@ func listSOPsRecord(db audit.DBTX, userID string, limit, offset int, tagID strin
 
 	// 7. Bulk fetch versions (newest first) for the latest and published version per SOP
 	versionQuery := `
-		SELECT v.sop_id, v.version, v.created_at,
-		       COALESCE((SELECT state FROM sop_version_states WHERE sop_version_id = v.id ORDER BY created_at DESC, rowid DESC LIMIT 1), '') AS status
+		SELECT v.sop_id, v.id, v.version, v.created_at, ` + currentVersionStateSQL + ` AS status
 		FROM sop_versions v
 		WHERE v.sop_id IN (` + strings.Join(placeholders, ",") + `)
 		ORDER BY v.sop_id, v.version DESC
@@ -190,7 +195,7 @@ func listSOPsRecord(db audit.DBTX, userID string, limit, offset int, tagID strin
 	for versionRows.Next() {
 		var sopID, createdAt string
 		var v SOPListVersion
-		if err := versionRows.Scan(&sopID, &v.Version, &createdAt, &v.Status); err != nil {
+		if err := versionRows.Scan(&sopID, &v.ID, &v.Version, &createdAt, &v.Status); err != nil {
 			return nil, 0, err
 		}
 		v.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
@@ -213,6 +218,42 @@ func listSOPsRecord(db audit.DBTX, userID string, limit, offset int, tagID strin
 	}
 
 	return sops, total, nil
+}
+
+// getSOPVersionPointersRecord returns the newest version of an SOP and the version
+// readers see. Either is nil when the SOP has no such version.
+func getSOPVersionPointersRecord(db audit.DBTX, sopID string) (latest, published *SOPListVersion, err error) {
+	query := `
+		SELECT v.id, v.version, v.created_at, ` + currentVersionStateSQL + ` AS status
+		FROM sop_versions v
+		WHERE v.sop_id = ?
+		ORDER BY v.version DESC
+	`
+
+	rows, err := db.Query(query, sopID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to fetch versions for sop: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var v SOPListVersion
+		var createdAt string
+		if err := rows.Scan(&v.ID, &v.Version, &createdAt, &v.Status); err != nil {
+			return nil, nil, err
+		}
+		v.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
+		if latest == nil {
+			latest = &v
+		}
+		if published == nil && v.Status == StatePublished {
+			published = &v
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+	return latest, published, nil
 }
 
 // --- SOP Version ---
@@ -769,11 +810,9 @@ func getActivePublishedVersionIDRecord(db audit.DBTX, sopID string, excludeVersi
 	var oldPublishedVersionID string
 
 	query := `
-        SELECT v.id 
+        SELECT v.id
         FROM sop_versions v
-        JOIN sop_version_states s ON v.id = s.sop_version_id
-        WHERE v.sop_id = ? AND s.state = 'published'
-        AND s.created_at = (SELECT MAX(created_at) FROM sop_version_states WHERE sop_version_id = v.id)
+        WHERE v.sop_id = ? AND ` + currentVersionStateSQL + ` = 'published'
         AND v.id != ?
         ORDER BY v.version DESC LIMIT 1
     `

@@ -86,12 +86,28 @@ export interface SOP {
     is_favorite?: boolean;
 }
 
+/** A version as an SOP row or detail points at it: no content, just where it stands. */
+export interface SOPVersionPointer {
+    id: string;
+    version: number;
+    status: SOPVersionStatus;
+    created_at: string;
+}
+
 /** A row of `GET /sops`: the SOP plus a summary of its versions. */
 export interface SOPListItem extends SOP {
     /** Highest version number in its current state; null before the first version. */
-    latest_version: { version: number; status: SOPVersionStatus; created_at: string } | null;
+    latest_version: SOPVersionPointer | null;
     /** Number of the version readers see; null until one is published. */
     published_version: number | null;
+}
+
+/** `GET /sops/{id}`: the SOP plus pointers to its newest and its published version. */
+export interface SOPDetail extends SOP {
+    latest_version: SOPVersionPointer | null;
+    /** Number and id of the version readers see; both null until one is published. */
+    published_version: number | null;
+    published_version_id: string | null;
 }
 
 export interface Tag {

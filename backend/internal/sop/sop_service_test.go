@@ -107,6 +107,90 @@ func TestService_GetSOPByID(t *testing.T) {
 	}
 }
 
+// The SOP detail names its newest version and the version readers see, and
+// /version-latest resolves to that same published version.
+func TestService_GetSOPByIDWithTags_VersionPointers(t *testing.T) {
+	env := testenv.New(t)
+	actorID := "admin-1"
+	env.SeedTestUser(t, actorID, "admin@test.local", auth.RoleAdmin)
+
+	sopID, err := env.SOPService.RegisterSOP("Pointer Protocol", &actorID)
+	if err != nil {
+		t.Fatalf("RegisterSOP: %v", err)
+	}
+
+	check := func(step string, latestID string, latestStatus string, publishedID string, publishedNumber int) {
+		t.Helper()
+		d, err := env.SOPService.GetSOPByIDWithTags(sopID, actorID)
+		if err != nil {
+			t.Fatalf("%s: GetSOPByIDWithTags: %v", step, err)
+		}
+		switch {
+		case latestID == "" && d.LatestVersion != nil:
+			t.Errorf("%s: want no latest version, got %+v", step, d.LatestVersion)
+		case latestID != "" && (d.LatestVersion == nil || d.LatestVersion.ID != latestID || d.LatestVersion.Status != latestStatus):
+			t.Errorf("%s: want latest %s in %s, got %+v", step, latestID, latestStatus, d.LatestVersion)
+		}
+		if publishedID == "" {
+			if d.PublishedVersionID != nil || d.PublishedVersion != nil {
+				t.Errorf("%s: want nothing published, got id %v number %v", step, d.PublishedVersionID, d.PublishedVersion)
+			}
+			return
+		}
+		if d.PublishedVersionID == nil || *d.PublishedVersionID != publishedID {
+			t.Errorf("%s: want published id %s, got %v", step, publishedID, d.PublishedVersionID)
+		}
+		if d.PublishedVersion == nil || *d.PublishedVersion != publishedNumber {
+			t.Errorf("%s: want published version %d, got %v", step, publishedNumber, d.PublishedVersion)
+		}
+		resolved, err := env.SOPService.GetSOPVersionIDLatestPublished(sopID)
+		if err != nil || resolved != publishedID {
+			t.Errorf("%s: version-latest resolved to %q (%v), want %s", step, resolved, err, publishedID)
+		}
+	}
+
+	check("no versions", "", "", "", 0)
+
+	v1, _, err := env.SOPService.RegisterSOPVersion(sopID, "V1 content", "First version", &actorID)
+	if err != nil {
+		t.Fatalf("RegisterSOPVersion v1: %v", err)
+	}
+	check("v1 draft", v1, sop.StateDraft, "", 0)
+
+	if err := env.SOPService.TransitionVersionState(v1, sop.StateRC, actorID); err != nil {
+		t.Fatalf("Promote v1: %v", err)
+	}
+	check("v1 rc", v1, sop.StateRC, "", 0)
+
+	if _, err := env.SOPService.ApproveSOPVersion(v1, actorID); err != nil {
+		t.Fatalf("Publish v1: %v", err)
+	}
+	check("v1 published", v1, sop.StatePublished, v1, 1)
+
+	v2, _, err := env.SOPService.RegisterSOPVersion(sopID, "V2 content", "Second version", &actorID)
+	if err != nil {
+		t.Fatalf("RegisterSOPVersion v2: %v", err)
+	}
+	if err := env.SOPService.TransitionVersionState(v2, sop.StateRC, actorID); err != nil {
+		t.Fatalf("Promote v2: %v", err)
+	}
+	check("v2 rc", v2, sop.StateRC, v1, 1)
+
+	if _, err := env.SOPService.ApproveSOPVersion(v2, actorID); err != nil {
+		t.Fatalf("Publish v2: %v", err)
+	}
+	check("v2 supersedes v1", v2, sop.StatePublished, v2, 2)
+
+	v3, _, err := env.SOPService.RegisterSOPVersion(sopID, "V3 content", "Third version", &actorID)
+	if err != nil {
+		t.Fatalf("RegisterSOPVersion v3: %v", err)
+	}
+	if err := env.SOPService.TransitionVersionState(v3, sop.StateRejected, actorID); err != nil {
+		t.Fatalf("Reject v3: %v", err)
+	}
+	check("v3 rejected", v3, sop.StateRejected, v2, 2)
+}
+
 func TestService_ListSOPs(t *testing.T) {
 	env := testenv.New(t)
 	actorID := "admin-1"
@@ -202,6 +286,9 @@ func TestService_ListSOPs(t *testing.T) {
 	a := byID[sopA]
 	if a.LatestVersion == nil || a.LatestVersion.Version != 2 || a.LatestVersion.Status != sop.StateDraft {
 		t.Errorf("Expected SOP A latest version 2 in draft, got %+v", a.LatestVersion)
+	}
+	if a.LatestVersion != nil && a.LatestVersion.ID == "" {
+		t.Errorf("Expected SOP A latest version to carry its id, got %+v", a.LatestVersion)
 	}
 	if a.PublishedVersion == nil || *a.PublishedVersion != 1 {
 		t.Errorf("Expected SOP A published version 1, got %v", a.PublishedVersion)

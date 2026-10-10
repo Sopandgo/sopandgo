@@ -69,7 +69,9 @@ Author acknowledgments are recorded when the version is created. Approver acknow
 
 Only one RC per SOP may be open at a time. When a new version is published, the previously published version becomes `superseded`.
 
-The change summary is stored on the version and shown in the version list, on the version page, and in the dashboard’s recent-publishes list. The version page also shows a line diff against the previous published version (or the previous version, if nothing is published yet).
+Only one version is **current** at a time: the published one. `GET /api/sops/{sopID}` names it in `published_version` and `published_version_id`, and the newest version of any state in `latest_version` (`id`, `version`, `status`, `created_at`); each is `null` until such a version exists. These are worked out from `sop_version_states` on every read, never stored on the SOP, so they always agree with the version list and with `GET .../version-latest`. The version page uses them to point from a draft, release candidate, rejected or superseded version to the current one, and to tell editors and approvers on the published version that a newer draft or release candidate is waiting.
+
+The change summary is stored on the version and shown in the version list, on the version page, and in the dashboard’s recent-publishes list. The version page also shows a line diff against the previous published version (or the previous version, if nothing is published yet) on its **Changes** tab, beside the document. `?view=changes` opens that tab directly; an approver opening a release candidate lands on it.
 
 When an email transport is switched on (not manual links), **publishing** a version emails other active users who can reader-sign. If mail cannot be delivered, the version stays published. Optional Slack / Gotify / generic webhook notifications for publish, RC, and reject are configured under admin Settings → Integrations and likewise never roll back the lifecycle action. Reminder digests for unsigned acknowledgments are not part of 1.0; use the dashboard and training coverage views.
 

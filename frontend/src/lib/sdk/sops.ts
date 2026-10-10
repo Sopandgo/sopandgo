@@ -2,6 +2,7 @@ import type { Client } from './client';
 import { sdkHttpErrorFromResponse } from './httpError';
 import type { 
     SOP, 
+    SOPDetail,
     SOPVersion, 
     SOPVersionSummary, 
     Acknowledgment, 
@@ -60,7 +61,7 @@ export const sops = (client: Client) => ({
     /**
      * Get metadata for a specific SOP.
      */
-    getById: async (id: string): Promise<SOP> => {
+    getById: async (id: string): Promise<SOPDetail> => {
         const res = await client.fetch(`/sops/${id}`, { 
             method: 'GET'
         });

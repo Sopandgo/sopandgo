@@ -86,12 +86,22 @@ func (s *Service) GetSOPByIDWithTags(id string, viewerUserID string) (*SOPWithTa
 		return nil, err
 	}
 
+	latest, published, err := getSOPVersionPointersRecord(s.db, id)
+	if err != nil {
+		return nil, err
+	}
+
 	out := &SOPWithTags{
-		ID:         base.ID,
-		Title:      base.Title,
-		CreatedAt:  base.CreatedAt,
-		Tags:       tags,
-		IsFavorite: isFav,
+		ID:            base.ID,
+		Title:         base.Title,
+		CreatedAt:     base.CreatedAt,
+		Tags:          tags,
+		IsFavorite:    isFav,
+		LatestVersion: latest,
+	}
+	if published != nil {
+		out.PublishedVersion = &published.Version
+		out.PublishedVersionID = &published.ID
 	}
 
 	return out, nil

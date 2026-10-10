@@ -8,11 +8,18 @@
 
     interface Props {
         items?: AcknowledgmentWithUser[] | null;
+        /** Rows shown before "Show all"; every row when unset. */
+        limit?: number;
     }
 
-    let { items = [] }: Props = $props();
+    let { items = [], limit }: Props = $props();
+
+    const uid = $props.id();
 
     let acks = $derived(items ?? []);
+    let expanded = $state(false);
+    let truncated = $derived(limit !== undefined && acks.length > limit && !expanded);
+    let shown = $derived(truncated ? acks.slice(0, limit) : acks);
 
     // Roles are information, not state: one neutral outline badge for every type.
     const ackLabels: Record<string, () => string> = {
@@ -23,8 +30,8 @@
 </script>
 
 <Card title={m.ack_log({ count: String(acks.length) })}>
-    <ul class="list">
-        {#each acks as ack, i (i)}
+    <ul class="list" id="{uid}-list">
+        {#each shown as ack, i (i)}
             <ListRow title={ack.user.display_name}>
                 {#snippet leading()}<Avatar displayName={ack.user.display_name} />{/snippet}
                 {#snippet meta()}
@@ -39,4 +46,17 @@
             <li class="p-6 text-sm text-base-content/70">{m.ack_empty()}</li>
         {/each}
     </ul>
+    {#if limit !== undefined && acks.length > limit}
+        <div class="border-t border-base-300 p-2">
+            <button
+                type="button"
+                class="btn btn-ghost btn-sm w-full"
+                aria-expanded={expanded}
+                aria-controls="{uid}-list"
+                onclick={() => (expanded = !expanded)}
+            >
+                {expanded ? m.ack_show_fewer() : m.ack_show_all({ count: String(acks.length) })}
+            </button>
+        </div>
+    {/if}
 </Card>

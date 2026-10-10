@@ -11,6 +11,8 @@
         error?: string;
         inputName?: string;
         success?: boolean;
+        /** Which action the result belongs to, so only that form shows the error. */
+        action?: string;
     }
 
     let {
@@ -22,6 +24,7 @@
     }>();
 
     let loading = $state(false);
+    const error = $derived(form?.action === 'sign' ? form.error : undefined);
 </script>
 
 <Card title={m.ack_reader_title()} class="w-full">
@@ -41,8 +44,8 @@
                 };
             }}
         >
-            {#if form?.error}
-                <Alert type="error" message={form.error} />
+            {#if error}
+                <Alert type="error" message={error} />
             {/if}
 
             <div class="form-control w-full my-4">
@@ -53,7 +56,7 @@
                     id="user_display_name"
                     name="user_display_name"
                     type="text"
-                    class="input w-full mt-4 {form?.error ? 'input-error' : ''}"
+                    class="input w-full mt-4 {error ? 'input-error' : ''}"
                     placeholder={user.display_name}
                     value={form?.inputName ?? ''} 
                     required

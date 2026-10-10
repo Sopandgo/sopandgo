@@ -60,11 +60,12 @@ export const actions: Actions = {
         const versionId = params.version_id;
 
         if (!locals.user) {
-            return fail(401, { error: m.error_unauthorized(), inputName });
+            return fail(401, { action: 'sign', error: m.error_unauthorized(), inputName });
         }
 
         if (inputName !== locals.user.display_name) {
-            return fail(400, { 
+            return fail(400, {
+                action: 'sign',
                 error: m.error_name_mismatch({ name: locals.user.display_name }),
                 inputName
             });
@@ -75,7 +76,8 @@ export const actions: Actions = {
             return { success: true };
         } catch (err) {
             console.error('Sign Action Error:', err);
-            return fail(500, { 
+            return fail(500, {
+                action: 'sign',
                 error: m.error_sign_failed(),
                 inputName 
             });
@@ -85,30 +87,31 @@ export const actions: Actions = {
     // --- Lifecycle Actions ---
 
     promote: async ({ locals, params }) => {
-        if (!locals.user) return fail(401, { error: m.error_unauthorized() });
+        if (!locals.user) return fail(401, { action: 'promote', error: m.error_unauthorized() });
 
         try {
             await locals.api.sops.promoteToRC(params.version_id);
             return { success: true };
         } catch (err) {
             console.error('Promote Action Error:', err);
-            return fail(500, { error: m.error_promote_failed() });
+            return fail(500, { action: 'promote', error: m.error_promote_failed() });
         }
     },
 
     approve: async ({ request, locals, params }) => {
-        if (!locals.user) return fail(401, { error: m.error_unauthorized() });
+        if (!locals.user) return fail(401, { action: 'approve', error: m.error_unauthorized() });
 
         const formData = await request.formData();
         const inputName = formData.get('user_display_name')?.toString().trim();
         const versionId = params.version_id;
 
         if (!locals.user) {
-            return fail(401, { error: m.error_unauthorized(), inputName });
+            return fail(401, { action: 'approve', error: m.error_unauthorized(), inputName });
         }
 
         if (inputName !== locals.user.display_name) {
-            return fail(400, { 
+            return fail(400, {
+                action: 'approve',
                 error: m.error_name_mismatch({ name: locals.user.display_name }),
                 inputName
             });
@@ -119,18 +122,18 @@ export const actions: Actions = {
             return { success: true };
         } catch (err) {
             console.error('Approve Action Error:', err);
-            return fail(500, { error: m.error_approve_failed() });
+            return fail(500, { action: 'approve', error: m.error_approve_failed() });
         }
     },
 
     reject: async ({ request, locals, params }) => {
-        if (!locals.user) return fail(401, { error: m.error_unauthorized() });
+        if (!locals.user) return fail(401, { action: 'reject', error: m.error_unauthorized() });
 
         const formData = await request.formData();
         const reason = formData.get('reason')?.toString().trim();
 
         if (!reason) {
-            return fail(400, { error: m.error_reject_reason() });
+            return fail(400, { action: 'reject', error: m.error_reject_reason() });
         }
 
         try {
@@ -138,7 +141,7 @@ export const actions: Actions = {
             return { success: true };
         } catch (err) {
             console.error('Reject Action Error:', err);
-            return fail(500, { error: m.error_reject_failed() });
+            return fail(500, { action: 'reject', error: m.error_reject_failed() });
         }
     },
 
