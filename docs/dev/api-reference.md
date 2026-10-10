@@ -29,6 +29,7 @@ Protected routes expect `Authorization: Bearer <access_token>`. Login/refresh re
 - Everything else: bearer access token, plus optional `requireScope(...)` (see `api.go`).
 - Bootstrap / `must_change_password`: only `GET /api/auth/me`, `PATCH /api/auth/me/update-password`, `PATCH /api/auth/me/locale`, and `PATCH /api/auth/me/theme` until the password is changed.
 - `GET /api/auth/me` includes `locale` and `theme`. `PATCH /api/auth/me/locale` with `{ "locale": "<tag>" }` stores a tag from the supported list (`en`, `de`, `fr`, `es`, `pt`, `zh`, `it`, `nl`, `pl`, `ja`, `ko`, `tr`, `sv`, `cs`, `sk`) and rejects anything else with 400. `PATCH /api/auth/me/theme` with `{ "theme": "light" }`, `"dark"`, or `"system"` stores that preference and rejects anything else with 400.
+- `PATCH /api/auth/me/update-password` takes `{ "current_password", "new_password" }`; a wrong current password returns 403 and the strict login limiter applies. `POST /api/auth/me/sessions/sign-out-others` takes `{ "refresh_token" }` (the caller's own session) and returns `{ "sessions_revoked": n }`.
 - `GET /api/admin/settings/email` includes `default_locale`. `PATCH /api/admin/settings/default-locale` with `{ "default_locale": "<tag>" }` sets the organization language used for shared notifications and PDF chrome (admin only).
 - **Admin HTTP tools** (users, sessions, audit log UI APIs, integrity, mail, integrations, backups) require the `admin:integrity` scope (admin role). The `auditor` role has an `audit:read` scope in RBAC, but **no audit-log routes currently require it** — audit listing is admin-only. Auditors can still use the normal signed-in SOP read surfaces.
 
@@ -38,12 +39,12 @@ Protected routes expect `Authorization: Bearer <access_token>`. Login/refresh re
 | --- | --- |
 | `400` | Bad input |
 | `401` | Missing/invalid token |
-| `403` | Missing scope or password-change gate |
+| `403` | Missing scope, password-change gate, or wrong current password |
 | `404` | Missing resource |
 | `409` | Invalid lifecycle or backup conflict |
 | `412` | Encryption key / credentials precondition |
 | `422` | Backup archive validation failed |
-| `429` | Rate limit (strict on login/reset; general elsewhere) |
+| `429` | Rate limit (strict on login/reset/password change; general elsewhere) |
 | `502` | Upstream mail/integration failure on test send |
 | `503` | PDF disabled or backup maintenance lock |
 

@@ -43,7 +43,7 @@ Initial Credentials:
 
 - User: `admin`
 - Password: `admin`
-- **Forced change:** the bootstrap admin must set a new password on first login before other routes unlock.
+- **Forced change:** the bootstrap admin must set a new password on first login before other routes unlock. The form asks for the current password, which is `admin`.
 
 Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left on (default `true`). They use weak passwords such as `12345` for exploration only. Set `SEED_DEMO_DATA=false` before the first start to skip them. Changing the flag later does not remove data that was already seeded.
 

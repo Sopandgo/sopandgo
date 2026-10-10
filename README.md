@@ -142,7 +142,7 @@ Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`
 ### First-week checklist
 
 1. Set **`ORIGIN`** and **`SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOP are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
-2. Sign in as `admin` / `admin` and **set a strong password** (required).
+2. Sign in as `admin` / `admin` and **set a strong password** (required; enter `admin` as the current password).
 3. Optionally save SMTP or Resend under **Settings → Email**, switch it on and send a **test email**; without it, invites use manual links.
 4. Create a real user invite (or keep demo data only for a trial).
 5. **Backup:** Admin → **Backup** → export a `.zip`, then optionally **validate** it.

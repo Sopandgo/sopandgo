@@ -57,6 +57,19 @@
 
     <fieldset class="fieldset">
 
+      <label class="label" for="current_password">
+        {m.password_current()}
+      </label>
+      <input
+        id="current_password"
+        name="current_password"
+        type="password"
+        class="input w-full {hasError ? 'input-error' : ''}"
+        placeholder={m.password_current()}
+        autocomplete="current-password"
+        required
+      />
+
       <label class="label" for="new_password">
         {m.password_new()}
       </label>

@@ -8,7 +8,15 @@
     import LocaleSelect from '$lib/components/LocaleSelect.svelte';
     import * as m from '$lib/paraglide/messages.js';
     import { daisyTheme } from '$lib/theme';
-    import { KeyRoundIcon, LanguagesIcon, SettingsIcon, SunMoonIcon, UserIcon } from 'lucide-svelte';
+    import {
+        KeyRoundIcon,
+        LanguagesIcon,
+        LogOutIcon,
+        MonitorSmartphoneIcon,
+        SettingsIcon,
+        SunMoonIcon,
+        UserIcon
+    } from 'lucide-svelte';
 
     let { data, form } = $props();
 
@@ -16,6 +24,8 @@
     const mustChange = $derived(!!user.must_change_password);
     const localeError = $derived(form?.setLocale?.error);
     const themeError = $derived(form?.setTheme?.error);
+    const signOutResult = $derived(form?.signOutOthers);
+    let signingOut = $state(false);
     let selectedTheme = $derived(data.user.theme);
 
     function applyTheme(theme: string) {
@@ -80,13 +90,18 @@
                 <LanguagesIcon class="h-4 w-4" />
                 {m.profile_language()}
             </h2>
-            <form method="POST" action="?/setLocale" class="flex flex-col gap-3">
+            <!-- Saves on change like Appearance. Not enhanced: the full reload renders the page in the new language. -->
+            <form
+                method="POST"
+                action="?/setLocale"
+                class="flex flex-col gap-3"
+                onchange={(event) => event.currentTarget.requestSubmit()}
+            >
                 <label class="sr-only" for="profile-locale">{m.locale_label()}</label>
                 <LocaleSelect id="profile-locale" value={user.locale} />
                 {#if localeError}
                     <Alert type="error" message={m.locale_failed()} />
                 {/if}
-                <button type="submit" class="btn btn-primary w-full sm:w-auto">{m.locale_save()}</button>
             </form>
         </div>
     </Card>
@@ -138,8 +153,45 @@
     </Card>
         </div>
 
-        <div class={mustChange ? 'order-1 lg:order-2' : ''}>
+        <div class="flex flex-col gap-6 {mustChange ? 'order-1 lg:order-2' : ''}">
             {@render passwordCard()}
+
+            {#if !mustChange}
+                <Card>
+                    <div class="card-body gap-4">
+                        <h2 class="flex items-center gap-2 text-lg font-semibold">
+                            <MonitorSmartphoneIcon class="h-4 w-4" />
+                            {m.sessions_heading()}
+                        </h2>
+                        <p class="text-sm text-base-content/70">{m.sessions_help()}</p>
+                        {#if signOutResult?.ok}
+                            <Alert type="success" message={m.sessions_signed_out()} />
+                        {:else if signOutResult?.error}
+                            <Alert type="error" message={m.sessions_sign_out_failed()} />
+                        {/if}
+                        <form
+                            method="POST"
+                            action="?/signOutOthers"
+                            use:enhance={() => {
+                                signingOut = true;
+                                return async ({ update }) => {
+                                    await update();
+                                    signingOut = false;
+                                };
+                            }}
+                        >
+                            <button type="submit" class="btn w-full sm:w-auto" disabled={signingOut}>
+                                {#if signingOut}
+                                    <span class="loading loading-spinner"></span>
+                                {:else}
+                                    <LogOutIcon class="size-4" />
+                                {/if}
+                                {m.sessions_sign_out_others()}
+                            </button>
+                        </form>
+                    </div>
+                </Card>
+            {/if}
         </div>
     </div>
 </div>

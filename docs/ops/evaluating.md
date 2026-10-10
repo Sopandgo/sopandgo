@@ -41,7 +41,7 @@ docker compose up -d
 
 | Account | Credentials | Role | Use for |
 | --- | --- | --- | --- |
-| Bootstrap admin | `admin` / `admin` | Admin | Settings, users, backup, audit. **Must change password on first login** before the rest of the app unlocks. |
+| Bootstrap admin | `admin` / `admin` | Admin | Settings, users, backup, audit. **Must change password on first login** (current password: `admin`) before the rest of the app unlocks. |
 | Demo Lab Manager | `manager@demo.local` / `12345` | Editor | Drafts and authoring |
 | Demo QA Officer | `qa@demo.local` / `12345` | Approver | Review / publish path |
 | Demo Research Assistant | `researcher@demo.local` / `12345` | Viewer | Reading and acknowledgments |

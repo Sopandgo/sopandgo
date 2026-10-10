@@ -36,6 +36,7 @@ sopandgo follows current industry standards for credential storage:
 * **Cost Factor:** 12 (balancing resistance to brute-force with server performance).
 * **Hashing Flow:** Passwords are hashed in the `internal/auth` package before ever reaching the database layer.
 * **Password Reset:** Valid passwords can only be set by the user via the Password Reset Token flow. This ensures no admin ever knows a user's password. Only Admins can trigger Password Reset.
+* **Signed-in password change:** `PATCH /api/auth/me/update-password` takes `current_password` and `new_password`. A wrong or missing current password returns `403`, writes a `login_failed` audit event (`failure_reason: invalid_current_password`), and leaves the password unchanged, so an unattended open session cannot take over the account. Reset links (`PATCH /api/auth/reset-password`) never ask for it, because the one-time token proves identity. The bootstrap admin enters `admin` as the current password on first sign-in.
 
 
 ## 3. Revocation Logic
@@ -45,6 +46,8 @@ Revocation is handled at three levels of granularity. When a revocation event oc
 | Action | API Endpoint | Logic |
 | --- | --- | --- |
 | **Session Logout** | `POST /api/auth/logout` | Deactivates the specific Refresh Token used. |
+| **Sign Out Other Devices** | `POST /api/auth/me/sessions/sign-out-others` | The signed-in user sends their own `refresh_token`; every other active Refresh Token of theirs is deactivated. Rejects a token that is not one of their active sessions. Audited as `logout` with `scope: other_sessions`. |
+| **Change Password** | `PATCH /api/auth/me/update-password` | Requires the current password. Deactivates all of the user's Refresh Tokens; the UI then signs out this session too. |
 | **User Revocation** | `DELETE /api/admin/users/{userID}/sessions` | Deactivates all Refresh Tokens associated with a `userID`. |
 | **Start Password Reset** | `POST /api/admin/users/{userID}/reset-password` | Admin starts invite/reset; email when a saved transport is switched on, otherwise a manual link (`effective_mail_mode`). |
 | **Complete Password Reset** | `PATCH /api/auth/reset-password` | User sets a new password with the one-time token; related sessions are revoked as part of the reset flow. |
@@ -58,7 +61,7 @@ Revocation is handled at three levels of granularity. When a revocation event oc
 The Go backend uses a "Chain of Responsibility" for API protection:
 
 1. **Rate limiting:**
-    * **Strict limiter:** Protects `/api/auth/login` and password-reset completion (token bucket: burst 3; refill 1 req/12s) to limit brute-force attempts.
+    * **Strict limiter:** Protects `/api/auth/login`, password-reset completion, and the signed-in password change (it checks the current password) (token bucket: burst 3; refill 1 req/12s) to limit brute-force attempts.
     * **General limiter:** Protects other rate-limited endpoints (token bucket: burst 10; refill 20 req/s).
     * **Proxy awareness:** Client IP for rate limits is `RemoteAddr`, unless that peer is the loopback proxy (Caddy on `127.0.0.1`). In that case the last `X-Forwarded-For` hop is used, because Caddy appends the address it observed. Client-supplied prefixes and `X-Real-Ip` are ignored.
 2. **`withAuth`:** Extracts the PASETO from the `Authorization` header, verifies the signature, and injects the `user_id` and token `role` into the Request Context.

@@ -98,7 +98,9 @@ func (s *Server) registerRoutes() {
 	}
 
 	// user
-	s.mux.HandleFunc("PATCH /api/auth/me/update-password", protected(s.handleUpdatePassword))
+	// Checks the current password, so it shares the login limiter.
+	s.mux.HandleFunc("PATCH /api/auth/me/update-password", loginLimiter.Middleware(protected(s.handleUpdatePassword)))
+	s.mux.HandleFunc("POST /api/auth/me/sessions/sign-out-others", protected(s.handleSignOutOtherSessions))
 	s.mux.HandleFunc("PATCH /api/auth/me/locale", protected(s.handleUpdateMyLocale))
 	s.mux.HandleFunc("PATCH /api/auth/me/theme", protected(s.handleUpdateMyTheme))
 	s.mux.HandleFunc("GET /api/auth/me", protected(s.handleGetMe))

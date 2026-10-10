@@ -26,8 +26,8 @@ Login (password verify + session create) is orchestrated in the **API** layer (`
 | File | Purpose | Key methods |
 | --- | --- | --- |
 | **`service.go`** | Constructor | `NewService` |
-| **`user_service.go`** | Users and password reset | `RegisterUser`, `UpdateUserRole`, `SetUserActiveStatus`, `UpdateUserPassword`, `GeneratePasswordResetToken`, `ResetPassword` |
-| **`session_service.go`** | Refresh sessions | `CreateSession`, `ValidateSession`, `RevokeSession`, `RevokeAllUserSessions`, `RevokeAllSessions`, `StartSessionsCleanupTask` |
+| **`user_service.go`** | Users and password reset | `RegisterUser`, `UpdateUserRole`, `SetUserActiveStatus`, `UpdateUserPassword`, `ChangeOwnPassword`, `GeneratePasswordResetToken`, `ResetPassword` |
+| **`session_service.go`** | Refresh sessions | `CreateSession`, `ValidateSession`, `RevokeSession`, `RevokeOtherUserSessions`, `RevokeAllUserSessions`, `RevokeAllSessions`, `StartSessionsCleanupTask` |
 | **`store.go`** | Unexported SQL | `createUserRecord`, `getSessionRecord`, … |
 | **`password.go`** | Hashing / rules | `HashPassword`, `ValidatePassword` |
 | **`token.go`** | PASETO access tokens | `GenerateAccessToken` |
@@ -63,10 +63,19 @@ token, user, err := authService.GeneratePasswordResetToken(userID)
 err = authService.ResetPassword(token, "NewStrongPassword123!")
 ```
 
+### Signed-in password change
+
+`ChangeOwnPassword` verifies the current password before calling `UpdateUserPassword`, and returns `ErrWrongCurrentPassword` otherwise. Reset and bootstrap call `UpdateUserPassword` directly.
+
+```go
+err := authService.ChangeOwnPassword(userID, "CurrentPassword123!", "NewStrongPassword123!")
+```
+
 ### Sessions
 
 ```go
 refreshToken, err := authService.CreateSession(userID)
 userID, role, err := authService.ValidateSession(refreshToken)
+revoked, err := authService.RevokeOtherUserSessions(userID, refreshToken) // keeps refreshToken
 authService.StartSessionsCleanupTask(ctx, 24*time.Hour)
 ```

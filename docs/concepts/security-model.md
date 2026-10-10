@@ -47,7 +47,8 @@ Key properties:
 - **Secure Hashing:** Passwords are stored using cryptographic hashing (Bcrypt).
 - **Dual-Token System:** The system uses short-lived access tokens (5 minutes) and server-tracked refresh tokens. Refresh tokens can be revoked by an admin.
 - **Password Reset Tokens:** Resets are handled via high-entropy, one-time-use tokens sent via email. These tokens are hashed in the database and deleted immediately upon use ("Burn-After-Reading").
-- **Brute-Force Protection:** Login and Password Reset endpoints are protected by strict IP-based rate limiting to prevent credential guessing attacks.
+- **Password change needs the current password:** Changing the password from account settings asks for the current one. Someone who finds a session left open on a shared PC cannot use it to lock the owner out. Reset links do not ask for it, because the one-time token already proves identity.
+- **Brute-Force Protection:** Login, Password Reset, and the signed-in password change are protected by strict IP-based rate limiting to prevent credential guessing attacks.
 - **Administrative Recovery:** Admins can trigger password resets.
 
 External identity providers (SSO, LDAP, OAuth) are **out of scope**.
@@ -70,7 +71,7 @@ The system uses Platform-Agnostic Security Tokens (PASETO) instead of JWT, avoid
 
 This allows for:
 - **Session revocation:** Revoking a refresh session takes effect immediately for new access tokens. An access token that was already issued stays valid until it expires (at most 5 minutes), because those tokens are not stored on the server.
-- **Per-device sessions:** Each login is its own refresh session. A user can log out that session. An admin can revoke every session for one user, or trigger a system-wide panic logout. The admin session list does not include refresh tokens.
+- **Per-device sessions:** Each login is its own refresh session. A user can log out that session, or sign out every other device from account settings. An admin can revoke every session for one user, or trigger a system-wide panic logout. The admin session list does not include refresh tokens.
 - **No Sensitive URLs:** No sensitive identifiers are embedded in SOP content/assets. One-time invite/reset tokens are delivered via email links and are time-boxed and single-use.
 
 ## Outbound integrations
