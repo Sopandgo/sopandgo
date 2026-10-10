@@ -6,17 +6,14 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals, parent }) => {
   const { sop } = await parent();
 
-  const canSeeTraining = locals.user?.role === 'admin' || locals.user?.role === 'approver';
-
   try {
-    const [versions, assets, allTags, trainingCoverage] = await Promise.all([
+    const [versions, assets, allTags] = await Promise.all([
       locals.api.sops.listVersions(sop.id),
       locals.api.assets.list(sop.id),
-      locals.api.tags.list(),
-      canSeeTraining ? locals.api.sops.trainingCoverage(sop.id) : Promise.resolve([])
+      locals.api.tags.list()
     ]);
 
-    return { sop, versions, assets, allTags, trainingCoverage };
+    return { sop, versions, assets, allTags };
   } catch (err) {
     console.error('SOP Page Load Error:', err);
     throw error(500, 'Could not load SOP page data');
@@ -26,13 +23,31 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 export const actions: Actions = {
   verifyAsset,
 
-  attach_tag: async ({ locals, request, params }) => {
+  // One field for both cases: attach the tag with this title, or create it first
+  add_tag: async ({ locals, request, params }) => {
     const form = await request.formData();
-    const tagId = String(form.get('tag_id') ?? '').trim();
+    const title = String(form.get('title') ?? '').trim();
     const sopId = params.sop_id;
 
     if (!sopId) return fail(400, { message: m.error_missing_sop() });
-    if (!tagId) return fail(400, { message: m.error_missing_tag() });
+    if (!title) return fail(400, { message: m.error_missing_title() });
+
+    let tagId: string;
+    try {
+      const existing = (await locals.api.tags.list()).find(
+        (t) => t.title.toLowerCase() === title.toLowerCase()
+      );
+      if (existing && existing.is_active === false) {
+        return fail(409, { message: m.error_tag_retired({ title: existing.title }) });
+      }
+      tagId = existing ? existing.id : (await locals.api.tags.create(title)).id;
+    } catch (err) {
+      console.error('ADD_TAG Error:', err);
+      if ((err as Error)?.message === 'TAG_ALREADY_EXISTS') {
+        return fail(409, { message: m.error_tag_exists() });
+      }
+      return fail(500, { message: m.error_create_tag() });
+    }
 
     try {
       await locals.api.sops.attachTag(sopId, tagId);
@@ -57,28 +72,6 @@ export const actions: Actions = {
     } catch (err) {
       console.error('DETACH_TAG Error:', err);
       return fail(500, { message: m.error_detach_tag() });
-    }
-  },
-
-  create_and_attach_tag: async ({ locals, request, params }) => {
-    const form = await request.formData();
-    const title = String(form.get('title') ?? '').trim();
-    const sopId = params.sop_id;
-
-    if (!sopId) return fail(400, { message: m.error_missing_sop() });
-    if (!title) return fail(400, { message: m.error_missing_title() });
-
-    try {
-      const { id } = await locals.api.tags.create(title);
-      await locals.api.sops.attachTag(sopId, id);
-      return { success: true };
-    } catch (err: any) {
-      console.error('CREATE_AND_ATTACH_TAG Error:', err);
-
-      if (err?.message === 'TAG_ALREADY_EXISTS') {
-        return fail(409, { message: m.error_tag_exists() });
-      }
-      return fail(500, { message: m.error_create_tag() });
     }
   },
 

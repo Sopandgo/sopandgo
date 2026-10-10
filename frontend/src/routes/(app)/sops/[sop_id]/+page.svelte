@@ -1,20 +1,41 @@
 <script lang="ts">
   import IdBadge from '$lib/components/IdBadge.svelte';
   import ListSopVersions from '$lib/components/ListSopVersions.svelte';
-  import SopTrainingCoverage from '$lib/components/SopTrainingCoverage.svelte';
-  import { NotebookIcon, PlusIcon, TagIcon, XIcon, PlusCircleIcon, StarIcon } from 'lucide-svelte';
+  import SopVersionStatusBadge from '$lib/components/SopVersionStatusBadge.svelte';
+  import FavoriteToggle from '$lib/components/FavoriteToggle.svelte';
+  import { BookOpenIcon, NotebookIcon, PlusIcon, XIcon } from 'lucide-svelte';
   import ListAssociatedAssets from '$lib/components/ListAssociatedAssets.svelte';
+  import Alert from '$lib/components/Alert.svelte';
   import Card from '$lib/components/Card.svelte';
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
   import { enhance } from '$app/forms';
   import * as m from '$lib/paraglide/messages.js';
+  import { getLocale } from '$lib/paraglide/runtime';
 
-  let { data } = $props();
+  let { data, form } = $props();
 
-  let newTagTitle = $state('');
+  const tagListId = $props.id();
 
-  // filter out tags already attached (and optionally inactive ones)
-  let attachedIds = $derived(new Set((data.sop.tags ?? []).map((t) => t.id)));
+  // Same roles the backend gives sop:write (new versions, tag changes)
+  let canEdit = $derived(['admin', 'approver', 'editor'].includes(data.user!.role));
+
+  let versions = $derived(data.versions ?? []);
+  // What readers see, and the newest version if it has not replaced that yet
+  let published = $derived(versions.find((v) => v.status === 'published'));
+  let latest = $derived(
+    versions.reduce<(typeof versions)[number] | undefined>(
+      (max, v) => (!max || v.version > max.version ? v : max),
+      undefined
+    )
+  );
+  let pending = $derived(latest && latest.status !== 'published' ? latest : undefined);
+  let updated = $derived(
+    new Date(latest?.created_at ?? data.sop.created_at).toLocaleDateString(getLocale())
+  );
+
+  let tags = $derived(data.sop.tags ?? []);
+  // Suggestions for the add field: active tags not on this SOP yet
+  let attachedIds = $derived(new Set(tags.map((t) => t.id)));
   let addableTags = $derived(
     (data.allTags ?? []).filter((t) => !attachedIds.has(t.id) && t.is_active !== false)
   );
@@ -25,136 +46,117 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-    <Card>
-        <div class="card-body">
+  <Card>
+    <div class="card-body gap-4">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex min-w-0 flex-col gap-1">
+          <div class="flex items-center gap-1">
             <CardPageHeading>
-                <NotebookIcon class="w-8 h-8" />
-                {data.sop.title}
+              <NotebookIcon class="w-8 h-8" />
+              {data.sop.title}
             </CardPageHeading>
+            <FavoriteToggle sopId={data.sop.id} title={data.sop.title} isFavorite={!!data.sop.is_favorite} />
+          </div>
 
-            <div class="flex items-center gap-2 text-base-content/70">
-                <span class="text-sm font-medium">ID:</span> 
-                <IdBadge id={data.sop.id} />
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2 pt-2">
-              {#if data.sop.is_favorite}
-                <form
-                  method="POST"
-                  action="?/unfavorite"
-                  use:enhance={() =>
-                    async ({ update }) => {
-                      await update({ invalidateAll: true });
-                    }}
-                >
-                  <button
-                    type="submit"
-                    class="btn btn-sm gap-1"
-                    aria-label={m.sops_remove_favorites_aria()}
-                  >
-                    <StarIcon class="size-4 fill-current" aria-hidden="true" />
-                    {m.sops_favorited()}
-                  </button>
-                </form>
-              {:else}
-                <form
-                  method="POST"
-                  action="?/favorite"
-                  use:enhance={() =>
-                    async ({ update }) => {
-                      await update({ invalidateAll: true });
-                    }}
-                >
-                  <button type="submit" class="btn btn-ghost btn-sm gap-1" aria-label={m.sops_add_favorites_aria()}>
-                    <StarIcon class="size-4" aria-hidden="true" />
-                    {m.sops_add_to_favorites()}
-                  </button>
-                </form>
-              {/if}
-            </div>
-
-            {#if data.user!.role === 'admin' || data.user!.role === 'approver' || data.user!.role === 'editor'}
-                <div class="card-actions justify-end pt-4 border-t border-base-300">
-                    <a href={`/sops/${data.sop.id}/new`}  class="btn btn-primary">
-                        <PlusIcon class="w-5 h-5" />
-                        {m.common_new_version()}
-                    </a>
-                </div>
+          <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-base-content/70">
+            {#if published}
+              <a href={`/sops/${data.sop.id}/v/${published.id}`} class="text-base-content underline">
+                {m.common_version({ version: String(published.version) })}
+              </a>
+              <SopVersionStatusBadge status={published.status} />
+            {:else}
+              <span>{m.sops_not_published()}</span>
             {/if}
+            {#if pending}
+              <span aria-hidden="true">·</span>
+              <a href={`/sops/${data.sop.id}/v/${pending.id}`} class="text-base-content underline">
+                {m.common_version({ version: String(pending.version) })}
+              </a>
+              <SopVersionStatusBadge status={pending.status} />
+            {/if}
+            <span aria-hidden="true">·</span>
+            <span>{m.sops_updated({ date: updated })}</span>
+            <span aria-hidden="true">·</span>
+            <IdBadge id={data.sop.id} />
+          </p>
         </div>
-    </Card>    
 
-<Card>
-  <div class="card-body">
-    <span class="text-sm font-medium text-base-content/70">
-      {m.common_tags()}
-    </span>
-
-    <div class="pt-4 border-t border-base-300 flex flex-col gap-4">
-      <!-- current tags -->
-      <div class="flex flex-wrap gap-2">
-        {#if (data.sop.tags ?? []).length === 0}
-          <span class="text-sm text-base-content/70">{m.sops_no_tags_assigned()}</span>
-        {:else}
-          {#each data.sop.tags as tag (tag.id)}
-            <form method="POST" action="?/detach_tag">
-              <input type="hidden" name="tag_id" value={tag.id} />
-              <button
-                type="submit"
-                class="badge badge-soft badge-primary gap-1 cursor-pointer"
-                aria-label={m.sops_remove_tag({ title: tag.title })}
-                title={m.sops_remove_tag_title()}
-              >
-                <TagIcon class="w-3 h-3" />
-                {tag.title}
-                <XIcon class="w-3 h-3" />
-              </button>
-            </form>
-          {/each}
+        {#if published || canEdit}
+          <div class="flex shrink-0 flex-wrap gap-2">
+            {#if canEdit}
+              <a href={`/sops/${data.sop.id}/new`} class="btn {published ? '' : 'btn-primary'}">
+                <PlusIcon class="size-4" />
+                {m.common_new_version()}
+              </a>
+            {/if}
+            {#if published}
+              <a href={`/sops/${data.sop.id}/v/latest`} class="btn btn-primary">
+                <BookOpenIcon class="size-4" />
+                {m.sop_read_current()}
+              </a>
+            {/if}
+          </div>
         {/if}
       </div>
 
-      <!-- attach existing -->
-      <form method="POST" action="?/attach_tag" class="flex flex-col md:flex-row gap-2 md:items-center">
-        <select class="select flex-1" name="tag_id" aria-label={m.sops_select_tag()}>
-          {#each addableTags as t (t.id)}
-            <option value={t.id}>{t.title}</option>
-          {/each}
-        </select>
-        <button class="btn" type="submit" aria-label={m.sops_attach_tag()} title={m.sops_attach_tag()}>
-          <PlusCircleIcon class="w-5 h-5" />
-          {m.common_add()}
-        </button>
-      </form>      
+      {#if tags.length > 0 || canEdit}
+        <div class="flex flex-wrap items-center gap-2">
+          {#if tags.length > 0}
+            <ul class="flex flex-wrap items-center gap-2" aria-label={m.common_tags()}>
+              {#each tags as tag (tag.id)}
+                <li class="badge badge-outline gap-1 {canEdit ? 'pr-0.5' : ''}">
+                  {tag.title}
+                  {#if canEdit}
+                    <form method="POST" action="?/detach_tag" use:enhance class="flex">
+                      <input type="hidden" name="tag_id" value={tag.id} />
+                      <button
+                        type="submit"
+                        class="btn btn-ghost btn-xs btn-square size-5 min-h-0"
+                        aria-label={m.sops_remove_tag({ title: tag.title })}
+                        title={m.sops_remove_tag({ title: tag.title })}
+                      >
+                        <XIcon class="size-3" aria-hidden="true" />
+                      </button>
+                    </form>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          {/if}
 
-      <!-- create + attach -->
-      <form method="POST" action="?/create_and_attach_tag" class="flex flex-col md:flex-row gap-2 md:items-center">
-        <input
-          class="input flex-1"
-          name="title"
-          placeholder={m.sops_new_tag_placeholder()}
-          bind:value={newTagTitle}
-        />
-        <button class="btn" type="submit" aria-label={m.sops_create_add_aria()}>
-          <PlusIcon class="w-5 h-5" />
-          {m.sops_create_add()}
-        </button>
-      </form>
+          {#if canEdit}
+            <!-- One field adds an existing tag or creates it; the list only suggests -->
+            <form method="POST" action="?/add_tag" use:enhance class="flex items-center gap-2">
+              <input
+                class="input input-sm w-44"
+                name="title"
+                list={tagListId}
+                autocomplete="off"
+                required
+                placeholder={m.sops_add_tag_placeholder()}
+                aria-label={m.sops_add_tag_label()}
+              />
+              <datalist id={tagListId}>
+                {#each addableTags as t (t.id)}
+                  <option value={t.title}></option>
+                {/each}
+              </datalist>
+              <button class="btn btn-sm" type="submit">
+                <PlusIcon class="size-4" />
+                {m.common_add()}
+              </button>
+            </form>
+          {/if}
+        </div>
+      {/if}
+
+      {#if form?.message}
+        <Alert type="error" message={form.message} />
+      {/if}
     </div>
-  </div>
-</Card>
+  </Card>
 
-    {#if data.user?.role === 'admin' || data.user?.role === 'approver'}
-      <Card title={m.dashboard_training_title()} description={m.sops_training_help()}>
-        <SopTrainingCoverage items={data.trainingCoverage ?? []} />
-      </Card>
-    {/if}
+  <ListSopVersions sopId={data.sop.id} items={versions} />
 
-    <ListSopVersions 
-        sopId={data.sop.id} 
-        items={data.versions ?? []}
-    />
-
-    <ListAssociatedAssets items={data.assets} />
+  <ListAssociatedAssets items={data.assets} />
 </div>
-

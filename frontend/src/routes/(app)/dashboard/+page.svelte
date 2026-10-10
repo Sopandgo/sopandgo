@@ -2,14 +2,14 @@
 	import Card from '$lib/components/Card.svelte';
 	import ListHeading from '$lib/components/ListHeading.svelte';
 	import ListRow from '$lib/components/ListRow.svelte';
+	import FavoriteToggle from '$lib/components/FavoriteToggle.svelte';
 	import {
 		greetingPeriodForDate,
 		partitionSignatureStatus,
 		pendingSignatureCount
 	} from '$lib/signatureBuckets';
-	import { enhance } from '$app/forms';
 	import SopTrainingCoverage from '$lib/components/SopTrainingCoverage.svelte';
-	import { CircleCheckIcon, FileTextIcon, NotebookIcon, StarIcon } from 'lucide-svelte';
+	import { CircleCheckIcon, FileTextIcon, NotebookIcon } from 'lucide-svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale } from '$lib/paraglide/runtime';
 
@@ -174,7 +174,7 @@
 
 			{#if favoriteSops.length === 0}
 				<p class="p-6 text-sm text-base-content/70">
-					{m.dashboard_no_favorites_before()}<strong class="font-medium text-base-content">{m.sops_add_to_favorites()}</strong>{m.dashboard_no_favorites_after()}
+					{m.dashboard_no_favorites()}
 				</p>
 			{:else}
 				<ul class="list">
@@ -186,17 +186,7 @@
 								{/each}
 							{/snippet}
 							{#snippet trailing()}
-								<form method="POST" action="?/unfavorite" use:enhance>
-									<input type="hidden" name="sop_id" value={sop.id} />
-									<button
-										type="submit"
-										class="btn btn-square btn-ghost btn-sm"
-										aria-label={m.aria_remove_favorite({ title: sop.title })}
-										title={m.aria_remove_favorite({ title: sop.title })}
-									>
-										<StarIcon class="size-4 fill-current" aria-hidden="true" />
-									</button>
-								</form>
+								<FavoriteToggle sopId={sop.id} title={sop.title} isFavorite />
 							{/snippet}
 						</ListRow>
 					{/each}

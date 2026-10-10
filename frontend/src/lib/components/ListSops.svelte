@@ -2,17 +2,16 @@
   import {
     ChevronRightIcon,
     FileTextIcon,
-    ChevronLeftIcon,
-    StarIcon
+    ChevronLeftIcon
   } from 'lucide-svelte';
   import type { Snippet } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import type { SOPListItem, SOPListResponse, Tag } from '$lib/sdk/types';
   import Card from './Card.svelte';
   import ListRow from './ListRow.svelte';
+  import FavoriteToggle from './FavoriteToggle.svelte';
   import SopVersionStatusBadge from './SopVersionStatusBadge.svelte';
   import { goto } from '$app/navigation';
-  import { enhance } from '$app/forms';
   import * as m from '$lib/paraglide/messages.js';
   import { getLocale } from '$lib/paraglide/runtime';
 
@@ -158,31 +157,7 @@
           {#if sop.latest_version && sop.latest_version.status !== 'published'}
             <SopVersionStatusBadge status={sop.latest_version.status} />
           {/if}
-          {#if sop.is_favorite}
-            <form method="POST" action="?/unfavorite" use:enhance>
-              <input type="hidden" name="sop_id" value={sop.id} />
-              <button
-                type="submit"
-                class="btn btn-square btn-ghost btn-sm"
-                aria-label={m.aria_remove_favorite({ title: sop.title })}
-                title={m.aria_remove_favorite({ title: sop.title })}
-              >
-                <StarIcon class="size-4 fill-current" aria-hidden="true" />
-              </button>
-            </form>
-          {:else}
-            <form method="POST" action="?/favorite" use:enhance>
-              <input type="hidden" name="sop_id" value={sop.id} />
-              <button
-                type="submit"
-                class="btn btn-square btn-ghost btn-sm"
-                aria-label={m.aria_add_favorite({ title: sop.title })}
-                title={m.aria_add_favorite({ title: sop.title })}
-              >
-                <StarIcon class="size-4" aria-hidden="true" />
-              </button>
-            </form>
-          {/if}
+          <FavoriteToggle sopId={sop.id} title={sop.title} isFavorite={!!sop.is_favorite} />
         {/snippet}
       </ListRow>
     {:else}
