@@ -88,7 +88,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 - Breadcrumbs live in the signed-in navbar, next to the sidebar toggle. Trails are defined per route in `$lib/breadcrumbs.ts` and start at the section (SOPs, Profile, or the admin page itself), never at the dashboard or an "Admin" crumb, because the sidebar already marks the section. Pages do not render their own breadcrumbs. On phones only the last two crumbs show.
 - Pages: page header (`page-title` plus one line of `body-sm` in `base-content-muted`, actions on the right), then cards stacked with `space-6` gaps.
 - Lists, not tables, for SOPs, versions, assets and signatures: a `ListRow` per item inside one bordered card.
-- A list's search and filters sit in a toolbar at the top of that same card, under its header, and apply as they change (search after a short pause). Choices that exclude each other are one segmented `join`, not separate checkboxes; long option sets use the Combobox. "Clear filters" is a ghost button, and the empty state says whether nothing exists yet or nothing matches.
+- A list's search and filters sit in a toolbar at the top of that same card, under its header, and apply as they change (search after a short pause). Choices that exclude each other are one segmented `join`, not separate checkboxes; long option sets use the Combobox. "Clear filters" is a ghost button, and the empty state (see EmptyState) says whether nothing exists yet or nothing matches. While a list has nothing in it at all, hide its toolbar.
 - Phones first: rows stack, secondary metadata wraps under the title, badges hide only if their meaning is repeated elsewhere.
 
 ## Components
@@ -111,6 +111,22 @@ The bordered `base-100` section that holds every block of content on a page; alw
 - Don't write `class="card …"` by hand in pages. Today 16 places do; route them through `Card`.
 - Don't nest cards. Use a divider or a group heading inside one card.
 - Don't add `shadow-*` or `rounded-2xl`; the radius is `radius-box`.
+
+### EmptyState
+
+What a list or card shows when it has nothing to list; rendered through `$lib/components/EmptyState.svelte`.
+
+**Anatomy**: centred, `space-12` vertical padding (`space-16` from `sm`). A 64px `radius-box` tile with a 32px icon and an 8px halo ring, then the heading (`body`, semibold), one line of `body-sm` in `base-content-muted` (at most `max-w-sm`), and the actions `space-6` below.
+
+**Tones**: `primary` (`primary` at 10% with a 5% halo, icon in `primary`) only for an invitation to create the first item; `neutral` (`base-200`, icon in `base-content-muted`) for everything else.
+
+**Say why it is empty**, and offer the step that fixes it:
+- Nothing exists yet and the reader may create: invite them ("Create your first SOP"), with the only `btn-primary` on the view. Hide the page header's create button while this shows.
+- Nothing exists yet and the reader may not create: say where items will come from, no button.
+- A search or filter hides everything: repeat the search term, offer "Clear filters" as a default `btn`.
+- A personal view is empty (favorites only): explain how to fill it, offer the way back to everything.
+
+**Behaviour**: `role="status"`, so a filter that empties the list is announced.
 
 ### ListRow
 
@@ -213,7 +229,7 @@ An inline message about the page or a form, rendered through `$lib/components/Al
 **Don't**
 - Don't write `class="alert …"` by hand (14 places do today).
 - Don't use solid `alert-error` fills or stack more than two alerts.
-- Don't use an alert for empty states; use plain `body-sm` text in the card.
+- Don't use an alert for empty states; use `EmptyState` for a whole list or card, or plain `body-sm` text for a small section inside one.
 
 ### Avatar
 

@@ -186,9 +186,11 @@
         {/snippet}
       </ListRow>
     {:else}
-      <li class="flex flex-col items-start gap-3 p-6 text-sm text-base-content/70">
-        {#if empty}{@render empty()}{:else}{m.sops_empty()}{/if}
-      </li>
+      {#if empty}
+        <li>{@render empty()}</li>
+      {:else}
+        <li class="p-6 text-sm text-base-content/70">{m.sops_empty()}</li>
+      {/if}
     {/each}
   </ul>
 

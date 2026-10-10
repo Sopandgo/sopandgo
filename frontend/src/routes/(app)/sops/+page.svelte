@@ -4,7 +4,16 @@
   import CardPageHeading from '$lib/components/CardPageHeading.svelte';
   import Combobox from '$lib/components/Combobox.svelte';
   import ListSops from '$lib/components/ListSops.svelte';
-  import { NotebookIcon, PlusIcon, SearchIcon, XIcon } from 'lucide-svelte';
+  import EmptyState from '$lib/components/EmptyState.svelte';
+  import {
+    NotebookIcon,
+    NotebookPenIcon,
+    PlusIcon,
+    SearchIcon,
+    SearchXIcon,
+    StarIcon,
+    XIcon
+  } from 'lucide-svelte';
   import * as m from '$lib/paraglide/messages.js';
   import type { PageData } from './$types';
 
@@ -103,6 +112,16 @@
     )
   );
 
+  // "Favorites first" only reorders; these are the filters that can hide SOPs
+  let isNarrowed = $derived(
+    Boolean(data.filters.q || data.filters.tag_id || data.filters.favorites_only)
+  );
+  // Nothing to search yet: the empty state replaces the toolbar and the header action
+  let isLibraryEmpty = $derived(data.total === 0 && !isNarrowed);
+  let isFavoritesEmpty = $derived(
+    data.filters.favorites_only && !data.filters.q && !data.filters.tag_id
+  );
+
   let tagOptions = $derived(data.tags.map((t) => ({ value: t.id, label: t.title })));
 </script>
 
@@ -124,7 +143,7 @@
           </span>
         </div>
 
-        {#if canCreate}
+        {#if canCreate && !isLibraryEmpty}
           <a
             href="/sops/new"
             class="btn btn-primary shrink-0"
@@ -143,88 +162,125 @@
     items={{ sops: data.sops, total: data.total }}
     activeFilters={data.filters}
     onTagClick={toggleTag}
-  >
-    {#snippet toolbar()}
-      <div class="flex flex-wrap items-center gap-3">
-        <form
-          role="search"
-          class="relative w-full sm:w-72"
-          onsubmit={(e) => {
-            e.preventDefault();
-            handleSearch();
-          }}
+    toolbar={isLibraryEmpty ? undefined : toolbar}
+    {empty}
+  />
+</div>
+
+{#snippet toolbar()}
+  <div class="flex flex-wrap items-center gap-3">
+    <form
+      role="search"
+      class="relative w-full sm:w-72"
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleSearch();
+      }}
+    >
+      <SearchIcon
+        class="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-base-content/70"
+        aria-hidden="true"
+      />
+      <input
+        type="search"
+        placeholder={m.sops_search_placeholder()}
+        aria-label={m.sops_search_placeholder()}
+        class="input w-full pl-9"
+        bind:value={searchTerm}
+        oninput={queueSearch}
+      />
+    </form>
+
+    {#if tagOptions.length > 0}
+      <Combobox
+        class="w-full sm:w-56"
+        label={m.common_tags()}
+        hideLabel
+        placeholder={m.sops_tag_placeholder()}
+        options={tagOptions}
+        bind:value={() => data.filters.tag_id, setTag}
+        allLabel={m.sops_all_tags()}
+        emptyLabel={m.sops_no_matching_tags()}
+        clearLabel={m.sops_clear_tag_aria()}
+      />
+    {/if}
+
+    <div class="join w-full sm:w-auto" role="group" aria-label={m.common_favorites()}>
+      {#each favoritesOptions as option (option.mode)}
+        <button
+          type="button"
+          class="btn join-item btn-sm flex-1 sm:btn-md sm:flex-none {favoritesMode === option.mode ? 'btn-active' : ''}"
+          aria-pressed={favoritesMode === option.mode}
+          onclick={() => setFavoritesMode(option.mode)}
         >
-          <SearchIcon
-            class="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-base-content/70"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            placeholder={m.sops_search_placeholder()}
-            aria-label={m.sops_search_placeholder()}
-            class="input w-full pl-9"
-            bind:value={searchTerm}
-            oninput={queueSearch}
-          />
-        </form>
+          {option.label()}
+        </button>
+      {/each}
+    </div>
 
-        {#if tagOptions.length > 0}
-          <Combobox
-            class="w-full sm:w-56"
-            label={m.common_tags()}
-            hideLabel
-            placeholder={m.sops_tag_placeholder()}
-            options={tagOptions}
-            bind:value={() => data.filters.tag_id, setTag}
-            allLabel={m.sops_all_tags()}
-            emptyLabel={m.sops_no_matching_tags()}
-            clearLabel={m.sops_clear_tag_aria()}
-          />
-        {/if}
+    {#if hasActiveFilters}
+      <button
+        type="button"
+        class="btn btn-ghost sm:ml-auto"
+        onclick={clearFilters}
+        aria-label={m.sops_clear_filters_aria()}
+      >
+        <XIcon class="size-4" />
+        {m.sops_clear_filters()}
+      </button>
+    {/if}
+  </div>
+{/snippet}
 
-        <div class="join w-full sm:w-auto" role="group" aria-label={m.common_favorites()}>
-          {#each favoritesOptions as option (option.mode)}
-            <button
-              type="button"
-              class="btn join-item btn-sm flex-1 sm:btn-md sm:flex-none {favoritesMode === option.mode ? 'btn-active' : ''}"
-              aria-pressed={favoritesMode === option.mode}
-              onclick={() => setFavoritesMode(option.mode)}
-            >
-              {option.label()}
-            </button>
-          {/each}
-        </div>
-
-        {#if hasActiveFilters}
-          <button
-            type="button"
-            class="btn btn-ghost sm:ml-auto"
-            onclick={clearFilters}
-            aria-label={m.sops_clear_filters_aria()}
-          >
-            <XIcon class="size-4" />
-            {m.sops_clear_filters()}
-          </button>
-        {/if}
-      </div>
-    {/snippet}
-
-    {#snippet empty()}
-      {#if hasActiveFilters}
-        <span>{m.sops_empty()}</span>
-        <button type="button" class="btn btn-sm" onclick={clearFilters}>
+{#snippet empty()}
+  {#if isLibraryEmpty}
+    {#if canCreate}
+      <EmptyState
+        icon={NotebookPenIcon}
+        tone="primary"
+        title={m.sops_empty_new_title()}
+        description={m.sops_empty_new_body()}
+      >
+        {#snippet actions()}
+          <a href="/sops/new" class="btn btn-primary">
+            <PlusIcon class="size-4" />
+            {m.common_new_sop()}
+          </a>
+        {/snippet}
+      </EmptyState>
+    {:else}
+      <EmptyState
+        icon={NotebookIcon}
+        title={m.sops_empty_none_title()}
+        description={m.sops_empty_none_body()}
+      />
+    {/if}
+  {:else if isFavoritesEmpty}
+    <EmptyState
+      icon={StarIcon}
+      title={m.sops_empty_fav_title()}
+      description={m.sops_empty_fav_body()}
+    >
+      {#snippet actions()}
+        <button type="button" class="btn" onclick={() => setFavoritesMode('all')}>
+          {m.common_all_sops()}
+        </button>
+      {/snippet}
+    </EmptyState>
+  {:else}
+    <EmptyState
+      icon={SearchXIcon}
+      title={m.sops_empty_match_title()}
+      description={data.filters.q
+        ? m.sops_empty_match_query({ query: data.filters.q })
+        : m.sops_empty_match_filters()}
+    >
+      {#snippet actions()}
+        <button type="button" class="btn" onclick={clearFilters}>
           <XIcon class="size-4" />
           {m.sops_clear_filters()}
         </button>
-      {:else}
-        <span>{m.sops_none_yet()}</span>
-        {#if canCreate}
-          <a href="/sops/new" class="btn btn-sm">
-            <PlusIcon class="size-4" />
-            {m.sops_create_first()}
-          </a>
-        {/if}
-      {/if}
-    {/snippet}
-  </ListSops>
-</div>
+      {/snippet}
+    </EmptyState>
+  {/if}
+{/snippet}
