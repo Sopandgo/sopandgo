@@ -36,7 +36,7 @@ All fields are optional. Without the file, every version is published and nothin
 
 | Field | Meaning |
 | --- | --- |
-| `tags` | Tags attached to the SOP. A tag is created the first time any SOP uses it. |
+| `tags` | Tags attached to the SOP. A tag is created the first time any SOP uses it. The seeder always adds `Demo` as well. |
 | `final_state` | Where the last version stops: `published` (default), `rc`, or `draft`. Earlier versions are always published. |
 | `change_summaries` | One change summary per version, in file order. Missing entries default to "Updated procedure". |
 | `read_by` | Demo user key to the version numbers that user signed as a reader. A version must be published to be signed. |

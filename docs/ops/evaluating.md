@@ -50,7 +50,7 @@ The three demo accounts ship with profile pictures; the bootstrap admin does not
 
 ## What the demo data contains
 
-Six short sample SOPs, tagged *Molecular Biology*, *Safety*, *Equipment*, and *Quality*, in different lifecycle states:
+Six short sample SOPs, each tagged *Demo* plus topic tags (*Molecular Biology*, *Safety*, *Equipment*, *Quality*), in different lifecycle states:
 
 | SOP | State | For the researcher |
 | --- | --- | --- |

@@ -43,6 +43,19 @@ func TestParseManifestDefaults(t *testing.T) {
 	}
 }
 
+func TestWithDemoTag(t *testing.T) {
+	got := withDemoTag([]string{"Safety", "demo", "Equipment"})
+	want := []string{"Demo", "Safety", "Equipment"}
+	if len(got) != len(want) {
+		t.Fatalf("withDemoTag = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("withDemoTag = %v, want %v", got, want)
+		}
+	}
+}
+
 func TestParseManifestRejectsInvalid(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -123,8 +136,30 @@ func TestSeedShippedDemoData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListTags: %v", err)
 	}
-	if len(tags) != 4 {
-		t.Errorf("seeded %d tags, want 4", len(tags))
+	if len(tags) != 5 {
+		t.Errorf("seeded %d tags, want 5", len(tags))
+	}
+	var demoTagID string
+	for _, tag := range tags {
+		if tag.Title == "Demo" {
+			demoTagID = tag.ID
+			break
+		}
+	}
+	if demoTagID == "" {
+		t.Fatal("expected Demo tag among seeded tags")
+	}
+	for _, item := range sops {
+		hasDemo := false
+		for _, tag := range item.Tags {
+			if tag.ID == demoTagID {
+				hasDemo = true
+				break
+			}
+		}
+		if !hasDemo {
+			t.Errorf("SOP %q missing Demo tag", item.Title)
+		}
 	}
 
 	// The researcher's dashboard shows one never-signed SOP and one that

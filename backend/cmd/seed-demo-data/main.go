@@ -31,7 +31,22 @@ const (
 	userManager    = "manager"
 	userQA         = "qa"
 	userResearcher = "researcher"
+	demoTag        = "Demo"
 )
+
+// withDemoTag returns tags with the Demo tag first. Manifest entries that
+// already spell Demo (any case) are dropped so the tag is attached once.
+func withDemoTag(tags []string) []string {
+	out := make([]string, 0, len(tags)+1)
+	out = append(out, demoTag)
+	for _, tag := range tags {
+		if strings.EqualFold(tag, demoTag) {
+			continue
+		}
+		out = append(out, tag)
+	}
+	return out
+}
 
 type demoUser struct {
 	key   string
@@ -289,8 +304,9 @@ func seedOneSOP(
 		return err
 	}
 
-	// 3. attach tags, creating each one the first time it is used
-	for _, tag := range manifest.Tags {
+	// 3. attach tags, creating each one the first time it is used.
+	// Every demo SOP gets the Demo tag so evaluators can filter the library.
+	for _, tag := range withDemoTag(manifest.Tags) {
 		tagID, ok := tagIDs[tag]
 		if !ok {
 			tagID, err = sopService.CreateTag(tag, &editorID)
