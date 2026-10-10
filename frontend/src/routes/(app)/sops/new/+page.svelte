@@ -26,7 +26,7 @@
 
             <div class="flex items-center gap-2 text-base-content/70 mb-4">
                 <span class="text-sm font-medium">
-                    {m.sops_register_help()}
+                    {m.sops_create_help()}
                 </span> 
             </div>
 
@@ -72,7 +72,7 @@
                         {#if loading}
                             <span class="loading loading-spinner"></span>
                         {/if}
-                        {m.sops_register()}
+                        {m.sops_create()}
                         <RocketIcon class="w-5 h-5"/>
                     </button>
                 </div>
