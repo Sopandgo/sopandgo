@@ -90,7 +90,7 @@
                         class="btn btn-sm gap-1"
                         aria-label={m.version_remove_favorite()}
                     >
-                        <StarIcon class="size-4 fill-accent" aria-hidden="true" />
+                        <StarIcon class="size-4 fill-current" aria-hidden="true" />
                         {m.sops_favorited()}
                     </button>
                 </form>

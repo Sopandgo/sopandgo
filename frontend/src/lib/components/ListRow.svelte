@@ -43,7 +43,7 @@
 </script>
 
 <li
-    class="list-row relative flex items-center gap-3 border-b border-base-300 transition-colors duration-150 after:hidden last:border-b-0 {attention ? 'bg-warning/10' : ''} {href ? 'hover:bg-base-200' : ''}"
+    class="list-row relative flex items-center gap-3 rounded-none [ul:last-child>&:last-child]:rounded-b-box border-b border-base-300 transition-colors duration-150 after:hidden last:border-b-0 {attention ? 'bg-warning/10' : ''} {href ? 'hover:bg-base-200' : ''}"
 >
     {#if leading}
         <div class="shrink-0">{@render leading()}</div>

@@ -137,7 +137,8 @@ One linked item in a list inside a `Card` — an SOP, a version, an asset, a sig
 - Main: title in `label` (truncates on one line), meta line in `meta` / `base-content-muted`; IDs and versions in `mono-id`.
 - Tags on the meta line: at most three, then a `badge-ghost` "+N" button that shows the rest in place (its `title` names the hidden tags) and turns into "Show fewer". A tag the list is filtered by is always among the visible ones.
 - Trailing: a `StatusBadge` or `IntegrityStatus`, small actions (`btn-sm`), and a chevron when the whole row is a link.
-- Rows are separated by `base-300` hairlines; the last row has none.
+- Favorite toggle: an outline star; a favorited SOP shows the star filled in the text colour (`fill-current`), not in `accent`.
+- Rows are square and separated by `base-300` hairlines; the last row has none. When the list ends the card, the last row takes the card's bottom `radius-box`, so its hover background stays inside the corners.
 
 **Variants**: default (`base-100`); `attention` for rows that need the reader's action, such as "Out of date — new version published": background `warning-soft`, leading icon in `warning`, and the reason in words in the meta line.
 

@@ -194,7 +194,7 @@
 										aria-label={m.aria_remove_favorite({ title: sop.title })}
 										title={m.aria_remove_favorite({ title: sop.title })}
 									>
-										<StarIcon class="size-4 fill-accent" aria-hidden="true" />
+										<StarIcon class="size-4 fill-current" aria-hidden="true" />
 									</button>
 								</form>
 							{/snippet}
