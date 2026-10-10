@@ -70,6 +70,16 @@
     return `${published} · ${m.sops_updated({ date })}`;
   }
 
+  // Work waiting on a newer version (draft, in review), or the state of an SOP nothing
+  // is published for yet. A rejected version after a published one changes nothing for
+  // readers, so it shows only on the SOP page.
+  function pendingStatus(sop: SOPListItem) {
+    const status = sop.latest_version?.status;
+    if (!status || status === 'published') return undefined;
+    if (status === 'rejected' && sop.published_version != null) return undefined;
+    return status;
+  }
+
   function rowHref(sopId: string) {
     return `/sops/${sopId}/v/latest`;
   }
@@ -106,9 +116,9 @@
         {/snippet}
 
         {#snippet trailing()}
-          <!-- A newer version than the published one (draft, in review, rejected) -->
-          {#if sop.latest_version && sop.latest_version.status !== 'published'}
-            <SopVersionStatusBadge status={sop.latest_version.status} />
+          {@const pending = pendingStatus(sop)}
+          {#if pending}
+            <SopVersionStatusBadge status={pending} />
           {/if}
           <FavoriteToggle sopId={sop.id} title={sop.title} isFavorite={!!sop.is_favorite} />
         {/snippet}
