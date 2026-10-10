@@ -145,7 +145,7 @@ Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`
 2. Sign in as `admin` / `admin` and **set a strong password** (required; enter `admin` as the current password).
 3. Optionally save SMTP or Resend under **Settings → Email**, switch it on and send a **test email**; without it, invites use manual links.
 4. Create a real user invite (or keep demo data only for a trial).
-5. **Backup:** Admin → **Backup** → export a `.zip`, then optionally **validate** it.
+5. **Backup:** **Settings → Backup** → export a `.zip`, then optionally **validate** it.
 6. Practice restore once on a non-production copy: stage apply → restart container → confirm SOPs and acknowledgments. See `docs/ops/backup-and-restore.md`.
 
 ### Upgrading

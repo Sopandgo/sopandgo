@@ -85,6 +85,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 ## Layout
 
 - Navbar: `base-100`, a `base-300` bottom border, no shadow. The logo sits at its own size, not inside a circular button.
+- Signed-in avatar menu: the user's name (to `/profile`), **Account settings** (`/profile/settings`), the appearance switch (`AccountThemeSwitch`: light, dark and system as a `join` of icon-only `btn-xs btn-square` buttons with `aria-pressed`), then sign out, with hairline dividers between the groups. Guests get `GuestLocaleMenu` and `GuestThemeToggle` in the navbar instead.
 - Breadcrumbs live in the signed-in navbar, next to the sidebar toggle. Trails are defined per route in `$lib/breadcrumbs.ts` and start at the section (SOPs, Profile, or the admin page itself), never at the dashboard or an "Admin" crumb, because the sidebar already marks the section. Pages do not render their own breadcrumbs. On phones only the last two crumbs show.
 - Pages: page header (`page-title` plus one line of `body-sm` in `base-content-muted`, actions on the right), then cards stacked with `space-6` gaps.
 - Lists, not tables, for SOPs, versions, assets and signatures: a `ListRow` per item inside one bordered card.
@@ -139,7 +140,7 @@ One linked item in a list inside a `Card` — an SOP, a version, an asset, a sig
 - Leading: a 40px `radius-field` tile on `base-200` with a 20px icon in `base-content-muted` (file-text for SOPs, paperclip for assets).
 - Main: title in `label` (truncates on one line), meta line in `meta` / `base-content-muted`; IDs and versions in `mono-id`.
 - Tags on the meta line: at most three, then a `badge-ghost` "+N" button that shows the rest in place (its `title` names the hidden tags) and turns into "Show fewer". A tag the list is filtered by is always among the visible ones.
-- Trailing: a `StatusBadge` or `IntegrityStatus`, small actions (`btn-sm`), and a chevron when the whole row is a link.
+- Trailing: a `StatusBadge` or `IntegrityStatus`, small actions (`btn-sm`), and a chevron when the whole row is a link. A second destination for the same item gets an icon-only `btn-square btn-ghost btn-sm` link here, never a link nested in the row's own; in the SOP list the row opens the latest version and a git-branch link opens the SOP page with all versions.
 - Favorite toggle (`FavoriteToggle`): an icon-only outline star (`btn-square btn-ghost btn-sm`); a favorited SOP shows the star filled in the text colour (`fill-current`), not in `accent`. The same toggle sits next to the page title on the SOP and version pages.
 - Rows are square and separated by `base-300` hairlines; the last row has none. When the list ends the card, the last row takes the card's bottom `radius-box`, so its hover background stays inside the corners.
 
