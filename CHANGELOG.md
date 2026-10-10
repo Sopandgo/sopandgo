@@ -2,6 +2,29 @@
 
 All notable releases of sopandgo are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
 
+## 1.1.0
+
+Signed-in navigation, profile pictures, and admin settings. Scheduled S3 backups are configured in the admin UI.
+
+- New signed-in shell: a sidebar, breadcrumbs, and an avatar menu for profile, theme, and sign out. `/` opens the dashboard or the login page.
+- Users can set a profile picture. It is included in backups, and the avatar falls back to initials.
+- Admin settings are split into Email, Integrations, and Backup. Email transports can be turned off; manual invite links remain the fallback.
+- Scheduled S3 backups, a connection test, and run-now live under Settings → Backup. The secret is sealed with `SECRET_ENCRYPTION_KEY`. A staged restore keeps the running instance's S3 settings.
+- Admin → Integrity scans every version, every asset, and the audit chain.
+- A rejection stores the reason. The version page shows who rejected the version, when, and why.
+- Users change their own password with the current password, and can sign out their other sessions.
+- Czech and Slovak join the interface languages.
+- A second reader acknowledgment of the same version returns 409 instead of 500.
+- With `SEED_DEMO_DATA`, a first boot seeds six sample SOPs covering tags, favorites, a draft, a release candidate, and signature states.
+- Frontend updates clear the undici and DOMPurify security advisories.
+
+### Upgrading from 1.0.x
+
+- `BACKUP_S3_*` environment variables are no longer read. After the upgrade, set scheduled S3 backups again under Admin → Settings → Backup.
+- Only `SECRET_ENCRYPTION_KEY` is read. The `SMTP_SECRET_ENCRYPTION_KEY` name is no longer accepted.
+- SvelteKit no longer reads `ORIGIN`. The Go API still uses it for invite links and the public URL. CSRF uses `HOST_HEADER` and `PROTOCOL_HEADER`, which the bundled compose file already sets.
+- Migrations run on startup. Take a backup before pulling, as with any upgrade.
+
 ## 1.0.2
 
 Standalone audit writes no longer race under concurrent SQLite writers.
