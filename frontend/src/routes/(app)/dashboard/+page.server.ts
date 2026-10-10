@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		};
 	} catch (err) {
 		console.error('Dashboard load error:', err);
-		throw error(500, 'Could not load dashboard');
+		throw error(500, m.error_service_unavailable());
 	}
 };
 

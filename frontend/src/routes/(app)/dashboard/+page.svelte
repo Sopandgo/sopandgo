@@ -1,15 +1,18 @@
 <script lang="ts">
 	import Card from '$lib/components/Card.svelte';
+	import CardPageHeading from '$lib/components/CardPageHeading.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
 	import ListHeading from '$lib/components/ListHeading.svelte';
 	import ListRow from '$lib/components/ListRow.svelte';
 	import FavoriteToggle from '$lib/components/FavoriteToggle.svelte';
+	import TagList from '$lib/components/TagList.svelte';
 	import {
 		greetingPeriodForDate,
 		partitionSignatureStatus,
 		pendingSignatureCount
 	} from '$lib/signatureBuckets';
 	import SopTrainingCoverage from '$lib/components/SopTrainingCoverage.svelte';
-	import { CircleCheckIcon, FileTextIcon, NotebookIcon } from 'lucide-svelte';
+	import { CircleCheckIcon, FileTextIcon, MegaphoneIcon, NotebookIcon, StarIcon } from 'lucide-svelte';
 	import * as m from '$lib/paraglide/messages.js';
 	import { getLocale } from '$lib/paraglide/runtime';
 
@@ -18,6 +21,7 @@
 	const user = $derived(data.user);
 	const signatureStatus = $derived(data.signatureStatus ?? []);
 	const favoriteSops = $derived(data.favorites?.sops ?? []);
+	const favoritesTotal = $derived(data.favorites?.total ?? 0);
 	const recentPublishes = $derived(data.recentPublishes ?? []);
 	const trainingCoverage = $derived(data.trainingCoverage ?? []);
 	const showTraining = $derived(user?.role === 'admin' || user?.role === 'approver');
@@ -45,31 +49,38 @@
 
 <div class="flex flex-col gap-6">
 	{#if user}
-		<Card as="section" aria-labelledby="greeting-heading">
-			<div class="card-body p-4 sm:p-6">
-				<h1 id="greeting-heading" class="text-2xl font-semibold">{greeting}</h1>
-				{#if pending === 0}
-					<p class="flex items-center gap-2">
-						<CircleCheckIcon class="size-4 shrink-0 text-success" aria-hidden="true" />
-						{m.dashboard_caught_up()}
-					</p>
-				{:else}
-					<p>
-						{pending === 1 ? m.dashboard_pending_one() : m.dashboard_pending_other({ count: String(pending) })}
-					</p>
-					{#if notStarted.length > 0 && actionRequired.length > 0}
-						<p class="text-sm text-base-content/70">
-							{m.dashboard_split({
-								never: String(notStarted.length),
-								updated: String(actionRequired.length)
-							})}
-						</p>
-					{/if}
-				{/if}
-				<div class="card-actions mt-2">
-					<a href="/sops" class="btn btn-primary">
+		<Card>
+			<div class="card-body">
+				<div class="flex items-start justify-between gap-4">
+					<div class="flex min-w-0 flex-col gap-1">
+						<CardPageHeading>{greeting}</CardPageHeading>
+						{#if pending === 0}
+							<p class="flex items-center gap-2 text-sm text-base-content/70">
+								<CircleCheckIcon class="size-4 shrink-0 text-success" aria-hidden="true" />
+								{m.dashboard_caught_up()}
+							</p>
+						{:else}
+							<p class="text-sm text-base-content/70">
+								{pending === 1 ? m.dashboard_pending_one() : m.dashboard_pending_other({ count: String(pending) })}
+							</p>
+							{#if notStarted.length > 0 && actionRequired.length > 0}
+								<p class="text-sm text-base-content/70">
+									{m.dashboard_split({
+										never: String(notStarted.length),
+										updated: String(actionRequired.length)
+									})}
+								</p>
+							{/if}
+						{/if}
+					</div>
+					<a
+						href="/sops"
+						class="btn btn-primary shrink-0"
+						aria-label={m.common_all_sops()}
+						title={m.common_all_sops()}
+					>
 						<NotebookIcon class="size-4" aria-hidden="true" />
-						{m.common_all_sops()}
+						<span class="hidden sm:inline">{m.common_all_sops()}</span>
 					</a>
 				</div>
 			</div>
@@ -83,27 +94,13 @@
 			description={m.dashboard_action_help()}
 		>
 			{#if actionRequired.length === 0 && notStarted.length === 0}
-				<p class="p-6 text-sm text-base-content/70">
-					{m.dashboard_nothing_before()}<a href="/sops" class="link link-primary">{m.dashboard_sop_library()}</a>{m.dashboard_nothing_after()}
-				</p>
+				<EmptyState
+					icon={CircleCheckIcon}
+					title={m.dashboard_caught_up_title()}
+					description={m.dashboard_caught_up_body()}
+				/>
 			{:else}
 				<ul class="list">
-					{#if notStarted.length > 0}
-						<ListHeading>{m.dashboard_new_unsigned()}</ListHeading>
-						{#each notStarted as sop (sop.sop_id)}
-							<ListRow
-								href={sopLatestHref(sop.sop_id)}
-								title={sop.title}
-								icon={FileTextIcon}
-							>
-								{#snippet meta()}<span class="font-mono">{m.common_version({ version: String(sop.latest_version) })}</span>{/snippet}
-								{#snippet trailing()}
-									<span class="badge badge-outline badge-sm hidden sm:inline-flex">{m.dashboard_review()}</span>
-								{/snippet}
-							</ListRow>
-						{/each}
-					{/if}
-
 					{#if actionRequired.length > 0}
 						<ListHeading>{m.dashboard_outdated()}</ListHeading>
 						{#each actionRequired as sop (sop.sop_id)}
@@ -120,6 +117,22 @@
 							</ListRow>
 						{/each}
 					{/if}
+
+					{#if notStarted.length > 0}
+						<ListHeading>{m.dashboard_new_unsigned()}</ListHeading>
+						{#each notStarted as sop (sop.sop_id)}
+							<ListRow
+								href={sopLatestHref(sop.sop_id)}
+								title={sop.title}
+								icon={FileTextIcon}
+							>
+								{#snippet meta()}<span class="font-mono">{m.common_version({ version: String(sop.latest_version) })}</span>{/snippet}
+								{#snippet trailing()}
+									<span class="badge badge-outline badge-sm hidden sm:inline-flex">{m.dashboard_review()}</span>
+								{/snippet}
+							</ListRow>
+						{/each}
+					{/if}
 				</ul>
 			{/if}
 		</Card>
@@ -132,12 +145,16 @@
 			description={m.dashboard_recent()}
 		>
 			{#if recentPublishes.length === 0}
-				<p class="p-6 text-sm text-base-content/70">{m.dashboard_nothing_published()}</p>
+				<EmptyState
+					icon={MegaphoneIcon}
+					title={m.dashboard_published_empty_title()}
+					description={m.dashboard_published_empty_body()}
+				/>
 			{:else}
 				<ul class="list">
 					{#each recentPublishes as item (item.version_id)}
 						<ListRow href={sopLatestHref(item.sop_id)} title={item.title} icon={FileTextIcon}>
-							{#if item.change_summary}{item.change_summary}{/if}
+							{#if item.change_summary}<span class="line-clamp-2">{item.change_summary}</span>{/if}
 							{#snippet meta()}
 								<span class="font-mono">{m.common_version({ version: String(item.version) })}</span>
 								{#if item.published_by}· {item.published_by}{/if}
@@ -169,21 +186,32 @@
 			description={m.dashboard_favorites_help()}
 		>
 			{#snippet actions()}
-				<a href="/sops?favorites_only=true" class="btn btn-sm">{m.dashboard_view_favorites()}</a>
+				{#if favoriteSops.length > 0}
+					{#if favoritesTotal > favoriteSops.length}
+						<span class="self-center text-sm text-base-content/70">
+							{m.sops_showing({ shown: String(favoriteSops.length), total: String(favoritesTotal) })}
+						</span>
+					{/if}
+					<a href="/sops?favorites_only=true" class="btn btn-sm">{m.dashboard_view_favorites()}</a>
+				{/if}
 			{/snippet}
 
 			{#if favoriteSops.length === 0}
-				<p class="p-6 text-sm text-base-content/70">
-					{m.dashboard_no_favorites()}
-				</p>
+				<EmptyState
+					icon={StarIcon}
+					title={m.sops_empty_fav_title()}
+					description={m.dashboard_no_favorites()}
+				>
+					{#snippet actions()}
+						<a href="/sops" class="btn">{m.common_all_sops()}</a>
+					{/snippet}
+				</EmptyState>
 			{:else}
 				<ul class="list">
 					{#each favoriteSops as sop (sop.id)}
 						<ListRow href={sopLatestHref(sop.id)} title={sop.title} icon={FileTextIcon}>
 							{#snippet metaExtra()}
-								{#each sop.tags as tag (tag.id)}
-									<span class="badge badge-outline badge-sm">{tag.title}</span>
-								{/each}
+								<TagList tags={sop.tags} tagHref={(tag) => `/sops?tag_id=${tag.id}`} />
 							{/snippet}
 							{#snippet trailing()}
 								<FavoriteToggle sopId={sop.id} title={sop.title} isFavorite />

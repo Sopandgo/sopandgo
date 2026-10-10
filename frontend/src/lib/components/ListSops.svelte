@@ -5,12 +5,12 @@
     ChevronLeftIcon
   } from 'lucide-svelte';
   import type { Snippet } from 'svelte';
-  import { SvelteSet } from 'svelte/reactivity';
-  import type { SOPListItem, SOPListResponse, Tag } from '$lib/sdk/types';
+  import type { SOPListItem, SOPListResponse } from '$lib/sdk/types';
   import Card from './Card.svelte';
   import ListRow from './ListRow.svelte';
   import FavoriteToggle from './FavoriteToggle.svelte';
   import SopVersionStatusBadge from './SopVersionStatusBadge.svelte';
+  import TagList from './TagList.svelte';
   import { goto } from '$app/navigation';
   import * as m from '$lib/paraglide/messages.js';
   import { getLocale } from '$lib/paraglide/runtime';
@@ -59,17 +59,6 @@
     goto(url.toString());
   }
 
-  // Tags shown per row before the rest collapse into a "+N" badge
-  const MAX_ROW_TAGS = 3;
-  const expandedTags = new SvelteSet<string>();
-
-  // The filtered tag always stays visible, so the reader sees why the row matched
-  function orderTags(tags: Tag[]) {
-    const i = tags.findIndex((t) => t.id === activeFilters.tag_id);
-    if (i < MAX_ROW_TAGS) return tags;
-    return [tags[i], ...tags.slice(0, i), ...tags.slice(i + 1)];
-  }
-
   // What readers see, and when it last changed
   function rowMeta(sop: SOPListItem) {
     const published =
@@ -113,43 +102,7 @@
         meta={rowMeta(sop)}
       >
         {#snippet metaExtra()}
-          {@const tags = orderTags(sop.tags)}
-          {@const expanded = expandedTags.has(sop.id)}
-          {@const hidden = tags.slice(MAX_ROW_TAGS)}
-          {#each expanded ? tags : tags.slice(0, MAX_ROW_TAGS) as tag (tag.id)}
-            <button
-              type="button"
-              onclick={() => onTagClick(tag.id)}
-              class="badge badge-sm relative z-10 cursor-pointer {activeFilters.tag_id === tag.id ? 'badge-soft badge-primary' : 'badge-outline'}"
-              aria-pressed={activeFilters.tag_id === tag.id}
-              aria-label={m.sops_filter_tag({ title: tag.title })}
-            >
-              {tag.title}
-            </button>
-          {/each}
-          {#if hidden.length > 0}
-            {#if expanded}
-              <button
-                type="button"
-                onclick={() => expandedTags.delete(sop.id)}
-                class="badge badge-sm badge-ghost relative z-10 cursor-pointer"
-                aria-expanded="true"
-              >
-                {m.sops_fewer_tags()}
-              </button>
-            {:else}
-              <button
-                type="button"
-                onclick={() => expandedTags.add(sop.id)}
-                class="badge badge-sm badge-ghost relative z-10 cursor-pointer"
-                aria-expanded="false"
-                aria-label={m.sops_more_tags_aria({ count: String(hidden.length) })}
-                title={hidden.map((t) => t.title).join(', ')}
-              >
-                +{hidden.length}
-              </button>
-            {/if}
-          {/if}
+          <TagList tags={sop.tags} activeTagId={activeFilters.tag_id} {onTagClick} />
         {/snippet}
 
         {#snippet trailing()}

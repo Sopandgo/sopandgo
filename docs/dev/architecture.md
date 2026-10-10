@@ -164,7 +164,7 @@ export const load = async ({ locals, params }) => {
 
 ### Home dashboard (signed-in landing)
 
-The route **`/dashboard`** is the default post-login destination in the SvelteKit app. It loads signature status and a favorites slice from the SDK, surfaces **All SOPs** (`/sops`), and deep-links pending acknowledgments to **`/sops/{id}/v/latest`**. Conceptual overview: `docs/concepts/home-dashboard.md`.
+The route **`/dashboard`** is the default post-login destination in the SvelteKit app. It loads signature status, recent publishes, a favorites slice, and (for admin and approver) training coverage from the SDK, surfaces **All SOPs** (`/sops`), and deep-links pending acknowledgments to **`/sops/{id}/v/latest`**. Conceptual overview: `docs/concepts/home-dashboard.md`.
 
 ### Draft editor and preview (new SOP version)
 
