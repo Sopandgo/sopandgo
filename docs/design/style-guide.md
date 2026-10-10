@@ -196,20 +196,20 @@ The SOP version status (`SopVersionStatusBadge`), as a soft daisyUI badge whose 
 
 ### IntegrityStatus
 
-The result of a file or version hash check (`IntegrityButtonAssets`), showing exactly what is known: verified, hash mismatch, file missing, or couldn't check.
+The result of a file or version hash check (`IntegrityCheck`, which renders `IntegrityStatusBadge`), showing exactly what is known: verified, hash mismatch, file missing, or couldn't check.
 
 | State | When | Treatment |
 | --- | --- | --- |
-| idle | before a check | `btn btn-ghost btn-sm` with shield icon, "Verify file" |
+| idle | before a check | `btn btn-ghost btn-sm` with shield-question-mark icon, "Verify file" |
 | checking | request in flight | same button, disabled, spinner, "Checking…" |
 | verified | `hash_valid: true` | `badge badge-soft badge-success`, shield-check, "Verified" |
 | hash mismatch | `hash_valid: false` | `badge badge-soft badge-error`, shield-x, "Hash mismatch" |
 | file missing | backend 404 | `badge badge-soft badge-warning`, file-x, "File missing" |
-| couldn't check | network error, 401/403, 500 | `badge badge-outline`, "Couldn't check", plus a ghost "Retry" button |
+| couldn't check | network error, 401/403, 500 | `badge badge-outline`, shield-alert, "Couldn't check", plus a ghost "Retry" button |
 
-**Consumer provides**: `sopId` and `assetId` (or `versionId`). The component calls a SvelteKit form action, which calls the SDK with the real `sopId`, and maps the response status to one of the states above.
+After any other result, an icon-only ghost button (`btn-square btn-sm`, rotate icon, "Check again" in `title` and `aria-label`) sits next to the badge. Each badge's `title` explains the state in a sentence.
 
-**Size**: `size="small"` drops the word but keeps the icon and moves the word into `title` and `aria-label`; use it only in dense rows where the column header names the check.
+**Consumer provides**: `kind` (`asset` or `version`) and `id`, plus an optional `initial` status from the page load and an `onresult` callback. The component posts to the page's `?/verifyAsset` or `?/verifyVersion` form action (`$lib/server/integrityActions`), which calls the SDK with the real `sop_id` from the route and maps the response status to one of the states above.
 
 **Don't**
 - Never show "Corrupt" for anything but a confirmed hash mismatch. A failed request is not evidence of corruption.
