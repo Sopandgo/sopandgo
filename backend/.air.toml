@@ -26,7 +26,9 @@ tmp_dir = "tmp"
   poll = false
   poll_interval = 0
   post_cmd = []
-  pre_cmd = ["go run ./cmd/seed-demo-data"]
+  # Split argv so Windows does not treat "go run …" as a single executable path.
+  # Seeds only when backend/data/app.db is missing (same rule as Docker).
+  pre_cmd = ["go", "run", "./cmd/seed-demo-data"]
   rerun = false
   rerun_delay = 500
   send_interrupt = false

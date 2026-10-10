@@ -14,7 +14,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 That local image is tagged `ghcr.io/sopandgo/sopandgo:1` on your machine. Run `docker compose pull` when you want the published image back.
 
 3. Or run components separately:
-    - Backend: `cd backend && go run cmd/sopandgo/main.go`, or `cd backend && air` for live reload (seeds demo data on a fresh `backend/data`). Air loads `backend/.env`: copy `backend/.env.example` and set `SECRET_ENCRYPTION_KEY` there to test mail and integrations
+    - Backend: `cd backend && go run cmd/sopandgo/main.go`, or `cd backend && air` for live reload. Air runs the demo seeder before each build when `backend/data/app.db` is missing (honors `SEED_DEMO_DATA=false` in `backend/.env`). To re-seed, stop air and delete `backend/data`. Air loads `backend/.env`: copy `backend/.env.example` and set `SECRET_ENCRYPTION_KEY` there to test mail and integrations
     - Frontend: `cd frontend && npm install && npm run dev`
 
 New to the product surface? [docs/ops/evaluating.md](docs/ops/evaluating.md) covers demo users and a short local tour.

@@ -1,6 +1,6 @@
 # Demo data
 
-`cmd/seed-demo-data` inserts these SOPs, plus three demo users, on the first start when `app.db` does not exist yet and `SEED_DEMO_DATA` is not `false`. [docs/ops/evaluating.md](../../docs/ops/evaluating.md) describes what an evaluator sees.
+`cmd/seed-demo-data` inserts these SOPs, plus three demo users, when `app.db` does not exist yet and `SEED_DEMO_DATA` is not `false`. Docker runs it from the entrypoint; local `air` runs the same command as a `pre_cmd` before each build. [docs/ops/evaluating.md](../../docs/ops/evaluating.md) describes what an evaluator sees.
 
 ## Layout
 
