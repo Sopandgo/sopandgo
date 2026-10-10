@@ -12,6 +12,12 @@ sops/<folder>/
   version-2.md     # optional further versions, created in file name order
   assets/          # optional images referenced from the Markdown as assets/<file>
   sop.json         # optional, see below
+
+avatars/
+  manager.jpg      # profile picture for manager@demo.local
+  qa.jpg           # profile picture for qa@demo.local
+  researcher.jpg   # profile picture for researcher@demo.local
+  ATTRIBUTIONS.md  # origin of the avatar files
 ```
 
 ## sop.json
@@ -36,7 +42,7 @@ All fields are optional. Without the file, every version is published and nothin
 | `read_by` | Demo user key to the version numbers that user signed as a reader. A version must be published to be signed. |
 | `favorited_by` | Demo user keys that favorite the SOP. |
 
-Demo user keys are `manager` (editor, authors every version), `qa` (approver, publishes every version), and `researcher` (viewer).
+Demo user keys are `manager` (editor, authors every version), `qa` (approver, publishes every version), and `researcher` (viewer). The bootstrap admin is not given a demo avatar. When `avatars/<key>.jpg` is present, the seeder uploads it through the same profile-picture pipeline as the product (four JPEG sizes under `DATA_DIR/users/`).
 
 The seeder rejects unknown fields and invalid values. `go test ./cmd/seed-demo-data` seeds this folder into a temporary directory, so run it after changing demo data.
 

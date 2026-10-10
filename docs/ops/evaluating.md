@@ -46,7 +46,7 @@ docker compose up -d
 | Demo QA Officer | `qa@demo.local` / `12345` | Approver | Review / publish path |
 | Demo Research Assistant | `researcher@demo.local` / `12345` | Viewer | Reading and acknowledgments |
 
-Demo accounts are for local exploration only. For a real lab, set **`SEED_DEMO_DATA=false`** in `.env` **before** the first boot so demo users and the sample SOPs are not inserted. Changing the flag later does not remove data already seeded.
+The three demo accounts ship with profile pictures; the bootstrap admin does not. Demo accounts are for local exploration only. For a real lab, set **`SEED_DEMO_DATA=false`** in `.env` **before** the first boot so demo users and the sample SOPs are not inserted. Changing the flag later does not remove data already seeded.
 
 ## What the demo data contains
 

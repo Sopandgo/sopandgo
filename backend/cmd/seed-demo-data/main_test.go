@@ -98,6 +98,18 @@ func TestSeedShippedDemoData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUserByEmail: %v", err)
 	}
+	if !researcher.HasAvatar {
+		t.Fatal("expected researcher demo avatar")
+	}
+	for _, email := range []string{"manager@demo.local", "qa@demo.local"} {
+		u, _, err := authService.GetUserByEmail(email)
+		if err != nil {
+			t.Fatalf("GetUserByEmail %s: %v", email, err)
+		}
+		if !u.HasAvatar {
+			t.Fatalf("expected avatar for %s", email)
+		}
+	}
 
 	sops, total, err := sopService.ListSOPs(researcher.ID, 100, 0, "", "", false, false)
 	if err != nil {
