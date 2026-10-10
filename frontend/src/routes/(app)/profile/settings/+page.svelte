@@ -180,7 +180,7 @@
                                 };
                             }}
                         >
-                            <button type="submit" class="btn w-full sm:w-auto" disabled={signingOut}>
+                            <button type="submit" class="btn w-full" disabled={signingOut}>
                                 {#if signingOut}
                                     <span class="loading loading-spinner"></span>
                                 {:else}

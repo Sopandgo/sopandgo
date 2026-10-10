@@ -30,6 +30,10 @@
 </script>
 
 <div class="flex w-full flex-col gap-4">
+  {#if showLogoutWarning}
+    <Alert type="warning" message={m.password_logout_warning()} />
+  {/if}
+
   {#if result?.error}
     <Alert type="error" message={result.error} class="w-xs" />
   {/if}
@@ -104,9 +108,6 @@
         {/if}
         {m.password_update()}
       </button>
-      {#if showLogoutWarning}
-        <Alert type="warning" message={m.password_logout_warning()}/>
-      {/if}
     </fieldset>
   </form>
 
