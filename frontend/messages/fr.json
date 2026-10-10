@@ -331,6 +331,7 @@
   "dashboard_pending_one": "Vous avez 1 SOP à examiner avant d’être à jour.",
   "dashboard_pending_other": "Vous avez {count} SOPs à examiner avant d’être à jour.",
   "dashboard_split": "{never} jamais signées · {updated} mises à jour depuis votre dernière signature",
+  "dashboard_load_failed": "Impossible de charger cette section. Rechargez la page pour réessayer.",
   "dashboard_action_required": "Action requise",
   "dashboard_action_help": "Signez la dernière version publiée de chaque SOP ci-dessous.",
   "dashboard_caught_up_title": "Rien à signer",

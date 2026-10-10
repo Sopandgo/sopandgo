@@ -331,6 +331,7 @@
   "dashboard_pending_one": "Du har 1 SOP som behöver din granskning innan du är uppdaterad.",
   "dashboard_pending_other": "Du har {count} SOPs som behöver din granskning innan du är uppdaterad.",
   "dashboard_split": "{never} aldrig signerade · {updated} uppdaterade sedan du senast signerade",
+  "dashboard_load_failed": "Det gick inte att läsa in det här avsnittet. Ladda om sidan för att försöka igen.",
   "dashboard_action_required": "Åtgärd krävs",
   "dashboard_action_help": "Signera den senaste publicerade versionen av varje SOP nedan.",
   "dashboard_caught_up_title": "Inget att signera",

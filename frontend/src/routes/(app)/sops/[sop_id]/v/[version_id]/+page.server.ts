@@ -1,5 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages.js';
+import { favorite, unfavorite } from '$lib/server/favoriteActions';
 import { verifyAsset, verifyVersion } from '$lib/server/integrityActions';
 import type { PageServerLoad, Actions } from './$types';
 import { env } from '$env/dynamic/private';
@@ -151,27 +152,6 @@ export const actions: Actions = {
         }
     },
 
-    favorite: async ({ locals, params }) => {
-        const sopId = params.sop_id;
-        if (!sopId) return fail(400, { error: m.error_missing_sop() });
-        try {
-            await locals.api.sops.favorite(sopId);
-            return { success: true };
-        } catch (err) {
-            console.error('favorite', err);
-            return fail(500, { error: m.error_favorite_failed() });
-        }
-    },
-
-    unfavorite: async ({ locals, params }) => {
-        const sopId = params.sop_id;
-        if (!sopId) return fail(400, { error: m.error_missing_sop() });
-        try {
-            await locals.api.sops.unfavorite(sopId);
-            return { success: true };
-        } catch (err) {
-            console.error('unfavorite', err);
-            return fail(500, { error: m.error_unfavorite_failed() });
-        }
-    }
+    favorite,
+    unfavorite
 };

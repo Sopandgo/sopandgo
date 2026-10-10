@@ -331,6 +331,7 @@
   "dashboard_pending_one": "Hai 1 SOP da rivedere prima di essere aggiornato.",
   "dashboard_pending_other": "Hai {count} SOP da rivedere prima di essere aggiornato.",
   "dashboard_split": "{never} mai firmate · {updated} aggiornate dall’ultima firma",
+  "dashboard_load_failed": "Impossibile caricare questa sezione. Ricarica la pagina per riprovare.",
   "dashboard_action_required": "Azione richiesta",
   "dashboard_action_help": "Firma l’ultima versione pubblicata di ciascuna SOP qui sotto.",
   "dashboard_caught_up_title": "Niente da firmare",

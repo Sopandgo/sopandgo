@@ -168,7 +168,7 @@ There is no public landing page. The root route **`/`** only redirects: signed-i
 
 ### Home dashboard (signed-in landing)
 
-The route **`/dashboard`** is the default post-login destination in the SvelteKit app. It loads signature status, recent publishes, a favorites slice, and (for admin and approver) training coverage from the SDK, surfaces **All SOPs** (`/sops`), and deep-links pending acknowledgments to **`/sops/{id}/v/latest`**. Conceptual overview: `docs/concepts/home-dashboard.md`.
+The route **`/dashboard`** is the default post-login destination in the SvelteKit app. It loads signature status, recent publishes, a favorites slice, and (for admin and approver) training coverage from the SDK, surfaces **All SOPs** (`/sops`), and deep-links pending acknowledgments to **`/sops/{id}/v/latest`**. Each request is settled on its own, so one failing API leaves an error in that card instead of failing the page. The greeting is computed in the reader's time zone: the page stores the browser's IANA zone in a non-httpOnly `tz` cookie (no security meaning) that the loader reads, and the browser's own clock takes over after hydration. Conceptual overview: `docs/concepts/home-dashboard.md`.
 
 ### Draft editor and preview (new SOP version)
 

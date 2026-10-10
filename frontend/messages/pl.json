@@ -331,6 +331,7 @@
   "dashboard_pending_one": "Masz 1 SOP, który wymaga Twojego przeglądu, zanim będziesz na bieżąco.",
   "dashboard_pending_other": "Masz {count} SOPów, które wymagają Twojego przeglądu, zanim będziesz na bieżąco.",
   "dashboard_split": "{never} nigdy nie podpisane · {updated} zaktualizowane od ostatniego podpisu",
+  "dashboard_load_failed": "Nie udało się wczytać tej sekcji. Odśwież stronę, aby spróbować ponownie.",
   "dashboard_action_required": "Wymagane działanie",
   "dashboard_action_help": "Podpisz najnowszą opublikowaną wersję każdego SOP poniżej.",
   "dashboard_caught_up_title": "Nic do podpisania",

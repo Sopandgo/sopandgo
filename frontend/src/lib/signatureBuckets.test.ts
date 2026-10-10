@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	greetingPeriodForDate,
-	partitionSignatureStatus,
-	pendingSignatureCount
-} from './signatureBuckets';
+import { partitionSignatureStatus, pendingSignatureCount } from './signatureBuckets';
 import type { UserSignatureStatus } from '$lib/sdk/types';
 
 const base = (over: Partial<UserSignatureStatus>): UserSignatureStatus => ({
@@ -39,17 +35,5 @@ describe('pendingSignatureCount', () => {
 				base({})
 			])
 		).toBe(2);
-	});
-});
-
-describe('greetingPeriodForDate', () => {
-	it('returns morning before noon', () => {
-		expect(greetingPeriodForDate(new Date('2020-01-01T11:00:00'))).toBe('morning');
-	});
-	it('returns afternoon before 17:00', () => {
-		expect(greetingPeriodForDate(new Date('2020-01-01T16:00:00'))).toBe('afternoon');
-	});
-	it('returns evening from 17:00', () => {
-		expect(greetingPeriodForDate(new Date('2020-01-01T17:00:00'))).toBe('evening');
 	});
 });

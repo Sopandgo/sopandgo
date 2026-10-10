@@ -334,6 +334,7 @@
   "dashboard_pending_one": "You have 1 SOP that needs your review before you are up to date.",
   "dashboard_pending_other": "You have {count} SOPs that need your review before you are up to date.",
   "dashboard_split": "{never} never signed · {updated} updated since you last signed",
+  "dashboard_load_failed": "This section could not be loaded. Reload the page to try again.",
   "dashboard_action_required": "Action required",
   "dashboard_action_help": "Sign the latest published version of each SOP below.",
   "dashboard_caught_up_title": "Nothing to sign",

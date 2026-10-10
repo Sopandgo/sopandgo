@@ -331,6 +331,7 @@
   "dashboard_pending_one": "Eine SOP braucht deine Prüfung, bevor du auf dem aktuellen Stand bist.",
   "dashboard_pending_other": "{count} SOPs brauchen deine Prüfung, bevor du auf dem aktuellen Stand bist.",
   "dashboard_split": "{never} noch nie unterschrieben · {updated} seit deiner letzten Unterschrift aktualisiert",
+  "dashboard_load_failed": "Dieser Bereich konnte nicht geladen werden. Lade die Seite neu, um es noch einmal zu versuchen.",
   "dashboard_action_required": "Handlung nötig",
   "dashboard_action_help": "Unterschreibe die zuletzt veröffentlichte Version jeder SOP unten.",
   "dashboard_caught_up_title": "Nichts zu unterschreiben",

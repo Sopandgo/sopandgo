@@ -331,6 +331,7 @@
   "dashboard_pending_one": "Güncel olmak için incelemeniz gereken 1 SOP var.",
   "dashboard_pending_other": "Güncel olmak için incelemeniz gereken {count} SOP var.",
   "dashboard_split": "{never} hiç imzalanmamış · {updated} son imzanızdan beri güncellenmiş",
+  "dashboard_load_failed": "Bu bölüm yüklenemedi. Tekrar denemek için sayfayı yenileyin.",
   "dashboard_action_required": "Eylem gerekli",
   "dashboard_action_help": "Aşağıdaki her SOP'un en son yayımlanmış sürümünü imzalayın.",
   "dashboard_caught_up_title": "İmzalanacak bir şey yok",

@@ -331,6 +331,7 @@
   "dashboard_pending_one": "Je hebt 1 SOP die je nog moet bekijken voordat je bij bent.",
   "dashboard_pending_other": "Je hebt {count} SOPs die je nog moet bekijken voordat je bij bent.",
   "dashboard_split": "{never} nooit ondertekend · {updated} bijgewerkt sinds je laatste ondertekening",
+  "dashboard_load_failed": "Dit onderdeel kon niet worden geladen. Laad de pagina opnieuw om het nog eens te proberen.",
   "dashboard_action_required": "Actie vereist",
   "dashboard_action_help": "Onderteken de nieuwste gepubliceerde versie van elke SOP hieronder.",
   "dashboard_caught_up_title": "Niets te ondertekenen",

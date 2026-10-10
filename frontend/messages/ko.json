@@ -331,6 +331,7 @@
   "dashboard_pending_one": "최신 상태를 유지하려면 검토가 필요한 SOP가 1개 있습니다.",
   "dashboard_pending_other": "최신 상태를 유지하려면 검토가 필요한 SOP가 {count}개 있습니다.",
   "dashboard_split": "{never} 아직 서명 안 함 · {updated} 마지막 서명 이후 업데이트됨",
+  "dashboard_load_failed": "이 섹션을 불러오지 못했습니다. 페이지를 새로고침하여 다시 시도하세요.",
   "dashboard_action_required": "조치 필요",
   "dashboard_action_help": "아래 각 SOP의 최신 게시 버전에 서명하세요.",
   "dashboard_caught_up_title": "서명할 항목이 없습니다",

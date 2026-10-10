@@ -331,6 +331,7 @@
   "dashboard_pending_one": "你有 1 份 SOP 需要审阅后才能保持最新。",
   "dashboard_pending_other": "你有 {count} 份 SOP 需要审阅后才能保持最新。",
   "dashboard_split": "{never} 份从未签署 · {updated} 份自你上次签署后已更新",
+  "dashboard_load_failed": "无法加载此部分。请刷新页面重试。",
   "dashboard_action_required": "需要操作",
   "dashboard_action_help": "请签署下方每份 SOP 的最新已发布版本。",
   "dashboard_caught_up_title": "没有需要签署的内容",

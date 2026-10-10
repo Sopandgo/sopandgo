@@ -331,6 +331,7 @@
   "dashboard_pending_one": "最新の状態にするには、確認が必要な SOP が 1 件あります。",
   "dashboard_pending_other": "最新の状態にするには、確認が必要な SOP が {count} 件あります。",
   "dashboard_split": "{never} 件は未署名 · {updated} 件は前回署名後に更新",
+  "dashboard_load_failed": "このセクションを読み込めませんでした。ページを再読み込みしてもう一度お試しください。",
   "dashboard_action_required": "対応が必要",
   "dashboard_action_help": "以下の各 SOP の最新公開バージョンに署名してください。",
   "dashboard_caught_up_title": "署名が必要なものはありません",

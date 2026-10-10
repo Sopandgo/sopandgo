@@ -334,6 +334,7 @@
   "dashboard_pending_one": "Máte 1 SOP, ktorý potrebuje vašu kontrolu, aby ste mali všetko aktuálne.",
   "dashboard_pending_other": "Počet SOP, ktoré potrebujú vašu kontrolu, aby ste mali všetko aktuálne: {count}.",
   "dashboard_split": "Nikdy nepodpísané: {never} · Aktualizované od vášho posledného podpisu: {updated}",
+  "dashboard_load_failed": "Túto sekciu sa nepodarilo načítať. Obnovte stránku a skúste to znova.",
   "dashboard_action_required": "Vyžaduje sa akcia",
   "dashboard_action_help": "Podpíšte najnovšiu publikovanú verziu každého SOP nižšie.",
   "dashboard_caught_up_title": "Nič na podpis",

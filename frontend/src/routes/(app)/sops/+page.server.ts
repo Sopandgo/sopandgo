@@ -1,5 +1,6 @@
-import { error, fail } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages.js';
+import { favorite, unfavorite } from '$lib/server/favoriteActions';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -39,28 +40,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-    favorite: async ({ locals, request }) => {
-        const form = await request.formData();
-        const sopId = String(form.get('sop_id') ?? '').trim();
-        if (!sopId) return fail(400, { message: m.error_missing_sop() });
-        try {
-            await locals.api.sops.favorite(sopId);
-            return { success: true };
-        } catch (err) {
-            console.error('favorite', err);
-            return fail(500, { message: m.error_favorite_failed() });
-        }
-    },
-    unfavorite: async ({ locals, request }) => {
-        const form = await request.formData();
-        const sopId = String(form.get('sop_id') ?? '').trim();
-        if (!sopId) return fail(400, { message: m.error_missing_sop() });
-        try {
-            await locals.api.sops.unfavorite(sopId);
-            return { success: true };
-        } catch (err) {
-            console.error('unfavorite', err);
-            return fail(500, { message: m.error_unfavorite_failed() });
-        }
-    }
+    favorite,
+    unfavorite
 };

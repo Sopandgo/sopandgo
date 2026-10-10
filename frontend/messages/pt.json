@@ -331,6 +331,7 @@
   "dashboard_pending_one": "Você tem 1 SOP que precisa da sua revisão antes de ficar em dia.",
   "dashboard_pending_other": "Você tem {count} SOPs que precisam da sua revisão antes de ficar em dia.",
   "dashboard_split": "{never} nunca assinadas · {updated} atualizadas desde a sua última assinatura",
+  "dashboard_load_failed": "Não foi possível carregar esta seção. Recarregue a página para tentar novamente.",
   "dashboard_action_required": "Ação necessária",
   "dashboard_action_help": "Assine a versão publicada mais recente de cada SOP abaixo.",
   "dashboard_caught_up_title": "Nada para assinar",

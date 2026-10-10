@@ -4,7 +4,7 @@ The **home dashboard** (`/dashboard`) is the default landing page after a succes
 
 ## What it shows
 
-1. **Welcome banner** — Time-of-day greeting using the signed-in user’s display name, plus a short status line derived from signature data (all caught up vs. how many SOPs still need review).
+1. **Welcome banner** — Time-of-day greeting using the signed-in user’s display name and the browser’s time zone (remembered in a `tz` cookie so the server-rendered page matches), plus a short status line derived from signature data (all caught up vs. how many SOPs still need review).
 
 2. **All SOPs** — The page’s only primary button, in the banner, opens the full SOP library at `/sops` without going through favorites.
 
@@ -22,7 +22,7 @@ The **home dashboard** (`/dashboard`) is the default landing page after a succes
 
 ## Data sources
 
-The dashboard loader uses the same APIs as other UI:
+The dashboard loader uses the same APIs as other UI. Each card loads on its own: if one request fails, that card shows an error and the rest of the page still loads. While signature status is unavailable, the banner leaves out its status line instead of claiming you are caught up.
 
 | UI need | API (via SDK) |
 | --- | --- |

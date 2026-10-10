@@ -1,5 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages.js';
+import { favorite, unfavorite } from '$lib/server/favoriteActions';
 import { verifyAsset } from '$lib/server/integrityActions';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -75,27 +76,6 @@ export const actions: Actions = {
     }
   },
 
-  favorite: async ({ locals, params }) => {
-    const sopId = params.sop_id;
-    if (!sopId) return fail(400, { message: m.error_missing_sop() });
-    try {
-      await locals.api.sops.favorite(sopId);
-      return { success: true };
-    } catch (err) {
-      console.error('favorite', err);
-      return fail(500, { message: m.error_favorite_failed() });
-    }
-  },
-
-  unfavorite: async ({ locals, params }) => {
-    const sopId = params.sop_id;
-    if (!sopId) return fail(400, { message: m.error_missing_sop() });
-    try {
-      await locals.api.sops.unfavorite(sopId);
-      return { success: true };
-    } catch (err) {
-      console.error('unfavorite', err);
-      return fail(500, { message: m.error_unfavorite_failed() });
-    }
-  }
+  favorite,
+  unfavorite
 };

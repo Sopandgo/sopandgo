@@ -331,6 +331,7 @@
   "dashboard_pending_one": "Tienes 1 SOP que requiere tu revisión antes de estar al día.",
   "dashboard_pending_other": "Tienes {count} SOPs que requieren tu revisión antes de estar al día.",
   "dashboard_split": "{never} nunca firmadas · {updated} actualizadas desde tu última firma",
+  "dashboard_load_failed": "No se pudo cargar esta sección. Vuelve a cargar la página para intentarlo de nuevo.",
   "dashboard_action_required": "Acción requerida",
   "dashboard_action_help": "Firma la última versión publicada de cada SOP a continuación.",
   "dashboard_caught_up_title": "Nada que firmar",
