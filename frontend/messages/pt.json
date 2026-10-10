@@ -231,6 +231,7 @@
   "error_unauthorized": "Não autorizado",
   "error_name_mismatch": "A verificação do nome falhou. Digite \"{name}\" exatamente.",
   "error_sign_failed": "Falha ao assinar o documento. Tente novamente.",
+  "error_already_acknowledged": "Já assinou esta versão.",
   "error_promote_failed": "Falha ao promover a Release Candidate.",
   "error_approve_failed": "Falha ao aprovar e publicar a SOP.",
   "error_reject_reason": "É necessário informar um motivo para rejeitar uma SOP.",

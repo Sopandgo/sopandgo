@@ -231,6 +231,7 @@
   "error_unauthorized": "権限がありません",
   "error_name_mismatch": "名前の確認に失敗しました。\"{name}\" を正確に入力してください。",
   "error_sign_failed": "文書への署名に失敗しました。もう一度お試しください。",
+  "error_already_acknowledged": "この版には既に署名済みです。",
   "error_promote_failed": "リリース候補への昇格に失敗しました。",
   "error_approve_failed": "SOP の承認と公開に失敗しました。",
   "error_reject_reason": "SOP を却下するには理由が必要です。",

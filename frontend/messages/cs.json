@@ -234,6 +234,7 @@
   "error_unauthorized": "Neautorizováno",
   "error_name_mismatch": "Ověření jména se nezdařilo. Zadejte přesně „{name}“.",
   "error_sign_failed": "Dokument se nepodařilo podepsat. Zkuste to prosím znovu.",
+  "error_already_acknowledged": "Tuto verzi jste již podepsali.",
   "error_promote_failed": "Povýšení na kandidáta na vydání se nezdařilo.",
   "error_approve_failed": "SOP se nepodařilo schválit a publikovat.",
   "error_reject_reason": "Pro zamítnutí SOP je nutné uvést důvod.",

@@ -231,6 +231,7 @@
   "error_unauthorized": "권한 없음",
   "error_name_mismatch": "이름 확인에 실패했습니다. \"{name}\"을(를) 정확히 입력하세요.",
   "error_sign_failed": "문서에 서명하지 못했습니다. 다시 시도해 주세요.",
+  "error_already_acknowledged": "이미 이 버전에 서명했습니다.",
   "error_promote_failed": "릴리스 후보로 승격하지 못했습니다.",
   "error_approve_failed": "SOP를 승인하고 게시하지 못했습니다.",
   "error_reject_reason": "SOP를 거부하려면 사유를 입력해야 합니다.",

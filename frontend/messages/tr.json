@@ -231,6 +231,7 @@
   "error_unauthorized": "Yetkisiz",
   "error_name_mismatch": "Ad doğrulaması başarısız. Lütfen \"{name}\" ifadesini tam olarak girin.",
   "error_sign_failed": "Belge imzalanamadı. Lütfen tekrar deneyin.",
+  "error_already_acknowledged": "Bu sürümü zaten imzaladınız.",
   "error_promote_failed": "Yayımlama Adayına yükseltilenemedi.",
   "error_approve_failed": "SOP onaylanıp yayımlanamadı.",
   "error_reject_reason": "Bir SOP'u reddetmek için neden belirtilmelidir.",

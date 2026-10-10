@@ -231,6 +231,7 @@
   "error_unauthorized": "Ej behörig",
   "error_name_mismatch": "Namnverifiering misslyckades. Ange \"{name}\" exakt.",
   "error_sign_failed": "Kunde inte signera dokumentet. Försök igen.",
+  "error_already_acknowledged": "Du har redan signerat den här versionen.",
   "error_promote_failed": "Kunde inte upphöja till releasekandidat.",
   "error_approve_failed": "Kunde inte godkänna och publicera SOP.",
   "error_reject_reason": "En anledning måste anges för att avvisa en SOP.",

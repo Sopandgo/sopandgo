@@ -59,8 +59,8 @@ func TestService_AddAcknowledgment(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected AddAcknowledgment to fail on duplicate user/type/version combination")
 	}
-	if !strings.Contains(err.Error(), "UNIQUE constraint failed") {
-		t.Errorf("Expected UNIQUE constraint error, got: %v", err)
+	if !strings.Contains(err.Error(), "conflict: already acknowledged") {
+		t.Errorf("Expected conflict: already acknowledged, got: %v", err)
 	}
 }
 

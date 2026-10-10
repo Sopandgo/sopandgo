@@ -130,7 +130,7 @@ func TestAPI_Acknowledgments(t *testing.T) {
 		}
 	})
 
-	t.Run("Service Error: Duplicate Acknowledgment (500)", func(t *testing.T) {
+	t.Run("Service Error: Duplicate Acknowledgment (409)", func(t *testing.T) {
 		path := fmt.Sprintf("/api/sops/%s/versions/%s/add-reader", sopID, v1ID)
 
 		// The first request succeeds (we already did this in an earlier test,
@@ -140,8 +140,8 @@ func TestAPI_Acknowledgments(t *testing.T) {
 		// The second request MUST fail because of SQLite UNIQUE constraints
 		rec := doRequest(http.MethodPost, path, readerToken)
 
-		if rec.Code != http.StatusInternalServerError {
-			t.Errorf("Expected 500 Internal Server Error for duplicate ack, got %d", rec.Code)
+		if rec.Code != http.StatusConflict {
+			t.Errorf("Expected 409 Conflict for duplicate ack, got %d. Body: %s", rec.Code, rec.Body.String())
 		}
 	})
 

@@ -231,6 +231,7 @@
   "error_unauthorized": "未授权",
   "error_name_mismatch": "姓名验证失败。请准确输入「{name}」。",
   "error_sign_failed": "签署文档失败。请重试。",
+  "error_already_acknowledged": "您已签署此版本。",
   "error_promote_failed": "提升为发布候选失败。",
   "error_approve_failed": "批准并发布 SOP 失败。",
   "error_reject_reason": "拒绝 SOP 时必须提供原因。",

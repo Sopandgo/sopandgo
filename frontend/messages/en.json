@@ -234,6 +234,7 @@
   "error_unauthorized": "Unauthorized",
   "error_name_mismatch": "Name verification failed. Please enter \"{name}\" exactly.",
   "error_sign_failed": "Failed to sign the document. Please try again.",
+  "error_already_acknowledged": "You have already signed this version.",
   "error_promote_failed": "Failed to promote to release candidate.",
   "error_approve_failed": "Failed to approve and publish SOP.",
   "error_reject_reason": "A reason must be provided to reject an SOP.",

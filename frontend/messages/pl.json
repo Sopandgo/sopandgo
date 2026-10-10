@@ -231,6 +231,7 @@
   "error_unauthorized": "Brak uprawnień",
   "error_name_mismatch": "Weryfikacja nazwy nieudana. Wpisz dokładnie „{name}”.",
   "error_sign_failed": "Nie udało się podpisać dokumentu. Spróbuj ponownie.",
+  "error_already_acknowledged": "Już podpisałeś tę wersję.",
   "error_promote_failed": "Nie udało się awansować do kandydata do wydania.",
   "error_approve_failed": "Nie udało się zatwierdzić i opublikować SOP.",
   "error_reject_reason": "Aby odrzucić SOP, należy podać powód.",

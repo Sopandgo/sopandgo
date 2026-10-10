@@ -259,7 +259,10 @@ export const sops = (client: Client) => ({
         const res = await client.fetch(`sops/${sopId}/versions/${sopVersionId}/add-reader`, {
             method: 'POST'
         });
-        if (!res.ok) throw new Error('READER_ACK_FAILED');
+        if (!res.ok) {
+            if (res.status === 409) throw new Error('ALREADY_ACKNOWLEDGED');
+            throw new Error('READER_ACK_FAILED');
+        }
         return await res.json();
     },
 

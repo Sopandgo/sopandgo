@@ -231,6 +231,7 @@
   "error_unauthorized": "Nicht berechtigt",
   "error_name_mismatch": "Die Namensprüfung ist fehlgeschlagen. Gib „{name}“ genau so ein.",
   "error_sign_failed": "Das Dokument konnte nicht unterschrieben werden. Bitte versuche es erneut.",
+  "error_already_acknowledged": "Du hast diese Version bereits unterschrieben.",
   "error_promote_failed": "Die Hochstufung zum Release-Kandidaten ist fehlgeschlagen.",
   "error_approve_failed": "Die SOP konnte nicht freigegeben und veröffentlicht werden.",
   "error_reject_reason": "Zum Ablehnen einer SOP ist eine Begründung nötig.",

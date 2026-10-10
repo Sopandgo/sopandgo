@@ -234,6 +234,7 @@
   "error_unauthorized": "Neautorizované",
   "error_name_mismatch": "Overenie mena zlyhalo. Zadajte presne „{name}“.",
   "error_sign_failed": "Dokument sa nepodarilo podpísať. Skúste to prosím znova.",
+  "error_already_acknowledged": "Túto verziu ste už podpísali.",
   "error_promote_failed": "Povýšenie na kandidáta na vydanie zlyhalo.",
   "error_approve_failed": "SOP sa nepodarilo schváliť a publikovať.",
   "error_reject_reason": "Na zamietnutie SOP je potrebné uviesť dôvod.",

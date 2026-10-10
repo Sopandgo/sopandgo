@@ -231,6 +231,7 @@
   "error_unauthorized": "Niet geautoriseerd",
   "error_name_mismatch": "Naamverificatie mislukt. Voer \"{name}\" precies in.",
   "error_sign_failed": "Document ondertekenen mislukt. Probeer het opnieuw.",
+  "error_already_acknowledged": "Je hebt deze versie al ondertekend.",
   "error_promote_failed": "Promoveren naar Release Candidate mislukt.",
   "error_approve_failed": "SOP goedkeuren en publiceren mislukt.",
   "error_reject_reason": "Er moet een reden worden opgegeven om een SOP af te wijzen.",
