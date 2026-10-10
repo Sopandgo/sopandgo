@@ -223,10 +223,11 @@
                 <FileDiffIcon class="size-4" aria-hidden="true" />
                 {m.version_tab_changes()}
                 <span
-                    class="font-mono text-xs text-base-content/70"
+                    class="font-mono text-xs"
                     title={m.diff_counts({ added: String(added), removed: String(removed) })}
                 >
-                    <span aria-hidden="true">+{added} −{removed}</span>
+                    <!-- Signs carry the meaning too, so the colours are never the only cue -->
+                    <span aria-hidden="true"><span class="text-success">+{added}</span> <span class="text-error">−{removed}</span></span>
                     <span class="sr-only">{m.diff_counts({ added: String(added), removed: String(removed) })}</span>
                 </span>
             </a>
@@ -238,7 +239,7 @@
             aria-labelledby="{uid}-tab-{view}"
         >
             {#if view === 'changes' && data.versionDiff}
-                <VersionDiff diff={data.versionDiff} />
+                <VersionDiff diff={data.versionDiff} assets={version.assets} />
             {:else}
                 <!-- Kept to a readable line length when the column is wide -->
                 <div class="max-w-3xl">
@@ -264,10 +265,13 @@
         <ListAssociatedAssets items={version.assets ?? []} />
 
         <SopDetails
+            sopId={data.sop.id}
             versionId={version.id}
             contentHash={version.content_hash}
             createdAt={version.created_at}
             hashValid={version.hash_valid}
+            status={version.status}
+            version={version.version}
         />
     </aside>
 </div>
