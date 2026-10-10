@@ -2,10 +2,11 @@
 
 All notable releases of sopandgo are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
 
-## 1.1.0
+## 1.1.1
 
-Signed-in navigation, profile pictures, and admin settings. Scheduled S3 backups are configured in the admin UI.
+Publishes the 1.1.0 changes. The v1.1.0 image was not published: the Caddy apt repository returned HTTP 402 during the build.
 
+- Install Caddy from the official `caddy:2.11.7` image instead of the Cloudsmith apt repository.
 - New signed-in shell: a sidebar, breadcrumbs, and an avatar menu for profile, theme, and sign out. `/` opens the dashboard or the login page.
 - Users can set a profile picture. It is included in backups, and the avatar falls back to initials.
 - Admin settings are split into Email, Integrations, and Backup. Email transports can be turned off; manual invite links remain the fallback.
@@ -24,6 +25,10 @@ Signed-in navigation, profile pictures, and admin settings. Scheduled S3 backups
 - Only `SECRET_ENCRYPTION_KEY` is read. The `SMTP_SECRET_ENCRYPTION_KEY` name is no longer accepted.
 - SvelteKit no longer reads `ORIGIN`. The Go API still uses it for invite links and the public URL. CSRF uses `HOST_HEADER` and `PROTOCOL_HEADER`, which the bundled compose file already sets.
 - Migrations run on startup. Take a backup before pulling, as with any upgrade.
+
+## 1.1.0
+
+No container image was published for this tag. Use 1.1.1.
 
 ## 1.0.2
 

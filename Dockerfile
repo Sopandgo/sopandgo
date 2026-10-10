@@ -40,14 +40,10 @@ ARG APP_VERSION=dev
 ENV APP_VERSION=${APP_VERSION}
 WORKDIR /app
 
-# 1. Install Caddy (Reverse Proxy)
-# We use the official instructions to add the Caddy repository and install it.
-# Caddy acts as the entry point, handling compression and routing internal traffic.
-RUN apt-get update && apt-get install -y curl debian-keyring debian-archive-keyring apt-transport-https \
-    && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
-    && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
-    && apt-get update && apt-get install -y caddy \
-    && rm -rf /var/lib/apt/lists/*
+# 1. Install Caddy (reverse proxy and entry point).
+# Copy the official static binary. The Cloudsmith apt repository is not used;
+# it returns HTTP 402 when its public quota is exhausted.
+COPY --from=caddy:2.11.7 /usr/bin/caddy /usr/bin/caddy
 
 # 2. Copy Build Artifacts
 # Backend binaries
