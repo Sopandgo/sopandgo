@@ -26,6 +26,12 @@
         }
     }
 
+    const options = $derived(
+        locales
+            .map((tag) => ({ tag, label: languageName(tag) }))
+            .sort((a, b) => a.label.localeCompare(b.label, getLocale(), { sensitivity: 'base' }))
+    );
+
     function onChange(event: Event) {
         if (mode !== 'cookie') return;
         const tag = (event.currentTarget as HTMLSelectElement).value;
@@ -42,7 +48,7 @@
     {disabled}
     onchange={onChange}
 >
-    {#each locales as tag (tag)}
-        <option value={tag} selected={tag === current}>{languageName(tag)}</option>
+    {#each options as { tag, label } (tag)}
+        <option value={tag} selected={tag === current}>{label}</option>
     {/each}
 </select>
