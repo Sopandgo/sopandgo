@@ -32,11 +32,13 @@
         class: extraClass = ''
     }: Props = $props();
 
+    // daisyUI's soft tint alone nearly matches the base-200 page, so every alert adds a
+    // stronger tint and a status border; it reads the same in a card and on the page.
     const typeClasses: Record<AlertType, string> = {
-        info: 'alert-info',
-        success: 'alert-success',
-        warning: 'alert-warning',
-        error: 'alert-error'
+        info: 'alert-info border-info/40 bg-info/10',
+        success: 'alert-success border-success/40 bg-success/10',
+        warning: 'alert-warning border-warning/40 bg-warning/10',
+        error: 'alert-error border-error/40 bg-error/10'
     };
 
     const icons = {
@@ -59,10 +61,13 @@
         {#if title}
             <div class="font-medium">{title}</div>
         {/if}
-        {#if children}
-            {@render children()}
-        {:else if message}
-            <span class="whitespace-pre-wrap">{message}</span>
-        {/if}
+        <!-- Icon and title carry the status colour; the body reads in the text colour -->
+        <div class="text-base-content">
+            {#if children}
+                {@render children()}
+            {:else if message}
+                <span class="whitespace-pre-wrap">{message}</span>
+            {/if}
+        </div>
     </div>
 </div>
