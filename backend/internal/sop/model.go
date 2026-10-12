@@ -10,6 +10,7 @@ import (
 const (
 	MaxChangeSummaryRunes = 500
 	MaxRejectReasonRunes  = 500
+	MaxArchiveReasonRunes = 500
 )
 
 var (
@@ -17,12 +18,36 @@ var (
 	ErrChangeSummaryTooLong  = errors.New("change summary must be 500 characters or fewer")
 	ErrRejectReasonRequired  = errors.New("a reason for rejecting is required")
 	ErrRejectReasonTooLong   = errors.New("the reason for rejecting must be 500 characters or fewer")
+	ErrArchiveReasonRequired = errors.New("a reason for archiving is required")
+	ErrArchiveReasonTooLong  = errors.New("the reason for archiving must be 500 characters or fewer")
+	// ErrSOPArchived blocks every change to an archived SOP's content, lifecycle and
+	// signatures. The "conflict:" prefix makes the API answer 409.
+	ErrSOPArchived = errors.New("conflict: this SOP is archived; unarchive it first")
+)
+
+// ArchiveFilter selects SOPs by archive state in ListSOPs.
+type ArchiveFilter string
+
+const (
+	ArchiveFilterActive ArchiveFilter = ""     // SOPs in use (the default)
+	ArchiveFilterOnly   ArchiveFilter = "only" // archived SOPs only
+	ArchiveFilterAll    ArchiveFilter = "all"  // both
 )
 
 type SOP struct {
 	ID        string    `json:"id"`
 	Title     string    `json:"title"`
 	CreatedAt time.Time `json:"created_at"`
+	// ArchivedAt is nil while the SOP is in use.
+	ArchivedAt *time.Time `json:"archived_at"`
+}
+
+// SOPArchive says who archived an SOP, when and why.
+type SOPArchive struct {
+	Reason      string    `json:"reason"`
+	ActorUserID string    `json:"actor_user_id"`
+	ActorName   string    `json:"actor_name"`
+	ArchivedAt  time.Time `json:"archived_at"`
 }
 
 type SOPWithTags struct {
@@ -31,6 +56,8 @@ type SOPWithTags struct {
 	CreatedAt  time.Time `json:"created_at"`
 	Tags       []Tag     `json:"tags"`
 	IsFavorite bool      `json:"is_favorite"`
+	// Archive is nil while the SOP is in use.
+	Archive *SOPArchive `json:"archive"`
 	// LatestVersion is the highest version number in its current state; nil before the first version.
 	LatestVersion *SOPListVersion `json:"latest_version"`
 	// PublishedVersion and PublishedVersionID name the version readers see; nil until one is published.

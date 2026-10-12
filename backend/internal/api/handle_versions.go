@@ -64,6 +64,9 @@ func (s *Server) handleRegisterSOPVersion(w http.ResponseWriter, r *http.Request
 
 		msg := err.Error()
 		switch {
+		case errors.Is(err, sop.ErrSOPArchived):
+			writeSOPArchived(w)
+			return
 		case strings.Contains(msg, "referenced asset not found:"),
 			strings.Contains(msg, "invalid asset URL encoding:"):
 			writeJSONError(w, http.StatusBadRequest, "invalid_asset_reference", msg)
@@ -292,6 +295,10 @@ func (s *Server) handlePromoteSOPVersion(w http.ResponseWriter, r *http.Request)
 
 	// 2. Transition State
 	err = s.sopService.TransitionVersionState(versionID, sop.StateRC, actorID)
+	if errors.Is(err, sop.ErrSOPArchived) {
+		writeSOPArchived(w)
+		return
+	}
 	if err != nil {
 		log.Printf("ERROR: promote version %s failed: %v", versionID, err)
 		http.Error(w, "Failed to promote version", http.StatusInternalServerError)
@@ -314,6 +321,10 @@ func (s *Server) handleApproveSOPVersion(w http.ResponseWriter, r *http.Request)
 
 	// The Service layer handles the transaction, the state check, AND the signature
 	ackID, err := s.sopService.ApproveSOPVersion(versionID, actorID)
+	if errors.Is(err, sop.ErrSOPArchived) {
+		writeSOPArchived(w)
+		return
+	}
 	if err != nil {
 		log.Printf("ERROR: approve version %s failed: %v", versionID, err)
 		http.Error(w, "Failed to approve and publish SOP", http.StatusInternalServerError)
@@ -362,6 +373,10 @@ func (s *Server) handleRejectSOPVersion(w http.ResponseWriter, r *http.Request) 
 
 	// 2. Transition State; the reason is stored with it
 	err = s.sopService.RejectSOPVersion(versionID, actorID, reason)
+	if errors.Is(err, sop.ErrSOPArchived) {
+		writeSOPArchived(w)
+		return
+	}
 	if errors.Is(err, sop.ErrRejectReasonRequired) || errors.Is(err, sop.ErrRejectReasonTooLong) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

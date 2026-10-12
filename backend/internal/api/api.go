@@ -130,6 +130,13 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /api/sops/{sopID}", protected(s.handleGetSOPByID))
 	s.mux.HandleFunc("POST /api/sops/{sopID}/favorite", protected(s.handleFavoriteSOP))
 	s.mux.HandleFunc("DELETE /api/sops/{sopID}/favorite", protected(s.handleUnfavoriteSOP))
+	// Approvers decide what readers use, so they also retire SOPs and bring them back
+	s.mux.HandleFunc("POST /api/sops/{sopID}/archive", protected(
+		s.requireScope(auth.ScopeSOPSignApprover, s.handleArchiveSOP)),
+	)
+	s.mux.HandleFunc("DELETE /api/sops/{sopID}/archive", protected(
+		s.requireScope(auth.ScopeSOPSignApprover, s.handleUnarchiveSOP)),
+	)
 
 	// tags (Global)
 	s.mux.HandleFunc("POST /api/tags", protected(

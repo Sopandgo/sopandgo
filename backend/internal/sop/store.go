@@ -27,14 +27,15 @@ func createSOPRecord(db audit.DBTX, id, title, createdAt string) error {
 
 func getSOPByIDRecord(db audit.DBTX, id string) (*SOP, error) {
 	const query = `
-		SELECT id, title, created_at
+		SELECT id, title, created_at, archived_at
 		FROM sops WHERE id = ?`
 
 	var s SOP
 	var createdAt string
+	var archivedAt sql.NullString
 
 	err := db.QueryRow(query, id).Scan(
-		&s.ID, &s.Title, &createdAt,
+		&s.ID, &s.Title, &createdAt, &archivedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("sop not found: %s", id)
@@ -44,10 +45,70 @@ func getSOPByIDRecord(db audit.DBTX, id string) (*SOP, error) {
 	}
 
 	s.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
+	s.ArchivedAt = parseNullTime(archivedAt)
 	return &s, nil
 }
 
-func listSOPsRecord(db audit.DBTX, userID string, limit, offset int, tagID string, searchQuery string, favoritesOnly, favoritesFirst bool) ([]SOPListItem, int, error) {
+func parseNullTime(v sql.NullString) *time.Time {
+	if !v.Valid {
+		return nil
+	}
+	t, _ := time.Parse(time.RFC3339Nano, v.String)
+	return &t
+}
+
+// getSOPArchiveRecord returns who archived the SOP and why, or nil while it is in use.
+func getSOPArchiveRecord(db audit.DBTX, sopID string) (*SOPArchive, error) {
+	var a SOPArchive
+	var archivedAt string
+	err := db.QueryRow(`
+		SELECT COALESCE(s.archive_reason, ''), COALESCE(s.archived_by, ''), COALESCE(u.display_name, ''), s.archived_at
+		FROM sops s
+		LEFT JOIN users u ON u.id = s.archived_by
+		WHERE s.id = ? AND s.archived_at IS NOT NULL
+	`, sopID).Scan(&a.Reason, &a.ActorUserID, &a.ActorName, &archivedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	a.ArchivedAt, _ = time.Parse(time.RFC3339Nano, archivedAt)
+	return &a, nil
+}
+
+func setSOPArchivedRecord(db audit.DBTX, sopID, archivedAt, archivedBy, reason string) error {
+	_, err := db.Exec(`
+		UPDATE sops SET archived_at = ?, archived_by = ?, archive_reason = ? WHERE id = ?
+	`, archivedAt, archivedBy, reason, sopID)
+	return err
+}
+
+func clearSOPArchivedRecord(db audit.DBTX, sopID string) error {
+	_, err := db.Exec(`
+		UPDATE sops SET archived_at = NULL, archived_by = NULL, archive_reason = NULL WHERE id = ?
+	`, sopID)
+	return err
+}
+
+// requireSOPActiveRecord returns ErrSOPArchived when the SOP is archived. Every write
+// to an SOP's content, lifecycle or signatures calls it inside its transaction.
+func requireSOPActiveRecord(db audit.DBTX, sopID string) error {
+	var archived int
+	err := db.QueryRow(`SELECT archived_at IS NOT NULL FROM sops WHERE id = ?`, sopID).Scan(&archived)
+	if err == sql.ErrNoRows {
+		return fmt.Errorf("sop not found: %s", sopID)
+	}
+	if err != nil {
+		return err
+	}
+	if archived != 0 {
+		return ErrSOPArchived
+	}
+	return nil
+}
+
+func listSOPsRecord(db audit.DBTX, userID string, limit, offset int, tagID string, searchQuery string, favoritesOnly, favoritesFirst bool, archived ArchiveFilter) ([]SOPListItem, int, error) {
 	var args []any
 	var conditions []string
 	joins := ""
@@ -74,6 +135,14 @@ func listSOPsRecord(db audit.DBTX, userID string, limit, offset int, tagID strin
 	if searchQuery != "" {
 		conditions = append(conditions, "s.title LIKE ?")
 		args = append(args, "%"+searchQuery+"%")
+	}
+
+	switch archived {
+	case ArchiveFilterOnly:
+		conditions = append(conditions, "s.archived_at IS NOT NULL")
+	case ArchiveFilterAll:
+	default:
+		conditions = append(conditions, "s.archived_at IS NULL")
 	}
 
 	whereClause := ""
@@ -103,7 +172,7 @@ func listSOPsRecord(db audit.DBTX, userID string, limit, offset int, tagID strin
 		orderBy = `CASE WHEN fav.user_id IS NOT NULL THEN 0 ELSE 1 END, ` + orderBy
 	}
 
-	querySQL := `SELECT DISTINCT s.id, s.title, s.created_at, ` + isFavExpr + ` AS is_favorite FROM sops s` +
+	querySQL := `SELECT DISTINCT s.id, s.title, s.created_at, s.archived_at, ` + isFavExpr + ` AS is_favorite FROM sops s` +
 		joins +
 		whereClause +
 		` ORDER BY ` + orderBy + ` LIMIT ? OFFSET ?`
@@ -121,11 +190,13 @@ func listSOPsRecord(db audit.DBTX, userID string, limit, offset int, tagID strin
 	for rows.Next() {
 		var s SOPListItem
 		var createdAt string
+		var archivedAt sql.NullString
 		var isFavInt int
-		if err := rows.Scan(&s.ID, &s.Title, &createdAt, &isFavInt); err != nil {
+		if err := rows.Scan(&s.ID, &s.Title, &createdAt, &archivedAt, &isFavInt); err != nil {
 			return nil, 0, err
 		}
 		s.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
+		s.ArchivedAt = parseNullTime(archivedAt)
 		s.IsFavorite = isFavInt != 0
 		s.Tags = []Tag{} // Initialize so it safely serializes as [] in JSON, not null
 		sops = append(sops, s)
@@ -877,7 +948,8 @@ func getSignatureStatusByUserIDRecord(db audit.DBTX, userID string) ([]UserSigna
 				ROW_NUMBER() OVER (PARTITION BY v.sop_id ORDER BY v.version DESC) AS rn
 			FROM sop_versions v
 			JOIN sops s ON v.sop_id = s.id
-			WHERE EXISTS (
+			WHERE s.archived_at IS NULL
+			AND EXISTS (
 				SELECT 1 FROM sop_version_states st
 				WHERE st.sop_version_id = v.id
 				  AND st.state = 'published'
@@ -1110,6 +1182,9 @@ func listCurrentlyPublishedVersionsRecord(db audit.DBTX, sopID string) ([]publis
 	if sopID != "" {
 		query += ` AND v.sop_id = ?`
 		args = append(args, sopID)
+	} else {
+		// Nobody is asked to sign an archived SOP, so it leaves the team overview
+		query += ` AND s.archived_at IS NULL`
 	}
 	query += ` ORDER BY s.title ASC`
 

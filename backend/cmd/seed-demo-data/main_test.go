@@ -124,7 +124,7 @@ func TestSeedShippedDemoData(t *testing.T) {
 		}
 	}
 
-	sops, total, err := sopService.ListSOPs(researcher.ID, 100, 0, "", "", false, false)
+	sops, total, err := sopService.ListSOPs(researcher.ID, 100, 0, "", "", false, false, sop.ArchiveFilterActive)
 	if err != nil {
 		t.Fatalf("ListSOPs: %v", err)
 	}
@@ -222,7 +222,7 @@ func TestSeedShippedDemoData(t *testing.T) {
 	if err := seed(dataDir, sopsRoot); err != nil {
 		t.Fatalf("second seed: %v", err)
 	}
-	_, total, err = sopService.ListSOPs(researcher.ID, 100, 0, "", "", false, false)
+	_, total, err = sopService.ListSOPs(researcher.ID, 100, 0, "", "", false, false, sop.ArchiveFilterActive)
 	if err != nil {
 		t.Fatalf("ListSOPs after second seed: %v", err)
 	}

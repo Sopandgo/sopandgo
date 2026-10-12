@@ -14,6 +14,8 @@ const EVENT_TITLES: Record<string, () => string> = {
     integrity_check: () => m.audit_integrity_check(),
     system_restart: () => m.audit_system_restart(),
     sop_created: () => m.audit_sop_created(),
+    sop_archived: () => m.audit_sop_archived(),
+    sop_unarchived: () => m.audit_sop_unarchived(),
     sop_version_created: () => m.audit_sop_version_created(),
     sop_version_state_changed: () => m.audit_sop_version_state_changed(),
     sop_acknowledgment_created: () => m.audit_sop_acknowledgment_created(),

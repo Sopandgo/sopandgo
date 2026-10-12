@@ -44,7 +44,7 @@ Protected routes expect `Authorization: Bearer <access_token>`. Login/refresh re
 | `401` | Missing/invalid token |
 | `403` | Missing scope, password-change gate, or wrong current password |
 | `404` | Missing resource |
-| `409` | Invalid lifecycle or backup conflict; 2FA precondition (`required_by_org`, `encryption_key_missing`, `authenticator_unavailable`, `email_transport_off`, `actor_needs_two_factor`) |
+| `409` | Invalid lifecycle or backup conflict; change to an archived SOP (`sop_archived`); 2FA precondition (`required_by_org`, `encryption_key_missing`, `authenticator_unavailable`, `email_transport_off`, `actor_needs_two_factor`) |
 | `412` | Encryption key / credentials precondition |
 | `422` | Backup archive validation failed |
 | `429` | Rate limit (strict on login/reset/password change; general elsewhere) |

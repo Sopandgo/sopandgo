@@ -19,6 +19,7 @@ Core ideas:
 - Version **content** is **immutable**; publishing uses an explicit **draft → RC → published** lifecycle.
 - Acknowledgments are tied to **exact versions**.
 - Users can **bookmark SOPs as favorites** (per-user, private to each account; favorites apply to the SOP container, not a specific version).
+- Approvers can **archive** SOPs that are no longer used, with a reason: they leave the list and signature tracking and become read-only, but nothing is deleted.
 - All data stays **self-hosted and portable**.
 
 ---
@@ -58,6 +59,7 @@ If the application is removed, SOP content remains readable on disk as standard 
   - may reference local assets (images, diagrams)
   - has a content hash recorded in the database; any user can re-check a version or asset file against it, and admins can scan everything at **Admin → Integrity** (`/admin/integrity`)
   - moves through a lifecycle: **draft → RC → published** (or rejected); a later publish marks the prior published version **superseded**
+- A whole SOP can be **archived** (approvers and admins, reason required): it becomes read-only and leaves the default list, but all versions and signatures stay readable
 - Users acknowledge specific SOP versions (`author` / `approver` / `reader`)
 - Content files are never modified or deleted; lifecycle state history is recorded separately
 
@@ -82,7 +84,7 @@ The security model is documented in detail under `docs/concepts/security-model.m
 
 ## Features (1.0)
 
-Self-hosted SOP management with invite-only auth, RBAC, immutable versioned content (draft → RC → published), acknowledgments, home dashboard, tags and favorites, audit trail, mail (SMTP/Resend or manual links), optional publish notices, Slack/Gotify/HTTP webhooks, backup/restore, PDF export, and Word import. The interface, emails, notifications, and PDF chrome ship in English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, Swedish, Czech, and Slovak. SOP titles and Markdown stay in the language the author wrote. Adding another interface language is a catalog change; see [Architecture](docs/dev/architecture.md#languages).
+Self-hosted SOP management with invite-only auth, RBAC, immutable versioned content (draft → RC → published), acknowledgments, home dashboard, tags and favorites, SOP archiving, audit trail, mail (SMTP/Resend or manual links), optional publish notices, Slack/Gotify/HTTP webhooks, backup/restore, PDF export, and Word import. The interface, emails, notifications, and PDF chrome ship in English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, Swedish, Czech, and Slovak. SOP titles and Markdown stay in the language the author wrote. Adding another interface language is a catalog change; see [Architecture](docs/dev/architecture.md#languages).
 
 Pending-acknowledgment reminder digests and lifecycle emails for RC/reject/archive are **out of scope for 1.0** — the dashboard and training coverage are the nudge surfaces; publish notices are the email surface.
 

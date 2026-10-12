@@ -33,6 +33,9 @@ func (s *Service) AddAcknowledgment(
 	if err != nil {
 		return "", err
 	}
+	if err := requireSOPActiveRecord(tx, v.SOPID); err != nil {
+		return "", err
+	}
 	if v.Status != StatePublished {
 		return "", fmt.Errorf("conflict: reader acknowledgments require a published version, current state is '%s'", v.Status)
 	}

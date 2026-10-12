@@ -22,13 +22,14 @@ It follows a **Service Layer Pattern** (`sop.Service`) for data consistency, ato
    * **Disk:** Absolute paths under `DATA_DIR`, resolved via `SafeJoin`.
    * **Network:** Streams files with `http.ServeFile` from the API layer.
 
-4. **Version lifecycle:** Content is append-only. Status moves `draft` → `rc` → `published` (or `rejected`); prior published versions become `superseded`. See `docs/concepts/versioning-and-signatures.md`.
+4. **Version lifecycle:** Content is append-only. Status moves `draft` → `rc` → `published` (or `rejected`); prior published versions become `superseded`. A whole SOP can be archived, which freezes all of this until it is unarchived. See `docs/concepts/versioning-and-signatures.md`.
 
 ## File Structure
 
 | File | Purpose | Key methods |
 | --- | --- | --- |
 | **`service.go`** | `Service` constructor and PDF config | `NewService`, `IsPDFExportEnabled` |
+| **`archive_service.go`** | Archive and unarchive an SOP (reason required, blocked while a release candidate is pending). Archived SOPs leave the default list, signature status and team coverage; every write to their content, lifecycle, signatures and assets returns `ErrSOPArchived` via `requireSOPActiveRecord` inside the write's transaction | `ArchiveSOP`, `UnarchiveSOP` |
 | **`sop_service.go`** | SOP containers; list rows carry tags, favorite state, the latest version (id, number, state, date) and the published version number; the detail adds the published version's id. Both are derived from the version states on read, not stored | `RegisterSOP`, `ListSOPs`, `GetSOPByIDWithTags` |
 | **`version_service.go`** | Drafts, content I/O, lifecycle; a rejection stores its reason on the state row and in the audit event, and the summary returns it | `RegisterSOPVersion`, `TransitionVersionState`, `ApproveSOPVersion`, `RejectSOPVersion`, summaries, integrity |
 | **`acknowledgment_service.go`** | Reader sign-off on published versions, and signature status | `AddAcknowledgment`, `GetSignatureStatusByUser` |
@@ -59,7 +60,15 @@ ackID, err := sopService.ApproveSOPVersion(versionID, approverID)
 err = sopService.RejectSOPVersion(versionID, approverID, reason) // reason required, stored
 ```
 
-### 3. Integrity
+### 3. Archive
+
+```go
+err := sopService.ArchiveSOP(sopID, approverID, reason) // reason required, stored
+err = sopService.UnarchiveSOP(sopID, approverID)
+list, total, err := sopService.ListSOPs(userID, 50, 0, "", "", false, false, sop.ArchiveFilterOnly)
+```
+
+### 4. Integrity
 
 ```go
 valid, err := sopService.VerifyVersionIntegrity(versionID)

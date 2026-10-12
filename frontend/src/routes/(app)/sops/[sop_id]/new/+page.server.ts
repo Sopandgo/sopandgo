@@ -9,6 +9,8 @@ import {
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
     const { sop } = await parent();
+    // An archived SOP takes no new versions; its page says why
+    if (sop.archive) throw redirect(303, `/sops/${sop.id}`);
     
     let assets: SOPAsset[] = [];
     try {

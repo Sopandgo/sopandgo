@@ -2,8 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
+
+	"github.com/sopandgo/sopandgo/backend/internal/sop"
 )
 
 func (s *Server) handleAddAcknowledgmentReader(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +36,8 @@ func (s *Server) processHandleAddAcknowledgment(w http.ResponseWriter, r *http.R
 	if err != nil {
 		msg := err.Error()
 		switch {
+		case errors.Is(err, sop.ErrSOPArchived):
+			writeSOPArchived(w)
 		case strings.HasPrefix(msg, "conflict:"):
 			detail := strings.TrimSpace(strings.TrimPrefix(msg, "conflict:"))
 			http.Error(w, detail, http.StatusConflict)

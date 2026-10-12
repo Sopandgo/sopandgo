@@ -313,8 +313,6 @@
                             <button type="submit" class="btn w-full" disabled={signingOut}>
                                 {#if signingOut}
                                     <span class="loading loading-spinner"></span>
-                                {:else}
-                                    <LogOutIcon class="size-4" />
                                 {/if}
                                 {m.sessions_sign_out_others()}
                             </button>

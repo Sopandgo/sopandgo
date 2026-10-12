@@ -577,6 +577,20 @@ var migrations = []migration{
 			return err
 		},
 	},
+	// v28: archived SOPs. archived_at is NULL while the SOP is in use; set, the SOP
+	// is read-only and hidden from the default list. archived_by and archive_reason
+	// describe the current archive only; earlier archives live in the audit log.
+	{
+		version: 28,
+		up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`
+				ALTER TABLE sops ADD COLUMN archived_at TEXT;
+				ALTER TABLE sops ADD COLUMN archived_by TEXT;
+				ALTER TABLE sops ADD COLUMN archive_reason TEXT;
+			`)
+			return err
+		},
+	},
 }
 
 func LatestSchemaVersion() int {

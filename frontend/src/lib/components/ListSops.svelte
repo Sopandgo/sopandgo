@@ -25,6 +25,7 @@
       q: string;
       favorites_only: boolean;
       favorites_first: boolean;
+      archived?: boolean;
     };
     onTagClick?: (tagId: string) => void; // parent owns filter logic
     /** Search and filter controls, shown above the rows in the same card. */
@@ -60,8 +61,12 @@
     goto(url.toString());
   }
 
-  // What readers see, and when it last changed
+  // What readers see, and when it last changed; for an archived SOP, when it was archived
   function rowMeta(sop: SOPListItem) {
+    if (sop.archived_at) {
+      const date = new Date(sop.archived_at).toLocaleDateString(getLocale());
+      return m.sops_archived_on({ date });
+    }
     const published =
       sop.published_version != null
         ? m.common_version({ version: String(sop.published_version) })
@@ -75,6 +80,8 @@
   // is published for yet. A rejected version after a published one changes nothing for
   // readers, so it shows only on the SOP page.
   function pendingStatus(sop: SOPListItem) {
+    // Nothing moves on an archived SOP; the badge says so instead
+    if (sop.archived_at) return 'archived';
     const status = sop.latest_version?.status;
     if (!status || status === 'published') return undefined;
     if (status === 'rejected' && sop.published_version != null) return undefined;

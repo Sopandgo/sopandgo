@@ -46,6 +46,10 @@ func (s *Service) RegisterSOPVersion(
 	}
 	defer tx.Rollback()
 
+	if err := requireSOPActiveRecord(tx, sopID); err != nil {
+		return "", 0, err
+	}
+
 	// 1. Only one release candidate at a time per SOP; drafts may exist in parallel.
 	hasRC, err := hasReleaseCandidateForSOPRecord(tx, sopID)
 	if err != nil {
@@ -405,6 +409,9 @@ func (s *Service) transitionVersionState(versionID string, newState string, acto
 	if err != nil {
 		return fmt.Errorf("could not find version: %w", err)
 	}
+	if err := requireSOPActiveRecord(tx, v.SOPID); err != nil {
+		return err
+	}
 	if err := validateManualVersionTransition(v.Status, newState); err != nil {
 		return err
 	}
@@ -470,6 +477,9 @@ func (s *Service) ApproveSOPVersion(versionID string, approverUserID string) (st
 	v, err := getSOPVersionByIDRecord(tx, versionID)
 	if err != nil {
 		return "", fmt.Errorf("could not find version: %w", err)
+	}
+	if err := requireSOPActiveRecord(tx, v.SOPID); err != nil {
+		return "", err
 	}
 	if v.Status != StateRC {
 		return "", fmt.Errorf("conflict: only release candidates can be approved, current state is '%s'", v.Status)

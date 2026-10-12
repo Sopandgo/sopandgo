@@ -10,6 +10,7 @@
     import Card from '#lib/components/Card.svelte';
     import CardPageHeading from '#lib/components/CardPageHeading.svelte';
     import SopVersionStatusBadge from '#lib/components/SopVersionStatusBadge.svelte';
+    import SopArchivedNotice from '#lib/components/SopArchivedNotice.svelte';
     import { enhance } from '$app/forms';
     import { page } from '$app/state';
     import Alert from '#lib/components/Alert.svelte';
@@ -29,6 +30,8 @@
     let role = $derived(user.role);
     let canAuthor = $derived(role === 'editor' || role === 'admin');
     let canApprove = $derived(role === 'approver' || role === 'admin');
+    // An archived SOP is read-only: no new versions, reviews or signatures
+    let archive = $derived(data.sop.archive);
 
     let created = $derived(new Date(version.created_at).toLocaleString(getLocale()));
 
@@ -106,6 +109,10 @@
 
 
 <div class="flex flex-col gap-6">
+{#if archive}
+    <SopArchivedNotice {archive} />
+{/if}
+
 <Card>
     <div class="card-body gap-4">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -138,14 +145,14 @@
                     </button>
                 {/if}
 
-                {#if canAuthor}
+                {#if canAuthor && !archive}
                     <a href={`/sops/${data.sop.id}/new`} class="btn">
                         <PlusIcon class="size-4" />
                         {m.common_new_version()}
                     </a>
                 {/if}
 
-                {#if version.status === 'draft' && canAuthor}
+                {#if version.status === 'draft' && canAuthor && !archive}
                     <form method="POST" action="?/promote" use:enhance>
                         <button class="btn btn-primary">
                             <ArrowUpRightIcon class="size-4" />
@@ -160,7 +167,8 @@
             <p>{version.change_summary}</p>
         {/if}
 
-        {#if !isPublished}
+        <!-- On an archived SOP the notice above the card is the page's one notice -->
+        {#if !archive && !isPublished}
             <Alert
                 type={noticeType}
                 title={version.rejection
@@ -187,7 +195,7 @@
                     {m.version_none_published()}
                 {/if}
             </Alert>
-        {:else if pending}
+        {:else if !archive && pending}
             <Alert type="info">
                 {pending.status === 'rc'
                     ? m.version_pending_rc({ version: String(pending.version) })
@@ -274,6 +282,7 @@
             {user}
             form={form}
             status={version.status ?? ""}
+            archived={!!archive}
         />
 
         <ListAcknowledgmentLog items={version.acknowledgments ?? []} limit={5} />

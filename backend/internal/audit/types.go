@@ -30,6 +30,8 @@ const (
 	EventAdminRevokedAllUserSessions  = "admin_revoked_all_user_sessions"
 	EventSystemGlobalRevocation       = "system_global_revocation"
 	EventSOPCreated                   = "sop_created"
+	EventSOPArchived                  = "sop_archived"
+	EventSOPUnarchived                = "sop_unarchived"
 	EventSOPVersionCreated            = "sop_version_created"
 	EventSOPVersionStateChanged       = "sop_version_state_changed"
 	EventSOPAcknowledgmentCreated     = "sop_acknowledgment_created"
@@ -86,6 +88,8 @@ var knownEventTypes = map[string]struct{}{
 	EventAdminRevokedAllUserSessions:  {},
 	EventSystemGlobalRevocation:       {},
 	EventSOPCreated:                   {},
+	EventSOPArchived:                  {},
+	EventSOPUnarchived:                {},
 	EventSOPVersionCreated:            {},
 	EventSOPVersionStateChanged:       {},
 	EventSOPAcknowledgmentCreated:     {},

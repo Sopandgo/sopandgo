@@ -31,7 +31,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 - Because the primary button is now dark ink on paper (light on ink in dark), it stands out only by being the sole filled button. Keep at most one filled `btn-primary` per view; this rule matters more than before. Other actions are `btn-ghost` or outline.
 - Selected and active states use `primary-soft` plus a non-colour cue (a 2px `primary` marker, bold label or check icon), not tint alone.
 - `secondary` is a near-neutral; use it rarely. `accent` (sand) is decorative only.
-- Status colours appear as soft badges and alerts: `success` text on `success-soft`, and so on. Solid status fills (`btn-error`) are only for destructive confirmations.
+- Status colours appear as soft badges (`success` text on `success-soft`, and so on) and as alerts: a 10% status tint with a 40% status border, the icon and title in the status colour and the body in `base-content`. Solid status fills (`btn-error`) are only for destructive confirmations.
 - `base-300` is for hairlines, never a text ground.
 - `brand-sky`, `brand-sand` and `brand-deep` are the logo's colours for the cover and PDF exports, not for UI state. `info` is the only blue left in UI state, and only for informational alerts.
 
@@ -44,6 +44,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 | Published | `success` on `success-soft` |
 | Rejected | `error` on `error-soft` |
 | Superseded | text only in `base-content-muted`, no badge fill |
+| Archived SOP | neutral outline badge, like a draft; the word says which |
 | Role: admin, approver, auditor | neutral outline badge; no red for admin |
 | Integrity verified | `success` soft badge, shield-check icon, "Verified" |
 | Hash mismatch | `error` soft badge, shield-x icon, "Hash mismatch" |
@@ -184,6 +185,7 @@ The SOP version status (`SopVersionStatusBadge`), as a soft daisyUI badge whose 
 | `published` | `badge badge-soft badge-success` | `status_published` |
 | `rejected` | `badge badge-soft badge-error` | `status_rejected` |
 | `superseded` | plain `text-xs text-base-content/70`, no badge | `status_superseded` |
+| `archived` (the SOP, not a version) | `badge badge-outline` | `status_archived` |
 | unknown | `badge badge-outline` | `status_unclear` |
 
 **Consumer provides**: `status` (one of the above). Nothing else; the component owns the mapping, so no other file picks a badge colour for a status.
@@ -218,7 +220,7 @@ After any other result, an icon-only ghost button (`btn-square btn-sm`, rotate i
 
 ### Alert
 
-An inline message about the page or a form, rendered through `#lib/components/Alert.svelte` as `alert alert-soft alert-<status>`.
+An inline message about the page or a form, rendered through `#lib/components/Alert.svelte` as `alert alert-soft alert-<status>` plus a 10% status tint (`bg-<status>/10`) and a 40% status border (`border-<status>/40`). daisyUI's soft tint alone almost matches the `base-200` page, so this keeps every alert distinct, in a card or straight on the page (like the archived-SOP notice above the heading card). The icon and title keep the status colour; the body reads in `base-content`, so long text stays easy to read. Every type follows the same recipe, so an error looks like a warning in everything but its colour, icon and words.
 
 | Type | Use for | Icon |
 | --- | --- | --- |

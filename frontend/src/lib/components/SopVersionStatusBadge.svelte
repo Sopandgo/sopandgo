@@ -3,7 +3,7 @@
 
     /*
      * Owns the status → look mapping (docs/design/style-guide.md → StatusBadge).
-     * No other file picks a badge colour for a version status.
+     * No other file picks a badge colour for a version status, or for an archived SOP.
      */
     let { status }: { status: string | null | undefined } = $props();
 
@@ -13,7 +13,9 @@
         published: { classes: 'badge badge-soft badge-success', label: m.status_published },
         rejected: { classes: 'badge badge-soft badge-error', label: m.status_rejected },
         // Superseded is history, not a state to act on: plain muted text.
-        superseded: { classes: 'text-xs text-base-content/70', label: m.status_superseded }
+        superseded: { classes: 'text-xs text-base-content/70', label: m.status_superseded },
+        // An archived SOP (not a version state): retired, read-only, nothing wrong.
+        archived: { classes: 'badge badge-outline', label: m.status_archived }
     };
 
     const badge = $derived(badges[status ?? ''] ?? { classes: 'badge badge-outline', label: m.status_unclear });

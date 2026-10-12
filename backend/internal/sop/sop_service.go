@@ -60,11 +60,12 @@ func (s *Service) ListSOPs(
 	tagID string,
 	searchQuery string,
 	favoritesOnly, favoritesFirst bool,
+	archived ArchiveFilter,
 ) ([]SOPListItem, int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	return listSOPsRecord(s.db, actorUserID, limit, offset, tagID, searchQuery, favoritesOnly, favoritesFirst)
+	return listSOPsRecord(s.db, actorUserID, limit, offset, tagID, searchQuery, favoritesOnly, favoritesFirst, archived)
 }
 
 func (s *Service) GetSOPByIDWithTags(id string, viewerUserID string) (*SOPWithTags, error) {
@@ -91,12 +92,18 @@ func (s *Service) GetSOPByIDWithTags(id string, viewerUserID string) (*SOPWithTa
 		return nil, err
 	}
 
+	archive, err := getSOPArchiveRecord(s.db, id)
+	if err != nil {
+		return nil, err
+	}
+
 	out := &SOPWithTags{
 		ID:            base.ID,
 		Title:         base.Title,
 		CreatedAt:     base.CreatedAt,
 		Tags:          tags,
 		IsFavorite:    isFav,
+		Archive:       archive,
 		LatestVersion: latest,
 	}
 	if published != nil {
