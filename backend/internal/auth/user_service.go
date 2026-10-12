@@ -172,6 +172,13 @@ func (s *Service) UpdateUserRole(
 		return fmt.Errorf("failed to revoke sessions: %w", err)
 	}
 
+	// Recovery codes are an admin-only fallback; they go with the role.
+	if oldRole == RoleAdmin && newRole != RoleAdmin {
+		if _, err := deleteRecoveryCodesRecord(tx, userID); err != nil {
+			return fmt.Errorf("failed to remove recovery codes: %w", err)
+		}
+	}
+
 	// 4. Audit
 	err = s.auditLogger.Log(
 		tx,

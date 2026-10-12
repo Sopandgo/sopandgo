@@ -37,5 +37,9 @@
   "pdf.stage.rc": "Release Candidate",
   "pdf.stage.published": "Veröffentlicht",
   "pdf.stage.rejected": "Abgelehnt",
-  "pdf.stage.superseded": "Ersetzt"
+  "pdf.stage.superseded": "Ersetzt",
+  "mail.two_factor_code.subject": "Dein SOPandGO-Anmeldecode",
+  "mail.two_factor_code.body": "Hallo {name},\n\ndein Anmeldecode lautet:\n\n{code}\n\nEr gilt einmal und läuft in 10 Minuten ab.\n\nWenn du dich nicht anmelden wolltest, ändere dein Passwort und informiere deine Administration.\n\nViele Grüße\nDas SOPandGO-Team",
+  "notify.break_glass.title": "Admin-Anmeldung auf dem Server zurückgesetzt",
+  "notify.break_glass.message": "Der Befehl recover-admin hat die Anmeldung von {email} auf dem Host {hostname} zurückgesetzt. Falls das niemand aus deinem Team war, prüfe das Audit-Log."
 }

@@ -37,5 +37,9 @@
   "pdf.stage.rc": "kandidát na vydanie",
   "pdf.stage.published": "publikované",
   "pdf.stage.rejected": "zamietnuté",
-  "pdf.stage.superseded": "nahradené"
+  "pdf.stage.superseded": "nahradené",
+  "mail.two_factor_code.subject": "Váš prihlasovací kód SOPandGO",
+  "mail.two_factor_code.body": "Dobrý deň, {name},\n\nváš prihlasovací kód je:\n\n{code}\n\nPlatí raz a vyprší o 10 minút.\n\nAk ste sa nepokúšali prihlásiť, zmeňte si heslo a informujte svojho administrátora.\n\nS pozdravom\nTím SOPandGO",
+  "notify.break_glass.title": "Prihlásenie administrátora resetované na serveri",
+  "notify.break_glass.message": "Príkaz recover-admin resetoval prihlásenie účtu {email} na hostiteľovi {hostname}. Ak to nikto z vášho tímu neurobil, skontrolujte auditný záznam."
 }

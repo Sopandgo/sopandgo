@@ -37,5 +37,9 @@
   "pdf.stage.rc": "candidat à la publication",
   "pdf.stage.published": "publié",
   "pdf.stage.rejected": "rejeté",
-  "pdf.stage.superseded": "remplacé"
+  "pdf.stage.superseded": "remplacé",
+  "mail.two_factor_code.subject": "Votre code de connexion SOPandGO",
+  "mail.two_factor_code.body": "Bonjour {name},\n\nVotre code de connexion est :\n\n{code}\n\nIl ne fonctionne qu'une fois et expire dans 10 minutes.\n\nSi vous n'avez pas essayé de vous connecter, changez votre mot de passe et prévenez votre administrateur.\n\nCordialement,\nL'équipe SOPandGO",
+  "notify.break_glass.title": "Connexion administrateur réinitialisée sur le serveur",
+  "notify.break_glass.message": "La commande recover-admin a réinitialisé la connexion de {email} sur l'hôte {hostname}. Si personne dans votre équipe ne l'a fait, consultez le journal d'audit."
 }

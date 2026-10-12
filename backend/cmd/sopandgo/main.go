@@ -23,6 +23,12 @@ import (
 )
 
 func main() {
+	// Host-only maintenance commands run instead of the server, e.g.
+	// `./sopandgo recover-admin --email admin@lab.org` from the container terminal.
+	if len(os.Args) > 1 {
+		os.Exit(runCommand(os.Args[1], os.Args[2:]))
+	}
+
 	log.Println("starting sopandgo backend")
 
 	// 1. Setup Graceful Shutdown
@@ -77,8 +83,17 @@ func main() {
 		log.Printf("audit write failed for system startup: %v", err)
 	}
 
-	// Auth Service: Manages users, roles, and sessions.
-	authService := auth.NewService(store.DB, auditLogger, dataDir)
+	// Mail, integration, S3, and 2FA secrets live in SQLite, encrypted with SECRET_ENCRYPTION_KEY.
+	encKey, ok := secrets.KeyFromEnv()
+	switch {
+	case !ok && secrets.KeySet():
+		log.Println("WARNING: SECRET_ENCRYPTION_KEY does not decode to 32 bytes (base64, hex, or 32 raw bytes); stored secrets cannot be saved or read")
+	case !ok:
+		log.Println("WARNING: SECRET_ENCRYPTION_KEY not set; set a 32-byte key (e.g. openssl rand -base64 32) to save SMTP and integration secrets, send mail, and use two-factor authentication")
+	}
+
+	// Auth Service: Manages users, roles, sessions, and two-factor authentication.
+	authService := auth.NewService(store.DB, auditLogger, dataDir, encKey)
 
 	// Bootstrap: Ensure at least one admin exists so the system isn't locked out.
 	if err := authService.EnsureAdminUser(); err != nil {
@@ -138,15 +153,6 @@ func main() {
 		}()
 	} else {
 		log.Println("PDF export is disabled")
-	}
-
-	// Mail and integration secrets live in SQLite (admin UI), encrypted with SECRET_ENCRYPTION_KEY.
-	encKey, ok := secrets.KeyFromEnv()
-	switch {
-	case !ok && secrets.KeySet():
-		log.Println("WARNING: SECRET_ENCRYPTION_KEY does not decode to 32 bytes (base64, hex, or 32 raw bytes); stored secrets cannot be saved or read")
-	case !ok:
-		log.Println("WARNING: SECRET_ENCRYPTION_KEY not set; set a 32-byte key (e.g. openssl rand -base64 32) to save SMTP and integration secrets and to send mail")
 	}
 
 	smtpSettingsStore := mail.NewSMTPSettingsStore(store.DB, encKey)

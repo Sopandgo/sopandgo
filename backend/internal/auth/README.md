@@ -25,14 +25,17 @@ Login (password verify + session create) is orchestrated in the **API** layer (`
 
 | File | Purpose | Key methods |
 | --- | --- | --- |
-| **`service.go`** | Constructor | `NewService(db, logger, dataDir)` |
+| **`service.go`** | Constructor | `NewService(db, logger, dataDir, encKey)` |
 | **`user_service.go`** | Users and password reset | `RegisterUser`, `UpdateUserRole`, `SetUserActiveStatus`, `UpdateUserPassword`, `ChangeOwnPassword`, `GeneratePasswordResetToken`, `ResetPassword` |
 | **`avatar_service.go`** | Profile pictures on disk | `SetAvatar`, `RemoveAvatar`, `AvatarAbsolutePath` |
 | **`avatar_image.go`** | Decode / crop / resize / JPEG | `processAvatarSizes` (96/256/512/1024) |
+| **`two_factor_service.go`** | TOTP, email codes, recovery codes, org rule | `BeginTOTPSetup`, `ConfirmTOTPSetup`, `DisableTwoFactor`, `VerifySecondFactor`, `IssueEmailCode`, `RegenerateRecoveryCodes`, `ResetTwoFactor`, `SetRequireTwoFactor` |
+| **`two_factor_store.go`** | Unexported 2FA SQL | `getTwoFactorRecord`, `advanceTwoFactorStepRecord`, … |
+| **`break_glass.go`** | Host-only admin recovery (no HTTP route) | `BreakGlassResetAdmin`, `ListAdmins` |
 | **`session_service.go`** | Refresh sessions | `CreateSession`, `ValidateSession`, `RevokeSession`, `RevokeOtherUserSessions`, `RevokeAllUserSessions`, `RevokeAllSessions`, `StartSessionsCleanupTask` |
 | **`store.go`** | Unexported SQL | `createUserRecord`, `getSessionRecord`, … |
 | **`password.go`** | Hashing / rules | `HashPassword`, `ValidatePassword` |
-| **`token.go`** | PASETO access tokens | `GenerateAccessToken` |
+| **`token.go`** | PASETO access tokens and 2FA challenge tokens | `GenerateAccessToken`, `GenerateTwoFactorChallenge` |
 | **`rbac.go`** | Role → scopes | `HasScope` |
 | **`bootstrap.go`** | Default admin | `EnsureAdminUser` |
 | **`model.go`** | Types and constants | `User` (includes `has_avatar`, `avatar_content_hash`), `Session`, `ScopeAdminTools` (`admin:integrity`) |
@@ -42,7 +45,26 @@ Login (password verify + session create) is orchestrated in the **API** layer (`
 ### Initialization
 
 ```go
-authService := auth.NewService(db, auditLogger, dataDir)
+// encKey is SECRET_ENCRYPTION_KEY (nil when unset; 2FA set-up is then refused).
+authService := auth.NewService(db, auditLogger, dataDir, encKey)
+```
+
+### Two-factor authentication
+
+The password step stays in the API layer. When `user.TwoFactorEnabled`, the handler issues a challenge token instead of a session and finishes with `VerifySecondFactor`:
+
+```go
+setup, err := authService.BeginTOTPSetup(userID, currentPassword) // secret + QR, pending
+codes, err := authService.ConfirmTOTPSetup(userID, code, refreshToken) // admins get recovery codes
+remaining, err := authService.VerifySecondFactor(userID, auth.SecondFactorTOTP, code)
+```
+
+### Break-glass
+
+`BreakGlassResetAdmin` is called only by `./sopandgo recover-admin` (`cmd/sopandgo/recover_admin.go`). It writes `admin_break_glass_reset` in the same transaction as the reset, so nothing changes without an audit entry.
+
+```go
+res, err := authService.BreakGlassResetAdmin(email, auth.BreakGlassContext{Hostname: host, OSUser: user})
 ```
 
 ### Registering a user (invite-only)

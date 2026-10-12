@@ -176,3 +176,33 @@ func (s *Service) SendPasswordResetEmail(recipientEmail, userID, userDisplayName
 
 	return nil
 }
+
+// SendTwoFactorCodeEmail delivers a one-time sign-in code (the 2FA email
+// fallback). The audit entry records the template, never the code.
+func (s *Service) SendTwoFactorCodeEmail(recipientEmail, userID, userDisplayName, code, locale string) error {
+	subject := i18n.T(locale, "mail.two_factor_code.subject", nil)
+	body := i18n.T(locale, "mail.two_factor_code.body", map[string]string{
+		"name": userDisplayName,
+		"code": code,
+	})
+	if err := s.sender.Send([]string{recipientEmail}, subject, body); err != nil {
+		payload := map[string]string{
+			"recipient": recipientEmail,
+			"template":  "two_factor_code_v1",
+			"status":    "failed",
+		}
+		if logErr := s.auditor.Log(nil, audit.EventEmailFailed, audit.EntityEmail, userID, nil, payload); logErr != nil {
+			log.Printf("WARNING: Failed to write audit log for sign-in code failure: %v", logErr)
+		}
+		return fmt.Errorf("failed to send sign-in code: %w", err)
+	}
+	payload := map[string]string{
+		"recipient": recipientEmail,
+		"template":  "two_factor_code_v1",
+		"status":    "sent",
+	}
+	if err := s.auditor.Log(nil, audit.EventEmailSent, audit.EntityUser, userID, nil, payload); err != nil {
+		log.Printf("WARNING: Failed to write audit log for sign-in code: %v", err)
+	}
+	return nil
+}

@@ -37,5 +37,9 @@
   "pdf.stage.rc": "release candidate",
   "pdf.stage.published": "gepubliceerd",
   "pdf.stage.rejected": "afgewezen",
-  "pdf.stage.superseded": "vervangen"
+  "pdf.stage.superseded": "vervangen",
+  "mail.two_factor_code.subject": "Je SOPandGO-aanmeldcode",
+  "mail.two_factor_code.body": "Hoi {name},\n\nJe aanmeldcode is:\n\n{code}\n\nDe code werkt één keer en verloopt over 10 minuten.\n\nHeb je niet geprobeerd je aan te melden? Wijzig dan je wachtwoord en laat het je beheerder weten.\n\nGroeten,\nHet SOPandGO-team",
+  "notify.break_glass.title": "Aanmelding van beheerder op de server gereset",
+  "notify.break_glass.message": "Het commando recover-admin heeft de aanmelding van {email} op host {hostname} gereset. Als niemand in je team dit heeft gedaan, controleer dan het auditlogboek."
 }

@@ -28,10 +28,28 @@ func applyAvatarFields(u *User, avatarPath, avatarHash sql.NullString) {
 	}
 }
 
+// twoFactorColumns adds two computed columns to a users query: whether the
+// account has a confirmed authenticator, and whether the organization requires one.
+const twoFactorColumns = `EXISTS (
+				SELECT 1 FROM user_two_factor tf
+				WHERE tf.user_id = users.id AND tf.confirmed_at IS NOT NULL
+			),
+			COALESCE((SELECT require_two_factor FROM app_settings WHERE id = 1), 0)`
+
+type twoFactorFlags struct {
+	enabled  int
+	required int
+}
+
+func (f twoFactorFlags) apply(u *User) {
+	u.TwoFactorEnabled = f.enabled == 1
+	u.MustEnrollTwoFactor = f.required == 1 && !u.TwoFactorEnabled
+}
+
 func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {
 	const query = `
 		SELECT id, display_name, email, role_id, is_active, must_change_password, locale, theme,
-			avatar_path, avatar_content_hash, created_at
+			avatar_path, avatar_content_hash, ` + twoFactorColumns + `, created_at
 		FROM users WHERE id = ?`
 
 	var u User
@@ -39,10 +57,11 @@ func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {
 	var isActive int
 	var mustChange int
 	var avatarPath, avatarHash sql.NullString
+	var tf twoFactorFlags
 
 	err := db.QueryRow(query, id).Scan(
 		&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &u.Theme,
-		&avatarPath, &avatarHash, &createdAt,
+		&avatarPath, &avatarHash, &tf.enabled, &tf.required, &createdAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("user not found: %s", id)
@@ -54,6 +73,7 @@ func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {
 	u.IsActive = isActive == 1
 	u.MustChangePassword = mustChange == 1
 	applyAvatarFields(&u, avatarPath, avatarHash)
+	tf.apply(&u)
 	u.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
 	return &u, nil
 }
@@ -61,7 +81,7 @@ func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {
 func getUserByEmailRecord(db audit.DBTX, email string) (*User, string, error) {
 	const query = `
 		SELECT id, display_name, email, role_id, is_active, must_change_password, locale, theme,
-			avatar_path, avatar_content_hash, password_hash
+			avatar_path, avatar_content_hash, ` + twoFactorColumns + `, password_hash
 		FROM users WHERE email = ?`
 
 	var u User
@@ -69,10 +89,11 @@ func getUserByEmailRecord(db audit.DBTX, email string) (*User, string, error) {
 	var isActive int
 	var mustChange int
 	var avatarPath, avatarHash sql.NullString
+	var tf twoFactorFlags
 
 	err := db.QueryRow(query, email).Scan(
 		&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &u.Theme,
-		&avatarPath, &avatarHash, &hash,
+		&avatarPath, &avatarHash, &tf.enabled, &tf.required, &hash,
 	)
 	if err != nil {
 		return nil, "", err
@@ -81,6 +102,7 @@ func getUserByEmailRecord(db audit.DBTX, email string) (*User, string, error) {
 	u.IsActive = isActive == 1
 	u.MustChangePassword = mustChange == 1
 	applyAvatarFields(&u, avatarPath, avatarHash)
+	tf.apply(&u)
 	return &u, hash, nil
 }
 
@@ -144,7 +166,7 @@ func updateUserThemeRecord(db audit.DBTX, userID, theme string) error {
 func listUsersRecord(db audit.DBTX) ([]User, error) {
 	const query = `
 		SELECT id, display_name, email, role_id, is_active, must_change_password, locale, theme,
-			avatar_path, avatar_content_hash, created_at
+			avatar_path, avatar_content_hash, ` + twoFactorColumns + `, created_at
 		FROM users ORDER BY created_at DESC, rowid DESC`
 
 	rows, err := db.Query(query)
@@ -160,15 +182,17 @@ func listUsersRecord(db audit.DBTX) ([]User, error) {
 		var isActive int
 		var mustChange int
 		var avatarPath, avatarHash sql.NullString
+		var tf twoFactorFlags
 		if err := rows.Scan(
 			&u.ID, &u.DisplayName, &u.Email, &u.Role, &isActive, &mustChange, &u.Locale, &u.Theme,
-			&avatarPath, &avatarHash, &createdAt,
+			&avatarPath, &avatarHash, &tf.enabled, &tf.required, &createdAt,
 		); err != nil {
 			return nil, err
 		}
 		u.IsActive = isActive == 1
 		u.MustChangePassword = mustChange == 1
 		applyAvatarFields(&u, avatarPath, avatarHash)
+		tf.apply(&u)
 		u.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
 		users = append(users, u)
 	}

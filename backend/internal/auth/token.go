@@ -54,3 +54,47 @@ func VerifyToken(tokenStr string) (*TokenClaims, error) {
 		UserRole: role,
 	}, nil
 }
+
+// challengeKey signs the short-lived token that sits between the password and
+// the second factor. It is separate from symmetricKey, so a challenge token
+// can never be accepted as an access token, and it also resets on restart.
+var challengeKey = paseto.NewV4SymmetricKey()
+
+const (
+	challengePurpose = "two_factor_challenge"
+	// TwoFactorChallengeTTL is how long a user has to enter the second factor.
+	TwoFactorChallengeTTL = 5 * time.Minute
+)
+
+// GenerateTwoFactorChallenge is issued after a correct password when the
+// account has 2FA on. It proves only the password step.
+func GenerateTwoFactorChallenge(userID string) (string, error) {
+	token := paseto.NewToken()
+	now := time.Now()
+	token.SetIssuedAt(now)
+	token.SetNotBefore(now)
+	token.SetExpiration(now.Add(TwoFactorChallengeTTL))
+	token.SetString("user_id", userID)
+	token.SetString("purpose", challengePurpose)
+	return token.V4Encrypt(challengeKey, nil), nil
+}
+
+// VerifyTwoFactorChallenge returns the user ID from a valid challenge token.
+func VerifyTwoFactorChallenge(tokenStr string) (string, error) {
+	parser := paseto.NewParser()
+	parser.AddRule(paseto.NotExpired())
+	parser.AddRule(paseto.ValidAt(time.Now()))
+	token, err := parser.ParseV4Local(challengeKey, tokenStr, nil)
+	if err != nil {
+		return "", fmt.Errorf("challenge validation failed: %w", err)
+	}
+	purpose, err := token.GetString("purpose")
+	if err != nil || purpose != challengePurpose {
+		return "", fmt.Errorf("not a two-factor challenge")
+	}
+	userID, err := token.GetString("user_id")
+	if err != nil {
+		return "", fmt.Errorf("user_id missing: %w", err)
+	}
+	return userID, nil
+}

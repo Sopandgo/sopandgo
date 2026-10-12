@@ -128,6 +128,24 @@ export const actions: Actions = {
         }
     },
 
+    resetTwoFactor: async ({ locals, request }) => {
+        const fd = await request.formData();
+        const user_id = String(fd.get('user_id') ?? '');
+        if (!user_id) {
+            return fail(400, { resetTwoFactor: { error: m.error_missing_user() } });
+        }
+        try {
+            await locals.api.admin.resetUserTwoFactor(user_id);
+            return { resetTwoFactor: { ok: true } };
+        } catch (err) {
+            console.error('Two-factor reset failed:', err);
+            const adminTarget = err instanceof Error && err.message === 'ADMIN_TARGET';
+            return fail(adminTarget ? 403 : 500, {
+                resetTwoFactor: { error: adminTarget ? m.users_reset_two_factor_admin() : m.users_reset_two_factor_failed() }
+            });
+        }
+    },
+
     updateStatus: async ({ locals, request }) => {
         const fd = await request.formData();
         const user_id = String(fd.get('user_id') ?? '');

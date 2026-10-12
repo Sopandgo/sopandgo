@@ -48,7 +48,10 @@ func New(t *testing.T) *Env {
 		t.Fatalf("failed to initialize audit logger: %v", err)
 	}
 
-	authService := auth.NewService(store.DB, auditLogger, dataDir)
+	// Fixed 32-byte key so 2FA and admin settings endpoints can be exercised in tests
+	testEncKey := []byte("01234567890123456789012345678901")
+
+	authService := auth.NewService(store.DB, auditLogger, dataDir, testEncKey)
 
 	authService.StartSessionsCleanupTask(ctx, 24*time.Hour)
 
@@ -61,8 +64,6 @@ func New(t *testing.T) *Env {
 		t.Fatalf("failed to initialize mail service: %v", err)
 	}
 
-	// Fixed 32-byte key so admin SMTP settings endpoints can be exercised in tests
-	testEncKey := []byte("01234567890123456789012345678901")
 	smtpSettingsStore := mail.NewSMTPSettingsStore(store.DB, testEncKey)
 	// Email is only used with a saved transport (otherwise manual links); the mock
 	// sender does the sending, this row just makes SMTP count as configured.

@@ -50,8 +50,24 @@ Key properties:
 - **Password change needs the current password:** Changing the password from account settings asks for the current one. Someone who finds a session left open on a shared PC cannot use it to lock the owner out. Reset links do not ask for it, because the one-time token already proves identity.
 - **Brute-Force Protection:** Login, Password Reset, and the signed-in password change are protected by strict IP-based rate limiting to prevent credential guessing attacks.
 - **Administrative Recovery:** Admins can trigger password resets.
+- **Two-factor authentication (optional):** Each user can add an authenticator app (TOTP, RFC 6238). After a correct password, the server asks for a code before it creates a session. A code is accepted once; replaying it fails. Setting up, replacing, or turning off 2FA needs the current password. The TOTP secret is sealed with `SECRET_ENCRYPTION_KEY`, so 2FA cannot be turned on without that key, and a leaked database or backup alone does not reveal the secrets.
+- **Email fallback:** When a mail transport is switched on, the sign-in step can also mail a 6-digit code (valid 10 minutes, one use, five tries, one send per minute). With the fallback on, the second factor is "authenticator app **or** mailbox": someone with the password and access to the user's mailbox can sign in. Labs that do not want that leave mail off or accept the trade-off knowingly.
+- **Recovery codes (admins only):** Admins get 10 single-use recovery codes when they set up 2FA. Only SHA-256 hashes are stored. Codes stop working when the account is no longer an admin.
+- **Organization-wide requirement:** An admin can require 2FA for every account. Only an admin who already uses 2FA can switch it on. Accounts without an authenticator can then only set one up (plus change language, theme, or password) until they do.
+- **Admin reset for normal users:** Admins can reset a normal user's 2FA from **Admin → Users**; the user is signed out and sets it up again. Admin accounts cannot be reset there, so a stolen admin session cannot quietly strip another admin's second factor through the UI.
+- **Rate limits on the second factor:** The code step uses the strict per-IP limiter plus a per-account limit, so guesses spread over many addresses still stop.
 
 External identity providers (SSO, LDAP, OAuth) are **out of scope**.
+
+
+## Break-glass recovery for admins
+
+An admin who lost their password, authenticator, and recovery codes is recovered on the host, not in the web app. The operator opens a shell in the `sopandgo` container (for example the Coolify **Terminal**, or `docker compose exec`) and runs `./sopandgo recover-admin --email <email>`. In one transaction it removes the admin's second factor and recovery codes, sets a temporary password that must be changed at the next sign-in, reactivates the account, and signs out every session. Steps are in [deployment.md](../ops/deployment.md#locked-out-admin-break-glass).
+
+- **No web route.** The command is part of the backend binary and has no HTTP endpoint. Nobody can reach it over the network, with or without an admin session.
+- **Always audited.** Each reset writes `admin_break_glass_reset` in the same transaction as the change; if that audit write fails, nothing changes. Refused or cancelled runs write `admin_break_glass_failed`. Both carry the host name and OS user and enter the hash chain like every other event. The temporary password is never logged. Integrations subscribed to `break_glass_used` get an alert.
+- **Admin accounts only.** Normal users are reset from **Admin → Users**.
+- **Who can use it:** anyone with a shell in the container or write access to the data directory. That is already outside what sopandgo defends (see below). The image runs Caddy, the SvelteKit server, and the Go API in one container, so code execution in any of them counts as host access: it could read `app.db` directly even without this command. Break-glass makes recovery possible and visible; it does not add a new boundary.
 
 
 ## Authorization and access control
@@ -125,6 +141,7 @@ sopandgo does **not** protect against:
 
 - A compromised host operating system on the server.
 - Malicious administrators or users with direct file/database access, although hash chained audit logs make this detectable.
+- Someone with a shell in the container resetting an admin's sign-in with `recover-admin`. This is the intended recovery path; it is audited and alerted, not prevented.
 - Physical access to the server.
 - Institutional network breaches or 'Man-in-the-Middle' attacks between the client and the server. While the internal Caddy instance handles routing, end-to-end encryption depends on the operator correctly configuring external SSL/TLS termination.
 

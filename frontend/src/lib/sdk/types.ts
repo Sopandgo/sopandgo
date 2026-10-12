@@ -18,8 +18,48 @@ export interface User {
     has_avatar: boolean;
     /** Content hash of the current picture; use as a cache-busting `v` value */
     avatar_content_hash?: string;
+    /** True when the user has a confirmed authenticator app */
+    two_factor_enabled: boolean;
+    /** True while the organization requires 2FA and this user has not set it up */
+    must_enroll_two_factor: boolean;
     /** ISO 8601 Timestamp */
     created_at: string;
+}
+
+/** Ways to pass the second sign-in step. `recovery_code` is offered to admins only. */
+export type TwoFactorMethod = 'totp' | 'email' | 'recovery_code';
+
+/** Answer to a correct password on an account with 2FA. */
+export interface TwoFactorChallenge {
+    challenge_token: string;
+    methods: TwoFactorMethod[];
+    /** Seconds until the challenge expires */
+    expires_in: number;
+}
+
+export interface TwoFactorStatus {
+    enabled: boolean;
+    /** A new authenticator is waiting for its first code */
+    pending_setup: boolean;
+    /** The organization requires 2FA */
+    required: boolean;
+    recovery_codes_remaining: number;
+    /** Recovery codes exist for admins only */
+    recovery_codes_available: boolean;
+    encryption_key_configured: boolean;
+}
+
+/** Returned once when an authenticator is set up. */
+export interface TwoFactorSetup {
+    secret: string;
+    otpauth_uri: string;
+    qr_code_data_url: string;
+}
+
+export interface SecuritySettings {
+    require_two_factor: boolean;
+    encryption_key_configured: boolean;
+    email_fallback_available: boolean;
 }
     
 export interface Acknowledgment {
@@ -219,7 +259,8 @@ export type IntegrationEvent =
     | 'sop_rc'
     | 'sop_rejected'
     | 'backup_s3_failed'
-    | 'integrity_check_failed';
+    | 'integrity_check_failed'
+    | 'break_glass_used';
 
 export interface PublicIntegrationChannel {
     enabled: boolean;

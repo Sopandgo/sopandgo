@@ -27,7 +27,15 @@ const EVENT_TITLES: Record<string, () => string> = {
     email_sent: () => m.audit_email_sent(),
     email_failed: () => m.audit_email_failed(),
     backup_s3_uploaded: () => m.audit_backup_s3_uploaded(),
-    default_locale_updated: () => m.audit_default_locale_updated()
+    default_locale_updated: () => m.audit_default_locale_updated(),
+    two_factor_enabled: () => m.audit_two_factor_enabled(),
+    two_factor_disabled: () => m.audit_two_factor_disabled(),
+    two_factor_reset: () => m.audit_two_factor_reset(),
+    two_factor_recovery_codes_generated: () => m.audit_two_factor_recovery_codes_generated(),
+    two_factor_recovery_code_used: () => m.audit_two_factor_recovery_code_used(),
+    two_factor_requirement_updated: () => m.audit_two_factor_requirement_updated(),
+    admin_break_glass_reset: () => m.audit_admin_break_glass_reset(),
+    admin_break_glass_failed: () => m.audit_admin_break_glass_failed()
 };
 
 export const auditEventOptions = Object.entries(EVENT_TITLES)
@@ -88,6 +96,11 @@ export function eventSummary(eventType: string, payload: string): string | null 
             const name = objectKey.split('/').filter(Boolean).at(-1);
             if (name) return name;
         }
+    }
+
+    if (key === 'admin_break_glass_reset' || key === 'admin_break_glass_failed') {
+        const host = data.hostname;
+        if (typeof host === 'string' && host.length > 0) return m.audit_on_host({ host });
     }
 
     if (key === 'user_role_updated') {

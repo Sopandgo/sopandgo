@@ -37,5 +37,9 @@
   "pdf.stage.rc": "リリース候補",
   "pdf.stage.published": "公開済み",
   "pdf.stage.rejected": "却下",
-  "pdf.stage.superseded": "置き換え済み"
+  "pdf.stage.superseded": "置き換え済み",
+  "mail.two_factor_code.subject": "SOPandGO のサインインコード",
+  "mail.two_factor_code.body": "{name} 様\n\nサインインコードは次のとおりです。\n\n{code}\n\nこのコードは 1 回だけ使用でき、10 分で期限切れになります。\n\nサインインを試みていない場合は、パスワードを変更し、管理者に連絡してください。\n\nSOPandGO チーム",
+  "notify.break_glass.title": "サーバー上で管理者のサインインがリセットされました",
+  "notify.break_glass.message": "recover-admin コマンドがホスト {hostname} で {email} のサインインをリセットしました。チームの誰も実行していない場合は、監査ログを確認してください。"
 }

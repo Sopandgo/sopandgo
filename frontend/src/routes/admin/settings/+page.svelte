@@ -4,12 +4,26 @@
     import Card from '#lib/components/Card.svelte';
     import CardPageHeading from '#lib/components/CardPageHeading.svelte';
     import LocaleSelect from '#lib/components/LocaleSelect.svelte';
-    import { LanguagesIcon } from '@lucide/svelte';
+    import { LanguagesIcon, ShieldCheckIcon } from '@lucide/svelte';
     import * as m from '#lib/paraglide/messages.js';
 
     let { data, form }: { data: any; form: any } = $props();
 
     const smtp = $derived(data.smtp);
+    const security = $derived(data.security);
+    const required = $derived(!!security?.require_two_factor);
+    // Turning the rule on needs the key and an admin who already uses 2FA, so
+    // nobody locks themselves out by flipping it. Turning it off is always allowed.
+    const blockedReason = $derived(
+        required || !security
+            ? null
+            : !security.encryption_key_configured
+              ? m.two_factor_key_missing()
+              : !data.user?.two_factor_enabled
+                ? m.security_require_needs_own()
+                : null
+    );
+    let saving = $state(false);
 </script>
 
 <svelte:head>
@@ -17,6 +31,56 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
+    <Card>
+        <div class="card-body space-y-4">
+            <h2 class="flex items-center gap-2 text-lg font-semibold">
+                <ShieldCheckIcon class="h-4 w-4" />
+                {m.security_heading()}
+            </h2>
+            <p class="text-sm text-base-content/70">{m.security_require_help()}</p>
+            {#if form?.saveSecurity?.error}
+                <Alert type="error" message={form.saveSecurity.error} />
+            {:else if form?.saveSecurity?.ok}
+                <Alert type="success" message={m.security_saved()} />
+            {/if}
+            {#if !security}
+                <Alert type="error" message={m.security_load_failed()} />
+            {:else}
+                <form
+                    method="POST"
+                    action="?/saveSecurity"
+                    onchange={(event) => event.currentTarget.requestSubmit()}
+                    use:enhance={() => {
+                        saving = true;
+                        return async ({ update }) => {
+                            await update();
+                            saving = false;
+                        };
+                    }}
+                >
+                    <label class="flex items-center gap-3 text-sm">
+                        <input
+                            type="checkbox"
+                            name="require_two_factor"
+                            class="toggle toggle-success"
+                            checked={required}
+                            disabled={saving || blockedReason !== null}
+                            aria-describedby={blockedReason ? 'security-blocked' : undefined}
+                        />
+                        <span>{m.security_require_label()}</span>
+                        <span class="text-base-content/70">{required ? m.two_factor_state_on() : m.two_factor_state_off()}</span>
+                    </label>
+                </form>
+                {#if blockedReason}
+                    <p id="security-blocked" class="text-xs text-base-content/70">{blockedReason}</p>
+                {/if}
+                {#if !security.email_fallback_available}
+                    <p class="text-xs text-base-content/70">{m.security_email_fallback_off()}</p>
+                {/if}
+            {/if}
+        </div>
+    </Card>
+
     <Card>
         <div class="card-body space-y-4">
             <CardPageHeading>

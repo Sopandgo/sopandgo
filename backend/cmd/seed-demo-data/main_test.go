@@ -105,7 +105,7 @@ func TestSeedShippedDemoData(t *testing.T) {
 		t.Fatalf("audit.New: %v", err)
 	}
 	sopService := sop.NewService(store.DB, auditLogger, dataDir, "1", false, nil)
-	authService := auth.NewService(store.DB, auditLogger, dataDir)
+	authService := auth.NewService(store.DB, auditLogger, dataDir, nil)
 
 	researcher, _, err := authService.GetUserByEmail("researcher@demo.local")
 	if err != nil {

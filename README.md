@@ -69,6 +69,8 @@ The system implements a **Stateless/Stateful Hybrid** security model:
 
 - **Unknowable Passwords:** Admins cannot set passwords. Users set their own credentials via email invites.
 - **Authentication:** PASETO (Stateless) for fast API access + Refresh Tokens (Stateful) for session management.
+- **Two-factor authentication:** Optional per user (authenticator app, with an emailed code as fallback when mail is on). Admins can require it for the whole organization and reset it for normal users. Admins also get single-use recovery codes.
+- **Locked-out admin:** The host operator resets an admin's sign-in with `./sopandgo recover-admin` in the container terminal. There is no web route for it, and every run is audited.
 - **Revocation:** Deactivating a user or changing their role applies on the next request. Revoking a refresh session stops new tokens immediately; an access token already issued lasts at most 5 minutes.
 - **Profile pictures:** Users upload their own picture; the server stores small re-encoded JPEGs. Any signed-in user can view them the same way they see display names.
 - **RBAC:** Role-Based Access Control limits actions (e.g., only "Editors" can create drafts).
@@ -109,7 +111,7 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
 2. **Configure environment (critical)** Copy **`.env.example`** to **`.env`** and set at least the values you need for your deployment. The repo already includes **`docker-compose.yml`**; you normally do **not** need to author compose from scratch.
 
 - **ORIGIN:** Must match the URL you use in the browser (default: `http://localhost:8087`). The Go API uses it for invite/reset links and related absolute URLs. SvelteKit 3 derives request origin from `HOST_HEADER` / `PROTOCOL_HEADER` (set in the image), not from `ORIGIN`.
-- **SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets or send mail/integrations that need them.
+- **SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key, two-factor authenticator secrets); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets, send mail/integrations that need them, or turn on two-factor authentication.
 - **SEED_DEMO_DATA:** `true` (default) inserts demo users and sample SOPs on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
 - **Mail:** In **Settings → Email** (`/admin/settings/email`), save **SMTP** (host, port, user, password, from-address) or **Resend** and switch it on in its card header to send invites and resets by email; verify with **Send test email**. Until a transport is on, admins get one-time links to share manually (manual links).
 - **Integrations:** On **Settings → Integrations** (`/admin/settings/integrations`), optionally enable Slack Incoming Webhooks, Gotify, and/or a generic HTTP webhook for lifecycle and ops alerts. There are no `SLACK_ENABLED`-style env flags — configure destinations in the UI.
@@ -145,9 +147,10 @@ Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`
 1. Set **`ORIGIN`** and **`SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOPs are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
 2. Sign in as `admin` / `admin` and **set a strong password** (required; enter `admin` as the current password).
 3. Optionally save SMTP or Resend under **Settings → Email**, switch it on and send a **test email**; without it, invites use manual links.
-4. Create a real user invite (or keep demo data only for a trial).
-5. **Backup:** **Settings → Backup** → export a `.zip`, then optionally **validate** it.
-6. Practice restore once on a non-production copy: stage apply → restart container → confirm SOPs and acknowledgments. See `docs/ops/backup-and-restore.md`.
+4. Turn on two-factor authentication for the admin account in **Account settings**, store the recovery codes, and decide whether to require 2FA for everyone under **Settings**. If an admin is ever locked out, see [Locked-out admin](docs/ops/deployment.md#locked-out-admin-break-glass).
+5. Create a real user invite (or keep demo data only for a trial).
+6. **Backup:** **Settings → Backup** → export a `.zip`, then optionally **validate** it.
+7. Practice restore once on a non-production copy: stage apply → restart container → confirm SOPs and acknowledgments. See `docs/ops/backup-and-restore.md`.
 
 ### Upgrading
 
