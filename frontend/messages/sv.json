@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "Administratör återställd på servern",
   "audit_admin_break_glass_failed": "Återställning av administratör på servern nekad",
   "audit_on_host": "på {host}",
-  "notify_event_break_glass": "Administratörsinloggning återställd på servern"
+  "notify_event_break_glass": "Administratörsinloggning återställd på servern",
+  "settings_general_intro": "Organisationens språk och säkerhet vid inloggning.",
+  "security_email_fallback_label": "Koder via e-post som reserv",
+  "security_email_fallback_on_help": "Den som inte kan använda sin autentiseringsapp kan få en engångskod för inloggning via e-post. Det följer e-postleveransen som är påslagen under E-post.",
+  "security_email_fallback_link": "Öppna e-postinställningar"
 }

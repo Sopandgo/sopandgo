@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "Yönetici sunucuda sıfırlandı",
   "audit_admin_break_glass_failed": "Sunucuda yönetici sıfırlaması reddedildi",
   "audit_on_host": "{host} üzerinde",
-  "notify_event_break_glass": "Yönetici oturum açma bilgileri sunucuda sıfırlandı"
+  "notify_event_break_glass": "Yönetici oturum açma bilgileri sunucuda sıfırlandı",
+  "settings_general_intro": "Kuruluş dili ve oturum açma güvenliği.",
+  "security_email_fallback_label": "Yedek olarak e-posta kodları",
+  "security_email_fallback_on_help": "Kimlik doğrulama uygulamasını kullanamayanlar e-postayla tek kullanımlık bir oturum açma kodu alabilir. Bu, E-posta bölümünde açık olan e-posta gönderimine bağlıdır.",
+  "security_email_fallback_link": "E-posta ayarlarını aç"
 }

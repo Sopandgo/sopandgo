@@ -789,5 +789,9 @@
   "audit_admin_break_glass_reset": "Administrátor resetovaný na serveri",
   "audit_admin_break_glass_failed": "Reset administrátora na serveri odmietnutý",
   "audit_on_host": "na {host}",
-  "notify_event_break_glass": "Prihlásenie administrátora resetované na serveri"
+  "notify_event_break_glass": "Prihlásenie administrátora resetované na serveri",
+  "settings_general_intro": "Jazyk organizácie a zabezpečenie prihlásenia.",
+  "security_email_fallback_label": "Kódy e-mailom ako záloha",
+  "security_email_fallback_on_help": "Kto nemôže použiť overovaciu aplikáciu, môže dostať jednorazový prihlasovací kód e-mailom. Riadi sa odosielaním pošty zapnutým v časti E-mail.",
+  "security_email_fallback_link": "Otvoriť nastavenia e-mailu"
 }

@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "Administrateur réinitialisé sur le serveur",
   "audit_admin_break_glass_failed": "Réinitialisation d'administrateur sur le serveur refusée",
   "audit_on_host": "sur {host}",
-  "notify_event_break_glass": "Connexion administrateur réinitialisée sur le serveur"
+  "notify_event_break_glass": "Connexion administrateur réinitialisée sur le serveur",
+  "settings_general_intro": "Langue de l'organisation et sécurité de la connexion.",
+  "security_email_fallback_label": "Codes par e-mail en secours",
+  "security_email_fallback_on_help": "Les personnes qui ne peuvent pas utiliser leur application d'authentification peuvent recevoir un code de connexion à usage unique par e-mail. Cela suit le transport d'e-mail activé dans E-mail.",
+  "security_email_fallback_link": "Ouvrir les paramètres e-mail"
 }

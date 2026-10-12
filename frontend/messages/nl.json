@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "Beheerder gereset op de server",
   "audit_admin_break_glass_failed": "Reset van beheerder op de server geweigerd",
   "audit_on_host": "op {host}",
-  "notify_event_break_glass": "Aanmelding van beheerder op de server gereset"
+  "notify_event_break_glass": "Aanmelding van beheerder op de server gereset",
+  "settings_general_intro": "Taal van de organisatie en beveiliging bij het aanmelden.",
+  "security_email_fallback_label": "Codes per e-mail als terugvaloptie",
+  "security_email_fallback_on_help": "Wie de authenticator-app niet kan gebruiken, kan een eenmalige aanmeldcode per e-mail krijgen. Dit volgt de mailverzending die onder E-mail aanstaat.",
+  "security_email_fallback_link": "E-mailinstellingen openen"
 }

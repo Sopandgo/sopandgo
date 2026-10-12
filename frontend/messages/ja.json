@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "サーバー上で管理者をリセットしました",
   "audit_admin_break_glass_failed": "サーバー上での管理者リセットを拒否しました",
   "audit_on_host": "{host} 上",
-  "notify_event_break_glass": "サーバー上で管理者のサインインがリセットされました"
+  "notify_event_break_glass": "サーバー上で管理者のサインインがリセットされました",
+  "settings_general_intro": "組織の言語とサインインのセキュリティ。",
+  "security_email_fallback_label": "予備手段としてのメールコード",
+  "security_email_fallback_on_help": "認証アプリを使えない人は、メールでワンタイムのサインインコードを受け取れます。これは「メール」でオンになっているメール送信に従います。",
+  "security_email_fallback_link": "メール設定を開く"
 }

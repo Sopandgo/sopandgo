@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "Zresetowano administratora na serwerze",
   "audit_admin_break_glass_failed": "Odrzucono reset administratora na serwerze",
   "audit_on_host": "na {host}",
-  "notify_event_break_glass": "Zresetowano logowanie administratora na serwerze"
+  "notify_event_break_glass": "Zresetowano logowanie administratora na serwerze",
+  "settings_general_intro": "Język organizacji i bezpieczeństwo logowania.",
+  "security_email_fallback_label": "Kody e-mailem jako rezerwa",
+  "security_email_fallback_on_help": "Osoby, które nie mogą użyć aplikacji uwierzytelniającej, mogą dostać jednorazowy kod logowania e-mailem. Zależy to od wysyłki poczty włączonej w zakładce E-mail.",
+  "security_email_fallback_link": "Otwórz ustawienia e-mail"
 }

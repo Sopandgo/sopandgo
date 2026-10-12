@@ -789,5 +789,9 @@
   "audit_admin_break_glass_reset": "Admin reset on the server",
   "audit_admin_break_glass_failed": "Admin reset on the server refused",
   "audit_on_host": "on {host}",
-  "notify_event_break_glass": "Admin sign-in reset on the server"
+  "notify_event_break_glass": "Admin sign-in reset on the server",
+  "settings_general_intro": "Organization language and sign-in security.",
+  "security_email_fallback_label": "Email codes as fallback",
+  "security_email_fallback_on_help": "People who can't use their authenticator app can get a one-time sign-in code by email. This follows the email transport switched on under Email.",
+  "security_email_fallback_link": "Open email settings"
 }

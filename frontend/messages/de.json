@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "Admin auf dem Server zurückgesetzt",
   "audit_admin_break_glass_failed": "Admin-Zurücksetzung auf dem Server abgelehnt",
   "audit_on_host": "auf {host}",
-  "notify_event_break_glass": "Admin-Anmeldung auf dem Server zurückgesetzt"
+  "notify_event_break_glass": "Admin-Anmeldung auf dem Server zurückgesetzt",
+  "settings_general_intro": "Sprache der Organisation und Sicherheit bei der Anmeldung.",
+  "security_email_fallback_label": "E-Mail-Codes als Ausweichweg",
+  "security_email_fallback_on_help": "Wer die Authenticator-App nicht nutzen kann, bekommt einen einmaligen Anmeldecode per E-Mail. Das folgt dem Mailversand, der unter E-Mail eingeschaltet ist.",
+  "security_email_fallback_link": "E-Mail-Einstellungen öffnen"
 }

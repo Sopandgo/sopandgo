@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "Amministratore reimpostato sul server",
   "audit_admin_break_glass_failed": "Reimpostazione amministratore sul server rifiutata",
   "audit_on_host": "su {host}",
-  "notify_event_break_glass": "Accesso amministratore reimpostato sul server"
+  "notify_event_break_glass": "Accesso amministratore reimpostato sul server",
+  "settings_general_intro": "Lingua dell'organizzazione e sicurezza dell'accesso.",
+  "security_email_fallback_label": "Codici via email come alternativa",
+  "security_email_fallback_on_help": "Chi non può usare l'app di autenticazione può ricevere via email un codice di accesso monouso. Segue l'invio email attivato in E-mail.",
+  "security_email_fallback_link": "Apri le impostazioni email"
 }

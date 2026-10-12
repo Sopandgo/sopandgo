@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "已在服务器上重置管理员",
   "audit_admin_break_glass_failed": "已拒绝在服务器上重置管理员",
   "audit_on_host": "在 {host} 上",
-  "notify_event_break_glass": "服务器上的管理员登录已被重置"
+  "notify_event_break_glass": "服务器上的管理员登录已被重置",
+  "settings_general_intro": "组织语言和登录安全。",
+  "security_email_fallback_label": "邮件验证码作为备用方式",
+  "security_email_fallback_on_help": "无法使用验证器应用的人可以通过电子邮件获取一次性登录验证码。这取决于“邮件”中开启的邮件发送方式。",
+  "security_email_fallback_link": "打开邮件设置"
 }

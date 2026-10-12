@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "Administrador redefinido no servidor",
   "audit_admin_break_glass_failed": "Redefinição de administrador no servidor recusada",
   "audit_on_host": "em {host}",
-  "notify_event_break_glass": "Login de administrador redefinido no servidor"
+  "notify_event_break_glass": "Login de administrador redefinido no servidor",
+  "settings_general_intro": "Idioma da organização e segurança do login.",
+  "security_email_fallback_label": "Códigos por e-mail como alternativa",
+  "security_email_fallback_on_help": "Quem não puder usar o app autenticador pode receber um código de login de uso único por e-mail. Isso segue o envio de e-mail ativado em E-mail.",
+  "security_email_fallback_link": "Abrir configurações de e-mail"
 }

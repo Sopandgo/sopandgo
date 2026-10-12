@@ -786,5 +786,9 @@
   "audit_admin_break_glass_reset": "Administrador restablecido en el servidor",
   "audit_admin_break_glass_failed": "Restablecimiento de administrador en el servidor rechazado",
   "audit_on_host": "en {host}",
-  "notify_event_break_glass": "Inicio de sesión de administrador restablecido en el servidor"
+  "notify_event_break_glass": "Inicio de sesión de administrador restablecido en el servidor",
+  "settings_general_intro": "Idioma de la organización y seguridad del inicio de sesión.",
+  "security_email_fallback_label": "Códigos por correo como alternativa",
+  "security_email_fallback_on_help": "Quien no pueda usar su app de autenticación puede recibir un código de inicio de sesión de un solo uso por correo. Depende del transporte de correo activado en Correo.",
+  "security_email_fallback_link": "Abrir la configuración de correo"
 }
