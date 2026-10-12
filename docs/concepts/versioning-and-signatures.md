@@ -79,6 +79,28 @@ When an email transport is switched on (not manual links), **publishing** a vers
 
 ---
 
+## Archiving an SOP
+
+An SOP that is no longer used, such as a replaced procedure or retired equipment, can be **archived**. Archiving applies to the SOP as a whole, not to a version, and it deletes nothing.
+
+- **Who:** approvers and admins (`sop:sign:approver`), the same people who decide what readers use. They archive from the SOP page and must give a reason (at most 500 characters).
+- **Precondition:** no release candidate may be waiting for review. Approve or reject it first, so no review is left on a frozen SOP. Drafts may stay; they stay drafts.
+- **Read-only:** while archived, the SOP takes no new versions, promotions, approvals, rejections, reader signatures or asset uploads. Those requests answer **409** with `{"error": "sop_archived"}`. Tags and favorites can still change, because they only help people find the SOP.
+- **Out of the way:** the SOP list (`/sops`) shows SOPs in use by default; its **Active / Archived** switch (`?archived=only`) shows the archived ones with an "archived" badge. Archived SOPs leave the signature status (`GET /api/auth/me/signature-status`), so nobody is asked to sign them, and the team overview (`GET /api/training/coverage`). They leave the dashboard's favorites too. The per-SOP coverage (`GET /api/sops/{sopID}/training`) still answers, as history.
+- **Still readable:** every version, its signatures, PDFs and assets stay available. The SOP page and its version pages show who archived the SOP, when and why. The recent-publishes list is history and is not filtered.
+- **Unarchive:** an approver or admin can bring the SOP back from its page. It returns exactly as it was archived.
+
+API:
+
+- `POST /api/sops/{sopID}/archive` — body `{"reason"}` (`sop:sign:approver`); **204**, **400** `invalid_archive_reason`, **404**, or **409** if it is already archived or a release candidate is pending
+- `DELETE /api/sops/{sopID}/archive` — unarchive (`sop:sign:approver`); **204**, or **409** if it is not archived
+- `GET /api/sops?archived=only|all` — the default lists SOPs in use; each row carries `archived_at` (`null` while in use)
+- `GET /api/sops/{sopID}` returns `archive` (`reason`, `actor_user_id`, `actor_name`, `archived_at`; `null` while in use)
+
+The archive state lives on the `sops` row (`archived_at`, `archived_by`, `archive_reason`) and describes only the current archive. Each archive and unarchive is in the audit log as `sop_archived` (with the reason) or `sop_unarchived`, so earlier archives remain traceable.
+
+---
+
 ## Immutability guarantees
 
 After a version is created:
@@ -168,6 +190,7 @@ At any point, sopandgo can answer questions such as:
 - Who promoted, approved, or rejected a version, and why was it rejected?
 - Who acknowledged that version (and as author, approver, or reader)?
 - When was the SOP last changed, and by whom?
+- Who archived or unarchived an SOP, when, and why?
 - What changed between versions?
 
 These answers are derived from:

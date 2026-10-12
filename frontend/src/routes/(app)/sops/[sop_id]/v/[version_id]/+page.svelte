@@ -10,6 +10,7 @@
     import Card from '#lib/components/Card.svelte';
     import CardPageHeading from '#lib/components/CardPageHeading.svelte';
     import SopVersionStatusBadge from '#lib/components/SopVersionStatusBadge.svelte';
+    import SopArchivedNotice from '#lib/components/SopArchivedNotice.svelte';
     import { enhance } from '$app/forms';
     import { page } from '$app/state';
     import Alert from '#lib/components/Alert.svelte';
@@ -29,6 +30,8 @@
     let role = $derived(user.role);
     let canAuthor = $derived(role === 'editor' || role === 'admin');
     let canApprove = $derived(role === 'approver' || role === 'admin');
+    // An archived SOP is read-only: no new versions, reviews or signatures
+    let archive = $derived(data.sop.archive);
 
     let created = $derived(new Date(version.created_at).toLocaleString(getLocale()));
 
@@ -138,14 +141,14 @@
                     </button>
                 {/if}
 
-                {#if canAuthor}
+                {#if canAuthor && !archive}
                     <a href={`/sops/${data.sop.id}/new`} class="btn">
                         <PlusIcon class="size-4" />
                         {m.common_new_version()}
                     </a>
                 {/if}
 
-                {#if version.status === 'draft' && canAuthor}
+                {#if version.status === 'draft' && canAuthor && !archive}
                     <form method="POST" action="?/promote" use:enhance>
                         <button class="btn btn-primary">
                             <ArrowUpRightIcon class="size-4" />
@@ -160,7 +163,9 @@
             <p>{version.change_summary}</p>
         {/if}
 
-        {#if !isPublished}
+        {#if archive}
+            <SopArchivedNotice {archive} />
+        {:else if !isPublished}
             <Alert
                 type={noticeType}
                 title={version.rejection
@@ -274,6 +279,7 @@
             {user}
             form={form}
             status={version.status ?? ""}
+            archived={!!archive}
         />
 
         <ListAcknowledgmentLog items={version.acknowledgments ?? []} limit={5} />

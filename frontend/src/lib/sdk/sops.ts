@@ -27,6 +27,8 @@ export const sops = (client: Client) => ({
         q?: string;
         favorites_only?: boolean;
         favorites_first?: boolean;
+        /** Default: SOPs in use. `only`: archived SOPs. `all`: both. */
+        archived?: 'only' | 'all';
     }): Promise<SOPListResponse> => {
         const query = new URLSearchParams();
         if (params?.limit !== undefined) query.append('limit', params.limit.toString());
@@ -35,6 +37,7 @@ export const sops = (client: Client) => ({
         if (params?.q) query.append('q', params.q);
         if (params?.favorites_only) query.append('favorites_only', 'true');
         if (params?.favorites_first) query.append('favorites_first', 'true');
+        if (params?.archived) query.append('archived', params.archived);
 
         const queryString = query.toString();
         const url = queryString ? `/sops?${queryString}` : '/sops';
@@ -103,6 +106,31 @@ export const sops = (client: Client) => ({
             method: 'DELETE'
         });
         if (!res.ok) throw new Error('UNFAVORITE_FAILED');
+    },
+
+    /**
+     * Archive an SOP: it becomes read-only and leaves the default list.
+     * Required Role: 'approver' or 'admin'. Throws SdkHttpError: 400
+     * `invalid_archive_reason`, 409 `conflict` (already archived, or a release
+     * candidate is pending).
+     */
+    archive: async (sopId: string, reason: string): Promise<void> => {
+        const res = await client.fetch(`/sops/${sopId}/archive`, {
+            method: 'POST',
+            body: { reason }
+        });
+        if (!res.ok) throw await sdkHttpErrorFromResponse(res);
+    },
+
+    /**
+     * Put an archived SOP back in use.
+     * Required Role: 'approver' or 'admin'
+     */
+    unarchive: async (sopId: string): Promise<void> => {
+        const res = await client.fetch(`/sops/${sopId}/archive`, {
+            method: 'DELETE'
+        });
+        if (!res.ok) throw await sdkHttpErrorFromResponse(res);
     },
 
     // --- Versions ---

@@ -1,8 +1,11 @@
 import { error, fail } from '@sveltejs/kit';
 import * as m from '#lib/paraglide/messages.js';
+import { SdkHttpError } from '#lib/sdk/httpError.js';
 import { favorite, unfavorite } from '#lib/server/favoriteActions.js';
 import { verifyAsset } from '#lib/server/integrityActions.js';
 import type { Actions, PageServerLoad } from './$types';
+
+const MAX_ARCHIVE_REASON = 500;
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
   const { sop } = await parent();
@@ -73,6 +76,48 @@ export const actions: Actions = {
     } catch (err) {
       console.error('DETACH_TAG Error:', err);
       return fail(500, { message: m.error_detach_tag() });
+    }
+  },
+
+  archive: async ({ locals, request, params }) => {
+    const form = await request.formData();
+    const reason = String(form.get('reason') ?? '').trim();
+
+    if (!reason) {
+      return fail(400, { action: 'archive', message: m.error_archive_reason() });
+    }
+    if ([...reason].length > MAX_ARCHIVE_REASON) {
+      return fail(400, {
+        action: 'archive',
+        message: m.error_reject_reason_long({ max: String(MAX_ARCHIVE_REASON) }),
+        reason
+      });
+    }
+
+    try {
+      await locals.api.sops.archive(params.sop_id, reason);
+      return { success: true };
+    } catch (err) {
+      console.error('ARCHIVE_SOP Error:', err);
+      // A release candidate waiting for review is the conflict people can fix here
+      const message =
+        err instanceof SdkHttpError && err.status === 409
+          ? m.sop_archive_rc_hint()
+          : m.error_archive_failed();
+      return fail(err instanceof SdkHttpError ? err.status : 500, { action: 'archive', message, reason });
+    }
+  },
+
+  unarchive: async ({ locals, params }) => {
+    try {
+      await locals.api.sops.unarchive(params.sop_id);
+      return { success: true };
+    } catch (err) {
+      console.error('UNARCHIVE_SOP Error:', err);
+      return fail(err instanceof SdkHttpError ? err.status : 500, {
+        action: 'unarchive',
+        message: m.error_unarchive_failed()
+      });
     }
   },
 

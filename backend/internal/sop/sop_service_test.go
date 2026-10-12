@@ -205,7 +205,7 @@ func TestService_ListSOPs(t *testing.T) {
 	}
 
 	// 1. Empty Database Check
-	sops, total, err := env.SOPService.ListSOPs(actorID, 50, 0, "", "", false, false)
+	sops, total, err := env.SOPService.ListSOPs(actorID, 50, 0, "", "", false, false, sop.ArchiveFilterActive)
 	if err != nil {
 		t.Fatalf("ListSOPs returned error on empty DB: %v", err)
 	}
@@ -221,7 +221,7 @@ func TestService_ListSOPs(t *testing.T) {
 	sopC, _ := env.SOPService.RegisterSOP("Gamma Earth Protocol", &actorID)
 
 	// 2. Default List (No filters, 50 limit)
-	sops, total, err = env.SOPService.ListSOPs(actorID, 50, 0, "", "", false, false)
+	sops, total, err = env.SOPService.ListSOPs(actorID, 50, 0, "", "", false, false, sop.ArchiveFilterActive)
 	if err != nil {
 		t.Fatalf("ListSOPs failed: %v", err)
 	}
@@ -233,18 +233,18 @@ func TestService_ListSOPs(t *testing.T) {
 	}
 
 	// 3. Pagination Test
-	sopsPage1, totalPaginated, _ := env.SOPService.ListSOPs(actorID, 2, 0, "", "", false, false)
+	sopsPage1, totalPaginated, _ := env.SOPService.ListSOPs(actorID, 2, 0, "", "", false, false, sop.ArchiveFilterActive)
 	if len(sopsPage1) != 2 || totalPaginated != 3 {
 		t.Errorf("Pagination Limit failed. Expected 2 items out of 3 total, got len %d total %d", len(sopsPage1), totalPaginated)
 	}
 
-	sopsPage2, _, _ := env.SOPService.ListSOPs(actorID, 2, 2, "", "", false, false)
+	sopsPage2, _, _ := env.SOPService.ListSOPs(actorID, 2, 2, "", "", false, false, sop.ArchiveFilterActive)
 	if len(sopsPage2) != 1 || sopsPage2[0].Title != "Alpha Fire Protocol" {
 		t.Errorf("Pagination Offset failed. Expected 1 item ('Alpha Fire Protocol'), got len %d", len(sopsPage2))
 	}
 
 	// 4. Text Search Test (Case Insensitive)
-	searchResults, totalSearch, _ := env.SOPService.ListSOPs(actorID, 50, 0, "", "water", false, false)
+	searchResults, totalSearch, _ := env.SOPService.ListSOPs(actorID, 50, 0, "", "water", false, false, sop.ArchiveFilterActive)
 	if len(searchResults) != 1 || totalSearch != 1 || searchResults[0].Title != "Beta Water Protocol" {
 		t.Errorf("Search failed. Expected 1 match for 'water', got %d", len(searchResults))
 	}
@@ -255,7 +255,7 @@ func TestService_ListSOPs(t *testing.T) {
 	env.SOPService.AttachTagToSOP(sopA, tagID, &actorID)
 	env.SOPService.AttachTagToSOP(sopC, tagID, &actorID)
 
-	tagResults, totalTags, _ := env.SOPService.ListSOPs(actorID, 50, 0, tagID, "", false, false)
+	tagResults, totalTags, _ := env.SOPService.ListSOPs(actorID, 50, 0, tagID, "", false, false, sop.ArchiveFilterActive)
 	if len(tagResults) != 2 || totalTags != 2 {
 		t.Errorf("Tag filter failed. Expected 2 tagged SOPs, got %d", len(tagResults))
 	}
@@ -275,7 +275,7 @@ func TestService_ListSOPs(t *testing.T) {
 		t.Fatalf("RegisterSOPVersion v2: %v", err)
 	}
 
-	sops, _, err = env.SOPService.ListSOPs(actorID, 50, 0, "", "", false, false)
+	sops, _, err = env.SOPService.ListSOPs(actorID, 50, 0, "", "", false, false, sop.ArchiveFilterActive)
 	if err != nil {
 		t.Fatalf("ListSOPs failed: %v", err)
 	}
@@ -315,7 +315,7 @@ func TestService_SOPFavorites(t *testing.T) {
 		t.Fatalf("RegisterSOP: %v", err)
 	}
 
-	list, _, err := env.SOPService.ListSOPs(u1, 50, 0, "", "", false, false)
+	list, _, err := env.SOPService.ListSOPs(u1, 50, 0, "", "", false, false, sop.ArchiveFilterActive)
 	if err != nil {
 		t.Fatalf("ListSOPs: %v", err)
 	}
@@ -332,7 +332,7 @@ func TestService_SOPFavorites(t *testing.T) {
 		t.Fatalf("FavoriteSOP idempotent: %v", err)
 	}
 
-	withFav, _, err := env.SOPService.ListSOPs(u1, 50, 0, "", "", false, false)
+	withFav, _, err := env.SOPService.ListSOPs(u1, 50, 0, "", "", false, false, sop.ArchiveFilterActive)
 	if err != nil {
 		t.Fatalf("ListSOPs: %v", err)
 	}
@@ -355,7 +355,7 @@ func TestService_SOPFavorites(t *testing.T) {
 		t.Fatalf("expected both sops in list")
 	}
 
-	only, total, err := env.SOPService.ListSOPs(u1, 50, 0, "", "", true, false)
+	only, total, err := env.SOPService.ListSOPs(u1, 50, 0, "", "", true, false, sop.ArchiveFilterActive)
 	if err != nil {
 		t.Fatalf("ListSOPs favorites_only: %v", err)
 	}
@@ -363,7 +363,7 @@ func TestService_SOPFavorites(t *testing.T) {
 		t.Fatalf("favorites_only: want 1 sop %s, got total=%d len=%d", sop1, total, len(only))
 	}
 
-	only2, total2, err := env.SOPService.ListSOPs(u2, 50, 0, "", "", true, false)
+	only2, total2, err := env.SOPService.ListSOPs(u2, 50, 0, "", "", true, false, sop.ArchiveFilterActive)
 	if err != nil {
 		t.Fatalf("ListSOPs u2: %v", err)
 	}
@@ -371,7 +371,7 @@ func TestService_SOPFavorites(t *testing.T) {
 		t.Fatalf("other user favorites_only should be empty, got total=%d", total2)
 	}
 
-	first, _, err := env.SOPService.ListSOPs(u1, 10, 0, "", "", false, true)
+	first, _, err := env.SOPService.ListSOPs(u1, 10, 0, "", "", false, true, sop.ArchiveFilterActive)
 	if err != nil {
 		t.Fatalf("ListSOPs favorites_first: %v", err)
 	}
@@ -400,7 +400,7 @@ func TestService_SOPFavorites(t *testing.T) {
 	if err := env.SOPService.UnfavoriteSOP(sop1, u1); err != nil {
 		t.Fatalf("UnfavoriteSOP idempotent: %v", err)
 	}
-	onlyAfter, _, _ := env.SOPService.ListSOPs(u1, 50, 0, "", "", true, false)
+	onlyAfter, _, _ := env.SOPService.ListSOPs(u1, 50, 0, "", "", true, false, sop.ArchiveFilterActive)
 	if len(onlyAfter) != 0 {
 		t.Fatalf("after unfavorite favorites_only should be empty, got %d", len(onlyAfter))
 	}

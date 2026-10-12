@@ -140,6 +140,16 @@ export interface SOP {
     tags: Tag[];
     /** Present on list/detail when the backend includes per-user favorite state */
     is_favorite?: boolean;
+    /** When the SOP was archived; null while it is in use. */
+    archived_at?: string | null;
+}
+
+/** Who archived an SOP, when and why. */
+export interface SOPArchive {
+    reason: string;
+    actor_user_id: string;
+    actor_name: string;
+    archived_at: string;
 }
 
 /** A version as an SOP row or detail points at it: no content, just where it stands. */
@@ -164,6 +174,8 @@ export interface SOPDetail extends SOP {
     /** Number and id of the version readers see; both null until one is published. */
     published_version: number | null;
     published_version_id: string | null;
+    /** Set while the SOP is archived: read-only, and hidden from the default list. */
+    archive: SOPArchive | null;
 }
 
 export interface Tag {

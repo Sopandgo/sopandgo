@@ -6,6 +6,7 @@
   import ListSops from '#lib/components/ListSops.svelte';
   import EmptyState from '#lib/components/EmptyState.svelte';
   import {
+    ArchiveIcon,
     NotebookIcon,
     NotebookPenIcon,
     PlusIcon,
@@ -22,6 +23,8 @@
   const SEARCH_DELAY_MS = 300;
 
   let canCreate = $derived(['admin', 'approver', 'editor'].includes(data.user!.role));
+  // Archived SOPs are read-only, so their view offers no way to create one
+  let showArchived = $derived(data.filters.archived);
 
   // Local UI state mirrors URL-backed filters (avoid capturing only initial `data`)
   let searchTerm = $state('');
@@ -78,6 +81,10 @@
     { mode: 'only', label: m.sops_favorites_only }
   ];
 
+  function setArchived(archived: boolean) {
+    updateQuery({ archived: archived ? 'only' : null }, true);
+  }
+
   let favoritesMode = $derived<FavoritesMode>(
     data.filters.favorites_only ? 'only' : data.filters.favorites_first ? 'first' : 'all'
   );
@@ -97,7 +104,7 @@
     searchTerm = '';
     // Keep the user on the same route but strip filter params (and reset offset)
     updateQuery(
-      { q: null, tag_id: null, favorites_only: null, favorites_first: null },
+      { q: null, tag_id: null, favorites_only: null, favorites_first: null, archived: null },
       true
     );
   }
@@ -108,16 +115,21 @@
       data.filters.q ||
         data.filters.tag_id ||
         data.filters.favorites_only ||
-        data.filters.favorites_first
+        data.filters.favorites_first ||
+        data.filters.archived
     )
   );
 
   // "Favorites first" only reorders; these are the filters that can hide SOPs
-  let isNarrowed = $derived(
+  let isFiltered = $derived(
     Boolean(data.filters.q || data.filters.tag_id || data.filters.favorites_only)
   );
+  let isNarrowed = $derived(isFiltered || showArchived);
+  // Nothing in use, but archived SOPs exist: keep the toolbar so they can be reached
+  let isAllArchived = $derived(data.total === 0 && !isNarrowed && data.archivedTotal > 0);
   // Nothing to search yet: the empty state replaces the toolbar and the header action
-  let isLibraryEmpty = $derived(data.total === 0 && !isNarrowed);
+  let isLibraryEmpty = $derived(data.total === 0 && !isNarrowed && !isAllArchived);
+  let isArchiveEmpty = $derived(showArchived && !isFiltered);
   let isFavoritesEmpty = $derived(
     data.filters.favorites_only && !data.filters.q && !data.filters.tag_id
   );
@@ -143,7 +155,7 @@
           </span>
         </div>
 
-        {#if canCreate && !isLibraryEmpty}
+        {#if canCreate && !isLibraryEmpty && !showArchived}
           <a
             href="/sops/new"
             class="btn btn-primary shrink-0"
@@ -205,6 +217,19 @@
       />
     {/if}
 
+    <div class="join w-full sm:w-auto" role="group" aria-label={m.sops_archive_view_aria()}>
+      {#each [false, true] as archived (archived)}
+        <button
+          type="button"
+          class="btn join-item btn-sm flex-1 sm:btn-md sm:flex-none {showArchived === archived ? 'btn-active' : ''}"
+          aria-pressed={showArchived === archived}
+          onclick={() => setArchived(archived)}
+        >
+          {archived ? m.sops_view_archived() : m.sops_view_active()}
+        </button>
+      {/each}
+    </div>
+
     <div class="join w-full sm:w-auto" role="group" aria-label={m.common_favorites()}>
       {#each favoritesOptions as option (option.mode)}
         <button
@@ -255,6 +280,30 @@
         description={m.sops_empty_none_body()}
       />
     {/if}
+  {:else if isAllArchived}
+    <EmptyState
+      icon={ArchiveIcon}
+      title={m.sops_empty_active_title()}
+      description={m.sops_empty_active_body()}
+    >
+      {#snippet actions()}
+        <button type="button" class="btn" onclick={() => setArchived(true)}>
+          {m.sops_view_archived()}
+        </button>
+      {/snippet}
+    </EmptyState>
+  {:else if isArchiveEmpty}
+    <EmptyState
+      icon={ArchiveIcon}
+      title={m.sops_empty_archived_title()}
+      description={m.sops_empty_archived_body()}
+    >
+      {#snippet actions()}
+        <button type="button" class="btn" onclick={() => setArchived(false)}>
+          {m.common_all_sops()}
+        </button>
+      {/snippet}
+    </EmptyState>
   {:else if isFavoritesEmpty}
     <EmptyState
       icon={StarIcon}

@@ -12,7 +12,7 @@
 ## Where it appears in the UI
 
 - **Home dashboard** (`/dashboard`): list of favorite SOPs (with unfavorite), plus a link to the full favorites-only list. See `docs/concepts/home-dashboard.md`.
-- **SOP list** (`/sops`): star to favorite or unfavorite; a three-way switch **All** / **Favorites first** / **Favorites only** in the list's toolbar (URL query params `favorites_first=true`, `favorites_only=true`).
+- **SOP list** (`/sops`): star to favorite or unfavorite; a three-way switch **All** / **Favorites first** / **Favorites only** in the list's toolbar (URL query params `favorites_first=true`, `favorites_only=true`). The switch applies within the **Active** or **Archived** view; an archived SOP keeps its favorite but appears only under **Archived**, and not on the dashboard. See [archiving](versioning-and-signatures.md#archiving-an-sop).
 - **SOP detail** (`/sops/{id}`) and **version view** (`/sops/{id}/v/latest` or `/sops/{id}/v/{versionId}`): a star next to the page title toggles the SOP-level favorite.
 
 Every star is the same `FavoriteToggle` component (`frontend/src/lib/components/FavoriteToggle.svelte`): an outline star that fills when the SOP is a favorite, posting to the page's `?/favorite` / `?/unfavorite` action. Every page registers the same two actions from `frontend/src/lib/server/favoriteActions.ts`. If the change fails, the star stays as it was and a short error appears next to it.

@@ -12,6 +12,7 @@
      * What the signed-in user can do with this version: sign it as a reader, see
      * that they already did, or review a release candidate. Renders nothing when
      * there is nothing to do. The signature log is a separate card on the page.
+     * On an archived SOP nobody signs or reviews; an existing signature still shows.
      */
     interface SignFormResult {
         error?: string;
@@ -24,12 +25,14 @@
         user,
         acks = [],
         form,
-        status
+        status,
+        archived = false
     } = $props<{
         user: User;
         acks?: AcknowledgmentWithUser[] | null;
         form?: SignFormResult | null;
         status: string | null;
+        archived?: boolean;
     }>();
 
     // Only a reader signature counts as having read it, as in training coverage;
@@ -39,7 +42,7 @@
     );
 
     let canAct = $derived(!!user && user.role !== 'viewer' && user.role !== 'auditor');
-    let canReview = $derived(canAct && status === 'rc' && (user.role === 'approver' || user.role === 'admin'));
+    let canReview = $derived(canAct && !archived && status === 'rc' && (user.role === 'approver' || user.role === 'admin'));
     let canSign = $derived(canAct && status === 'published');
 </script>
 
@@ -62,6 +65,6 @@
             />
         </div>
     </Card>
-{:else if canSign}
+{:else if canSign && !archived}
     <AcknowledgmentActionReader {user} {form} />
 {/if}

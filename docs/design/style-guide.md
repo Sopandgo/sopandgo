@@ -44,6 +44,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 | Published | `success` on `success-soft` |
 | Rejected | `error` on `error-soft` |
 | Superseded | text only in `base-content-muted`, no badge fill |
+| Archived SOP | neutral outline badge, like a draft; the word says which |
 | Role: admin, approver, auditor | neutral outline badge; no red for admin |
 | Integrity verified | `success` soft badge, shield-check icon, "Verified" |
 | Hash mismatch | `error` soft badge, shield-x icon, "Hash mismatch" |
@@ -184,6 +185,7 @@ The SOP version status (`SopVersionStatusBadge`), as a soft daisyUI badge whose 
 | `published` | `badge badge-soft badge-success` | `status_published` |
 | `rejected` | `badge badge-soft badge-error` | `status_rejected` |
 | `superseded` | plain `text-xs text-base-content/70`, no badge | `status_superseded` |
+| `archived` (the SOP, not a version) | `badge badge-outline` | `status_archived` |
 | unknown | `badge badge-outline` | `status_unclear` |
 
 **Consumer provides**: `status` (one of the above). Nothing else; the component owns the mapping, so no other file picks a badge colour for a status.

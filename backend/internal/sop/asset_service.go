@@ -27,6 +27,10 @@ func (s *Service) AddAsset(
 	}
 	defer tx.Rollback()
 
+	if err := requireSOPActiveRecord(tx, sopID); err != nil {
+		return "", err
+	}
+
 	// 1. Prepare Paths
 	// DB PATH: Relative (Portable) -> "sops/<id>/assets/<filename>"
 	relPath := filepath.Join("sops", sopID, "assets", filename)

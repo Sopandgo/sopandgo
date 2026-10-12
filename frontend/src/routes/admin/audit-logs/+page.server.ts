@@ -16,7 +16,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         const [auditRes, users, sopList, auditFilterOptions] = await Promise.all([
             locals.api.admin.getAuditLogs(logsPerPage, offset, filters),
             locals.api.admin.listUsers(),
-            locals.api.sops.list({ limit: 500, offset: 0 }),
+            // Archived SOPs keep their audit history, so the filter lists them too
+            locals.api.sops.list({ limit: 500, offset: 0, archived: 'all' }),
             locals.api.admin.getAuditFilterOptions()
         ]);
         

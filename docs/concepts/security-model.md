@@ -88,6 +88,7 @@ Access to SOPs and administrative actions is controlled by **roles** and **scope
 - **Immediate account checks:** Deactivating a user or changing their role takes effect on the next API request. The server loads the account and rejects inactive users. It authorizes with the role stored in the database, not the role copied into the access token.
 - **Auditability:** Every change to a user's role or status is logged in the audit trail.
 - **Roles in practice:** `admin` has full tools (including audit log APIs). `approver` / `editor` / `viewer` cover the publish and read loop. `auditor` is a reserved role with SOP read access; the admin Audit Logs UI and APIs remain admin-only in 1.0.
+- **Archiving SOPs:** Only approvers and admins (`sop:sign:approver`) archive or unarchive an SOP, and archiving requires a reason that goes into the audit log. Archiving hides an SOP and blocks changes to it on the server; it deletes no content, version, signature or audit record, and any signed-in user can still read the SOP. It is not a way to withdraw information from people who could already read it.
 - **Profile pictures:** Each signed-in user may upload or remove their own picture. Uploads are type-checked (JPEG/PNG/WebP), size-capped (5 MB), and re-encoded to small JPEGs on disk. Any authenticated user can fetch another user's processed avatar the same way they can see display names in acknowledgment lists. Pictures are **not** a confidentiality boundary beyond the existing signed-in access model.
 
 

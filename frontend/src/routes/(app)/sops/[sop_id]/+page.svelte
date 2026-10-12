@@ -3,11 +3,19 @@
   import ListSopVersions from '#lib/components/ListSopVersions.svelte';
   import SopVersionStatusBadge from '#lib/components/SopVersionStatusBadge.svelte';
   import FavoriteToggle from '#lib/components/FavoriteToggle.svelte';
-  import { BookOpenIcon, NotebookIcon, PlusIcon, XIcon } from '@lucide/svelte';
+  import {
+    ArchiveIcon,
+    ArchiveRestoreIcon,
+    BookOpenIcon,
+    NotebookIcon,
+    PlusIcon,
+    XIcon
+  } from '@lucide/svelte';
   import ListAssociatedAssets from '#lib/components/ListAssociatedAssets.svelte';
   import Alert from '#lib/components/Alert.svelte';
   import Card from '#lib/components/Card.svelte';
   import CardPageHeading from '#lib/components/CardPageHeading.svelte';
+  import SopArchivedNotice from '#lib/components/SopArchivedNotice.svelte';
   import { enhance } from '$app/forms';
   import * as m from '#lib/paraglide/messages.js';
   import { getLocale } from '#lib/paraglide/runtime.js';
@@ -18,6 +26,19 @@
 
   // Same roles the backend gives sop:write (new versions, tag changes)
   let canEdit = $derived(['admin', 'approver', 'editor'].includes(data.user!.role));
+  // Approvers decide what readers use, so they archive and unarchive (sop:sign:approver)
+  let canArchive = $derived(['admin', 'approver'].includes(data.user!.role));
+  // Set while the SOP is archived: read-only, so no new versions
+  let archive = $derived(data.sop.archive);
+
+  // The archive form opens in place; a failed submit keeps it open with the reason
+  let archiveOpen = $state(false);
+  let archiving = $state(false);
+  let unarchiving = $state(false);
+  let archiveFailed = $derived(form?.action === 'archive');
+  $effect(() => {
+    if (archiveFailed) archiveOpen = true;
+  });
 
   let versions = $derived(data.versions ?? []);
   // What readers see, and the newest version if it has not replaced that yet
@@ -29,6 +50,8 @@
     )
   );
   let pending = $derived(latest && latest.status !== 'published' ? latest : undefined);
+  // Only one release candidate exists at a time, and it is always the newest version
+  let reviewPending = $derived(latest?.status === 'rc');
   let updated = $derived(
     new Date(latest?.created_at ?? data.sop.created_at).toLocaleDateString(getLocale())
   );
@@ -81,9 +104,21 @@
           </p>
         </div>
 
-        {#if published || canEdit}
+        {#if published || (canEdit && !archive) || (canArchive && !archive)}
           <div class="flex shrink-0 flex-wrap gap-2">
-            {#if canEdit}
+            {#if canArchive && !archive}
+              <button
+                type="button"
+                class="btn btn-ghost"
+                aria-expanded={archiveOpen}
+                aria-controls={`${tagListId}-archive`}
+                onclick={() => (archiveOpen = !archiveOpen)}
+              >
+                <ArchiveIcon class="size-4" />
+                {m.sop_archive_button()}
+              </button>
+            {/if}
+            {#if canEdit && !archive}
               <a href={`/sops/${data.sop.id}/new`} class="btn {published ? '' : 'btn-primary'}">
                 <PlusIcon class="size-4" />
                 {m.common_new_version()}
@@ -98,6 +133,95 @@
           </div>
         {/if}
       </div>
+
+      {#if archive}
+        <SopArchivedNotice {archive}>
+          {#snippet actions()}
+            {#if canArchive}
+              <form
+                method="POST"
+                action="?/unarchive"
+                use:enhance={() => {
+                  unarchiving = true;
+                  return async ({ update }) => {
+                    await update();
+                    unarchiving = false;
+                  };
+                }}
+              >
+                <button class="btn btn-sm" disabled={unarchiving}>
+                  {#if unarchiving}
+                    <span class="loading loading-spinner loading-xs"></span>
+                    {m.sop_unarchiving()}
+                  {:else}
+                    <ArchiveRestoreIcon class="size-4" />
+                    {m.sop_unarchive_button()}
+                  {/if}
+                </button>
+              </form>
+            {/if}
+          {/snippet}
+        </SopArchivedNotice>
+      {:else if canArchive && archiveOpen}
+        <form
+          id={`${tagListId}-archive`}
+          method="POST"
+          action="?/archive"
+          class="flex flex-col gap-3 border-t border-base-300 pt-4"
+          use:enhance={() => {
+            archiving = true;
+            return async ({ update, result }) => {
+              await update();
+              archiving = false;
+              if (result.type === 'success') archiveOpen = false;
+            };
+          }}
+        >
+          <div>
+            <h2 class="font-semibold">{m.sop_archive_title()}</h2>
+            <p class="mt-1 text-sm text-base-content/70">{m.sop_archive_body()}</p>
+          </div>
+
+          {#if reviewPending}
+            <Alert type="info" compact message={m.sop_archive_rc_hint()} />
+          {/if}
+
+          <div>
+            <label class="label" for={`${tagListId}-reason`}>
+              <span class="label-text">{m.sop_archive_reason_label()}</span>
+            </label>
+            <textarea
+              id={`${tagListId}-reason`}
+              name="reason"
+              rows="2"
+              maxlength="500"
+              class="textarea mt-2 w-full {archiveFailed ? 'textarea-error' : ''}"
+              placeholder={m.sop_archive_reason_placeholder()}
+              value={form && 'reason' in form ? String(form.reason ?? '') : ''}
+              required
+              autocomplete="off"
+              disabled={reviewPending}
+            ></textarea>
+            <p class="mt-1 text-xs text-base-content/70">{m.sop_archive_reason_help()}</p>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" class="btn btn-ghost" onclick={() => (archiveOpen = false)}>
+              {m.common_cancel()}
+            </button>
+            <!-- Archiving is undone with one click, so it is not styled as destructive -->
+            <button class="btn" disabled={archiving || reviewPending}>
+              {#if archiving}
+                <span class="loading loading-spinner loading-xs"></span>
+                {m.sop_archiving()}
+              {:else}
+                <ArchiveIcon class="size-4" />
+                {m.sop_archive_confirm()}
+              {/if}
+            </button>
+          </div>
+        </form>
+      {/if}
 
       {#if tags.length > 0 || canEdit}
         <div class="flex flex-wrap items-center gap-2">

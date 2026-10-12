@@ -2,10 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/sopandgo/sopandgo/backend/internal/sop"
 )
 
 // handleAddAsset: Uploads a binary file (multipart/form-data)
@@ -42,6 +45,8 @@ func (s *Server) handleAddAsset(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		msg := err.Error()
 		switch {
+		case errors.Is(err, sop.ErrSOPArchived):
+			writeSOPArchived(w)
 		case strings.HasPrefix(msg, "asset already exists:"):
 			fn := strings.TrimSpace(strings.TrimPrefix(msg, "asset already exists:"))
 			writeJSONError(w, http.StatusConflict, "asset_exists",
