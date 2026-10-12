@@ -104,7 +104,7 @@ Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTI
 
 **Events:** `sop_published`, `sop_rc`, `sop_rejected`, `backup_s3_failed`, `integrity_check_failed`, `break_glass_used` (an admin was reset with `recover-admin`). Use **Send test** per channel to verify. Delivery failures are audited and never roll back SOP publish/promote/reject.
 
-If you **rotate** `SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save. Authenticator apps stop working too: users sign in with an emailed code (when mail is on) or an admin recovery code, then set up their app again; reset normal users from **Admin → Users** and admins with [`recover-admin`](#locked-out-admin-break-glass).
+If you **rotate** `SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save. Authenticator apps stop working too: admins sign in with a recovery code, users with an emailed code if the policy allows email, and then set up their app again; reset normal users from **Admin → Users** and admins with [`recover-admin`](#locked-out-admin-break-glass).
 
 ### Audit Taxonomy Hardening
 
@@ -132,7 +132,13 @@ The application does not enforce network-level restrictions. Operators should:
 
 ### Two-factor authentication
 
-Users turn on 2FA in **Account settings**. Admins can require it for everyone under **Settings** (General → Security); the switch is available once `SECRET_ENCRYPTION_KEY` is set and the admin has 2FA on. With a mail transport switched on, users can also get a sign-in code by email. Admins get recovery codes when they set up 2FA. A normal user who lost their phone is reset from **Admin → Users**.
+Users add an authenticator app in **Account settings**. Under **Settings → General → Security**, an admin chooses the organization's required second factor:
+
+- **None** (default): password only, unless someone adds an app on their own.
+- **Email code or app**: every sign-in needs an app code or a code mailed to the account's address. Admins must use an app. Needs a switched-on email transport; while this level is active, switching email off stops users without an app from signing in (Settings → Email warns about this).
+- **Authenticator app**: every sign-in needs an app code; email codes are not accepted.
+
+Levels above none need `SECRET_ENCRYPTION_KEY` and an admin who already uses an app. Admins get recovery codes when they set up an app. A normal user who lost their phone is reset from **Admin → Users**.
 
 ### Locked-out admin (break-glass)
 

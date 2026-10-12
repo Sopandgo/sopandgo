@@ -16,9 +16,11 @@
 
     let { methods, form = null }: Props = $props();
 
+    // An app code is the default when the user has one; under the email policy
+    // without an app, email is the only method and the code is already on its way.
     // svelte-ignore state_referenced_locally
     let method = $state<TwoFactorMethod>(
-        form?.method && methods.includes(form.method) ? form.method : 'totp'
+        form?.method && methods.includes(form.method) ? form.method : (methods[0] ?? 'totp')
     );
     let loading = $state(false);
     let sending = $state(false);

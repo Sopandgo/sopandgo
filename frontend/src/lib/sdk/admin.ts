@@ -15,7 +15,8 @@ import type {
     BackupApplyResponse,
     BackupS3Settings,
     BackupS3SettingsInput,
-    SecuritySettings
+    SecuritySettings,
+    TwoFactorPolicy
 } from './types';
 
 export const admin = (client: Client) => ({
@@ -205,10 +206,10 @@ export const admin = (client: Client) => ({
     },
 
     /** Errors carry the API code in upper case, e.g. ACTOR_NEEDS_TWO_FACTOR. */
-    updateSecuritySettings: async (require_two_factor: boolean): Promise<SecuritySettings> => {
+    updateSecuritySettings: async (two_factor_policy: TwoFactorPolicy): Promise<SecuritySettings> => {
         const res = await client.fetch('/admin/settings/security', {
             method: 'PATCH',
-            body: { require_two_factor }
+            body: { two_factor_policy }
         });
         if (!res.ok) {
             let code = 'SECURITY_SETTINGS_UPDATE_FAILED';

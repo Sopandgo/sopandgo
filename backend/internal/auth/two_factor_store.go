@@ -85,26 +85,22 @@ func deleteTwoFactorRecords(db audit.DBTX, userID string) (totp, recovery, email
 	return totp, recovery, email, nil
 }
 
-func getRequireTwoFactorRecord(db audit.DBTX) (bool, error) {
-	var v int
-	err := db.QueryRow(`SELECT require_two_factor FROM app_settings WHERE id = 1`).Scan(&v)
+func getTwoFactorPolicyRecord(db audit.DBTX) (string, error) {
+	var v string
+	err := db.QueryRow(`SELECT two_factor_policy FROM app_settings WHERE id = 1`).Scan(&v)
 	if err == sql.ErrNoRows {
-		return false, nil
+		return TwoFactorPolicyNone, nil
 	}
-	return v == 1, err
+	return normalizeTwoFactorPolicy(v), err
 }
 
-func setRequireTwoFactorRecord(db audit.DBTX, required bool, now time.Time) error {
-	v := 0
-	if required {
-		v = 1
-	}
+func setTwoFactorPolicyRecord(db audit.DBTX, policy string, now time.Time) error {
 	_, err := db.Exec(`
-		INSERT INTO app_settings (id, require_two_factor, updated_at)
+		INSERT INTO app_settings (id, two_factor_policy, updated_at)
 		VALUES (1, ?, ?)
-		ON CONFLICT(id) DO UPDATE SET require_two_factor = excluded.require_two_factor,
+		ON CONFLICT(id) DO UPDATE SET two_factor_policy = excluded.two_factor_policy,
 			updated_at = excluded.updated_at
-	`, v, now.UTC().Format(time.RFC3339Nano))
+	`, policy, now.UTC().Format(time.RFC3339Nano))
 	return err
 }
 

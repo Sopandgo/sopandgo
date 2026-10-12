@@ -69,7 +69,7 @@ The system implements a **Stateless/Stateful Hybrid** security model:
 
 - **Unknowable Passwords:** Admins cannot set passwords. Users set their own credentials via email invites.
 - **Authentication:** PASETO (Stateless) for fast API access + Refresh Tokens (Stateful) for session management.
-- **Two-factor authentication:** Optional per user (authenticator app, with an emailed code as fallback when mail is on). Admins can require it for the whole organization and reset it for normal users. Admins also get single-use recovery codes.
+- **Two-factor authentication:** Each user can add an authenticator app. Admins set the organization's required second factor: none, an emailed code or an app, or an app only. Admins always need an app above none, get single-use recovery codes, and can reset 2FA for normal users.
 - **Locked-out admin:** The host operator resets an admin's sign-in with `./sopandgo recover-admin` in the container terminal. There is no web route for it, and every run is audited.
 - **Revocation:** Deactivating a user or changing their role applies on the next request. Revoking a refresh session stops new tokens immediately; an access token already issued lasts at most 5 minutes.
 - **Profile pictures:** Users upload their own picture; the server stores small re-encoded JPEGs. Any signed-in user can view them the same way they see display names.
@@ -147,7 +147,7 @@ Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`
 1. Set **`ORIGIN`** and **`SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOPs are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
 2. Sign in as `admin` / `admin` and **set a strong password** (required; enter `admin` as the current password).
 3. Optionally save SMTP or Resend under **Settings → Email**, switch it on and send a **test email**; without it, invites use manual links.
-4. Turn on two-factor authentication for the admin account in **Account settings**, store the recovery codes, and decide whether to require 2FA for everyone under **Settings**. If an admin is ever locked out, see [Locked-out admin](docs/ops/deployment.md#locked-out-admin-break-glass).
+4. Turn on two-factor authentication for the admin account in **Account settings**, store the recovery codes, and choose the organization's required second factor under **Settings** (General → Security). If an admin is ever locked out, see [Locked-out admin](docs/ops/deployment.md#locked-out-admin-break-glass).
 5. Create a real user invite (or keep demo data only for a trial).
 6. **Backup:** **Settings → Backup** → export a `.zip`, then optionally **validate** it.
 7. Practice restore once on a non-production copy: stage apply → restart container → confirm SOPs and acknowledgments. See `docs/ops/backup-and-restore.md`.

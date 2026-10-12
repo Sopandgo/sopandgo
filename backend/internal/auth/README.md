@@ -29,7 +29,7 @@ Login (password verify + session create) is orchestrated in the **API** layer (`
 | **`user_service.go`** | Users and password reset | `RegisterUser`, `UpdateUserRole`, `SetUserActiveStatus`, `UpdateUserPassword`, `ChangeOwnPassword`, `GeneratePasswordResetToken`, `ResetPassword` |
 | **`avatar_service.go`** | Profile pictures on disk | `SetAvatar`, `RemoveAvatar`, `AvatarAbsolutePath` |
 | **`avatar_image.go`** | Decode / crop / resize / JPEG | `processAvatarSizes` (96/256/512/1024) |
-| **`two_factor_service.go`** | TOTP, email codes, recovery codes, org rule | `BeginTOTPSetup`, `ConfirmTOTPSetup`, `DisableTwoFactor`, `VerifySecondFactor`, `IssueEmailCode`, `RegenerateRecoveryCodes`, `ResetTwoFactor`, `SetRequireTwoFactor` |
+| **`two_factor_service.go`** | TOTP, email codes, recovery codes, organization policy | `BeginTOTPSetup`, `ConfirmTOTPSetup`, `DisableTwoFactor`, `SecondFactorMethods`, `VerifySecondFactor`, `IssueEmailCode`, `RegenerateRecoveryCodes`, `ResetTwoFactor`, `SetTwoFactorPolicy` |
 | **`two_factor_store.go`** | Unexported 2FA SQL | `getTwoFactorRecord`, `advanceTwoFactorStepRecord`, … |
 | **`break_glass.go`** | Host-only admin recovery (no HTTP route) | `BreakGlassResetAdmin`, `ListAdmins` |
 | **`session_service.go`** | Refresh sessions | `CreateSession`, `ValidateSession`, `RevokeSession`, `RevokeOtherUserSessions`, `RevokeAllUserSessions`, `RevokeAllSessions`, `StartSessionsCleanupTask` |
@@ -51,7 +51,7 @@ authService := auth.NewService(db, auditLogger, dataDir, encKey)
 
 ### Two-factor authentication
 
-The password step stays in the API layer. When `user.TwoFactorEnabled`, the handler issues a challenge token instead of a session and finishes with `VerifySecondFactor`:
+The password step stays in the API layer. When `auth.SecondFactorRequired(user)`, the handler issues a challenge token instead of a session, offers `SecondFactorMethods(user, mailOn)`, and finishes with `VerifySecondFactor`. The organization's policy (`none`, `email`, `totp`) is loaded with each user (`User.TwoFactorPolicy`):
 
 ```go
 setup, err := authService.BeginTOTPSetup(userID, currentPassword) // secret + QR, pending

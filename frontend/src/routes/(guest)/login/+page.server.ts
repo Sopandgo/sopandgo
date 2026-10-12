@@ -59,7 +59,7 @@ export const actions: Actions = {
                     secure: url.protocol === 'https:',
                     maxAge: result.expires_in
                 });
-                return { twoFactor: { methods: result.methods } };
+                return { twoFactor: { methods: result.methods }, emailSent: result.email_sent };
             }
         } catch (err) {
             const e = err as Error;
@@ -72,6 +72,9 @@ export const actions: Actions = {
             }
             if (e.message === 'TOO_MANY_ATTEMPTS') {
                 return fail(429, { message: m.error_too_many_attempts(), email });
+            }
+            if (e.message === 'SECOND_FACTOR_UNAVAILABLE') {
+                return fail(503, { message: m.two_factor_login_email_unavailable(), email });
             }
 
             console.error('Login Error:', e);
@@ -102,6 +105,8 @@ export const actions: Actions = {
             const e = err as Error;
             switch (e.message) {
                 case 'CHALLENGE_EXPIRED':
+                case 'METHOD_NOT_ALLOWED':
+                    // Expired, or the policy changed while signing in: start over.
                     clearChallenge(cookies);
                     return fail(401, { message: m.two_factor_login_expired() });
                 case 'ACCOUNT_INACTIVE':
@@ -135,6 +140,7 @@ export const actions: Actions = {
             const keep = { twoFactor: { methods: pending.methods }, method: 'email' as const };
             switch (e.message) {
                 case 'CHALLENGE_EXPIRED':
+                case 'EMAIL_UNAVAILABLE':
                     clearChallenge(cookies);
                     return fail(401, { message: m.two_factor_login_expired() });
                 case 'EMAIL_THROTTLED':

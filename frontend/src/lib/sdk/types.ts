@@ -29,10 +29,18 @@ export interface User {
 /** Ways to pass the second sign-in step. `recovery_code` is offered to admins only. */
 export type TwoFactorMethod = 'totp' | 'email' | 'recovery_code';
 
-/** Answer to a correct password on an account with 2FA. */
+/**
+ * The organization's required second factor: `none`, `email` (an emailed code
+ * or an app; admins need an app), or `totp` (an app for everyone).
+ */
+export type TwoFactorPolicy = 'none' | 'email' | 'totp';
+
+/** Answer to a correct password when a second factor is required. */
 export interface TwoFactorChallenge {
     challenge_token: string;
     methods: TwoFactorMethod[];
+    /** True when email was the only method and the code was sent already */
+    email_sent: boolean;
     /** Seconds until the challenge expires */
     expires_in: number;
 }
@@ -41,8 +49,11 @@ export interface TwoFactorStatus {
     enabled: boolean;
     /** A new authenticator is waiting for its first code */
     pending_setup: boolean;
-    /** The organization requires 2FA */
+    policy: TwoFactorPolicy;
+    /** The policy requires an authenticator app for this account */
     required: boolean;
+    /** The policy accepts emailed sign-in codes for this account */
+    email_codes: boolean;
     recovery_codes_remaining: number;
     /** Recovery codes exist for admins only */
     recovery_codes_available: boolean;
@@ -57,9 +68,10 @@ export interface TwoFactorSetup {
 }
 
 export interface SecuritySettings {
-    require_two_factor: boolean;
+    two_factor_policy: TwoFactorPolicy;
     encryption_key_configured: boolean;
-    email_fallback_available: boolean;
+    /** An email transport is saved and switched on */
+    email_transport_on: boolean;
 }
     
 export interface Acknowledgment {

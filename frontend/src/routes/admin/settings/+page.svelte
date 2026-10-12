@@ -7,24 +7,40 @@
     import LocaleSelect from '#lib/components/LocaleSelect.svelte';
     import { SettingsIcon } from '@lucide/svelte';
     import * as m from '#lib/paraglide/messages.js';
+    import type { SecuritySettings, TwoFactorPolicy } from '#lib/sdk/types.js';
 
     let { data, form }: { data: any; form: any } = $props();
 
     const smtp = $derived(data.smtp);
-    const security = $derived(data.security);
-    const required = $derived(!!security?.require_two_factor);
-    // Turning the rule on needs the key and an admin who already uses 2FA, so
-    // nobody locks themselves out by flipping it. Turning it off is always allowed.
-    const blockedReason = $derived(
-        required || !security
-            ? null
-            : !security.encryption_key_configured
-              ? m.two_factor_key_missing()
-              : !data.user?.two_factor_enabled
-                ? m.security_require_needs_own()
-                : null
-    );
+    const security = $derived(data.security as SecuritySettings | null);
+    const current = $derived<TwoFactorPolicy>(security?.two_factor_policy ?? 'none');
+    // svelte-ignore state_referenced_locally
+    let selected = $state<TwoFactorPolicy>(data.security?.two_factor_policy ?? 'none');
+    $effect(() => {
+        selected = current;
+    });
     let saving = $state(false);
+
+    // Why a level cannot be chosen yet. Any level above None needs the key and
+    // your own app, because admins need an app there; Email also needs email
+    // switched on. The current level and None are always selectable.
+    function blockedReason(policy: TwoFactorPolicy): string | null {
+        if (!security || policy === 'none' || policy === current) return null;
+        if (!security.encryption_key_configured) return m.two_factor_key_missing();
+        if (!data.user?.two_factor_enabled) return m.security_policy_needs_own();
+        if (policy === 'email' && !security.email_transport_on) return m.security_policy_needs_email();
+        return null;
+    }
+
+    const options = $derived(
+        (
+            [
+                { value: 'none', label: m.security_policy_none(), help: m.security_policy_none_help() },
+                { value: 'email', label: m.security_policy_email(), help: m.security_policy_email_help() },
+                { value: 'totp', label: m.security_policy_totp(), help: m.security_policy_totp_help() }
+            ] as const
+        ).map((o) => ({ ...o, blocked: blockedReason(o.value) }))
+    );
 </script>
 
 <svelte:head>
@@ -72,56 +88,62 @@
             {#if !security}
                 <Alert type="error" message={m.security_load_failed()} />
             {:else}
+                {#if current === 'email' && !security.email_transport_on}
+                    <Alert type="warning">
+                        {m.security_policy_email_off_warning()}
+                        <a class="underline" href={resolve('admin/settings/email')}>{m.security_email_fallback_link()}</a>
+                    </Alert>
+                {/if}
                 <form
                     method="POST"
                     action="?/saveSecurity"
-                    class="space-y-1.5"
-                    onchange={(event) => event.currentTarget.requestSubmit()}
+                    class="space-y-4"
                     use:enhance={() => {
                         saving = true;
                         return async ({ update }) => {
-                            await update();
+                            await update({ reset: false });
                             saving = false;
                         };
                     }}
                 >
-                    <label class="flex items-center gap-3 text-sm">
-                        <input
-                            type="checkbox"
-                            name="require_two_factor"
-                            class="toggle toggle-success"
-                            checked={required}
-                            disabled={saving || blockedReason !== null}
-                            aria-describedby="security-require-help"
-                        />
-                        <span class="font-medium">{m.security_require_label()}</span>
-                        <span class="text-base-content/70">{required ? m.two_factor_state_on() : m.two_factor_state_off()}</span>
-                    </label>
-                    <div id="security-require-help" class="space-y-1 text-sm text-base-content/70">
-                        <p>{m.security_require_help()}</p>
-                        {#if blockedReason}
-                            <p>{blockedReason}</p>
-                        {/if}
+                    <fieldset class="space-y-3" aria-describedby="security-policy-help">
+                        <legend class="text-sm font-medium">{m.security_policy_label()}</legend>
+                        <p id="security-policy-help" class="text-sm text-base-content/70">{m.security_policy_help()}</p>
+                        {#each options as option (option.value)}
+                            <label class="flex items-start gap-3 text-sm {option.blocked ? 'cursor-not-allowed' : 'cursor-pointer'}">
+                                <input
+                                    type="radio"
+                                    name="two_factor_policy"
+                                    value={option.value}
+                                    class="radio radio-sm mt-0.5"
+                                    bind:group={selected}
+                                    disabled={saving || option.blocked !== null}
+                                    aria-describedby="security-policy-{option.value}-help"
+                                />
+                                <span class="space-y-0.5">
+                                    <span class="flex flex-wrap items-center gap-2 font-medium">
+                                        {option.label}
+                                        {#if option.value === current}
+                                            <span class="badge badge-outline badge-sm">{m.security_policy_current()}</span>
+                                        {/if}
+                                    </span>
+                                    <span id="security-policy-{option.value}-help" class="block text-base-content/70">
+                                        {option.help}
+                                        {#if option.blocked}
+                                            <span class="block">{option.blocked}</span>
+                                        {/if}
+                                    </span>
+                                </span>
+                            </label>
+                        {/each}
+                    </fieldset>
+                    <div class="flex flex-col sm:flex-row sm:justify-end">
+                        <button type="submit" class="btn w-full sm:w-auto" disabled={saving || selected === current}>
+                            {#if saving}<span class="loading loading-spinner loading-xs"></span>{/if}
+                            {m.security_policy_save()}
+                        </button>
                     </div>
                 </form>
-
-                <!-- Read-only: follows whether an email transport is switched on under Email. -->
-                <div class="space-y-1.5 border-t border-base-300 pt-4">
-                    <div class="flex flex-wrap items-center gap-3 text-sm">
-                        <span class="font-medium">{m.security_email_fallback_label()}</span>
-                        {#if security.email_fallback_available}
-                            <span class="badge badge-soft badge-success">{m.two_factor_state_on()}</span>
-                        {:else}
-                            <span class="badge badge-outline">{m.two_factor_state_off()}</span>
-                        {/if}
-                    </div>
-                    <p class="text-sm text-base-content/70">
-                        {security.email_fallback_available
-                            ? m.security_email_fallback_on_help()
-                            : m.security_email_fallback_off()}
-                        <a class="underline" href={resolve('admin/settings/email')}>{m.security_email_fallback_link()}</a>
-                    </p>
-                </div>
             {/if}
         </div>
     </Card>

@@ -9,7 +9,14 @@ export const load: PageServerLoad = async ({ locals }) => {
     } catch (err) {
         console.error('Failed to load email settings:', err);
     }
-    return { smtp };
+    // The 2FA policy decides whether switching email off would block sign-ins.
+    let twoFactorPolicy: string | null = null;
+    try {
+        twoFactorPolicy = (await locals.api.admin.getSecuritySettings()).two_factor_policy;
+    } catch (err) {
+        console.error('Failed to load security settings:', err);
+    }
+    return { smtp, twoFactorPolicy };
 };
 
 export const actions: Actions = {

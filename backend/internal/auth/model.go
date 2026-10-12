@@ -20,10 +20,13 @@ type User struct {
 	HasAvatar          bool   `json:"has_avatar"`
 	AvatarContentHash  string `json:"avatar_content_hash,omitempty"`
 	TwoFactorEnabled   bool   `json:"two_factor_enabled"`
-	// MustEnrollTwoFactor is true while the organization requires 2FA and this
-	// account has not confirmed an authenticator yet.
-	MustEnrollTwoFactor bool      `json:"must_enroll_two_factor"`
-	CreatedAt           time.Time `json:"created_at"`
+	// MustEnrollTwoFactor is true while the organization's policy requires an
+	// authenticator app for this account and it has not confirmed one yet.
+	MustEnrollTwoFactor bool `json:"must_enroll_two_factor"`
+	// TwoFactorPolicy is the organization's policy (none, email, totp), loaded
+	// with the account so sign-in can decide its methods in one place.
+	TwoFactorPolicy string    `json:"-"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 type Session struct {

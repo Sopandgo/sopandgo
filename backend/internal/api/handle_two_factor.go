@@ -41,6 +41,10 @@ func (s *Server) writeTwoFactorError(w http.ResponseWriter, r *http.Request, use
 		writeJSONError(w, http.StatusForbidden, "admin_target", err.Error())
 	case errors.Is(err, auth.ErrActorNeedsTwoFactor):
 		writeJSONError(w, http.StatusConflict, "actor_needs_two_factor", err.Error())
+	case errors.Is(err, auth.ErrEmailTransportOff):
+		writeJSONError(w, http.StatusConflict, "email_transport_off", err.Error())
+	case errors.Is(err, auth.ErrInvalidTwoFactorPolicy):
+		writeJSONError(w, http.StatusBadRequest, "invalid_policy", err.Error())
 	default:
 		log.Printf("ERROR: two-factor request for user %s failed: %v", userID, err)
 		http.Error(w, "two-factor request failed", http.StatusInternalServerError)
@@ -147,20 +151,21 @@ func (s *Server) handleAdminResetUserTwoFactor(w http.ResponseWriter, r *http.Re
 }
 
 type securitySettingsResponse struct {
-	RequireTwoFactor        bool `json:"require_two_factor"`
-	EncryptionKeyConfigured bool `json:"encryption_key_configured"`
-	EmailFallbackAvailable  bool `json:"email_fallback_available"`
+	// TwoFactorPolicy is none, email, or totp.
+	TwoFactorPolicy         string `json:"two_factor_policy"`
+	EncryptionKeyConfigured bool   `json:"encryption_key_configured"`
+	EmailTransportOn        bool   `json:"email_transport_on"`
 }
 
 func (s *Server) securitySettings() (*securitySettingsResponse, error) {
-	required, err := s.authService.RequireTwoFactor()
+	policy, err := s.authService.TwoFactorPolicy()
 	if err != nil {
 		return nil, err
 	}
 	return &securitySettingsResponse{
-		RequireTwoFactor:        required,
+		TwoFactorPolicy:         policy,
 		EncryptionKeyConfigured: s.authService.EncryptionKeyConfigured(),
-		EmailFallbackAvailable:  s.emailFallbackAvailable(),
+		EmailTransportOn:        s.emailTransportOn(),
 	}, nil
 }
 
@@ -176,14 +181,14 @@ func (s *Server) handleAdminGetSecuritySettings(w http.ResponseWriter, r *http.R
 
 func (s *Server) handleAdminPatchSecuritySettings(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		RequireTwoFactor *bool `json:"require_two_factor"`
+		TwoFactorPolicy string `json:"two_factor_policy"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.RequireTwoFactor == nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 	actorID := GetUserID(r.Context())
-	err := s.authService.SetRequireTwoFactor(*req.RequireTwoFactor, actorID)
+	err := s.authService.SetTwoFactorPolicy(req.TwoFactorPolicy, actorID, s.emailTransportOn())
 	if s.writeTwoFactorError(w, r, actorID, err) {
 		return
 	}

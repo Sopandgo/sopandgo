@@ -1,6 +1,9 @@
 import { fail } from '@sveltejs/kit';
 import * as m from '#lib/paraglide/messages.js';
+import type { TwoFactorPolicy } from '#lib/sdk/types.js';
 import type { Actions, PageServerLoad } from './$types';
+
+const POLICIES: TwoFactorPolicy[] = ['none', 'email', 'totp'];
 
 export const load: PageServerLoad = async ({ locals }) => {
     let smtp = null;
@@ -21,14 +24,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
     saveSecurity: async ({ locals, request }) => {
         const fd = await request.formData();
-        const require_two_factor = fd.get('require_two_factor') === 'on';
+        const policy = String(fd.get('two_factor_policy') ?? '') as TwoFactorPolicy;
+        if (!POLICIES.includes(policy)) {
+            return fail(400, { saveSecurity: { error: m.security_save_failed() } });
+        }
         try {
-            await locals.api.admin.updateSecuritySettings(require_two_factor);
+            await locals.api.admin.updateSecuritySettings(policy);
             return { saveSecurity: { ok: true } };
         } catch (err) {
             const code = err instanceof Error ? err.message : '';
             if (code === 'ACTOR_NEEDS_TWO_FACTOR') {
-                return fail(409, { saveSecurity: { error: m.security_require_needs_own() } });
+                return fail(409, { saveSecurity: { error: m.security_policy_needs_own() } });
+            }
+            if (code === 'EMAIL_TRANSPORT_OFF') {
+                return fail(409, { saveSecurity: { error: m.security_policy_needs_email() } });
             }
             if (code === 'ENCRYPTION_KEY_MISSING') {
                 return fail(409, { saveSecurity: { error: m.two_factor_key_missing() } });

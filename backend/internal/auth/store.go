@@ -29,21 +29,23 @@ func applyAvatarFields(u *User, avatarPath, avatarHash sql.NullString) {
 }
 
 // twoFactorColumns adds two computed columns to a users query: whether the
-// account has a confirmed authenticator, and whether the organization requires one.
+// account has a confirmed authenticator, and the organization's 2FA policy.
 const twoFactorColumns = `EXISTS (
 				SELECT 1 FROM user_two_factor tf
 				WHERE tf.user_id = users.id AND tf.confirmed_at IS NOT NULL
 			),
-			COALESCE((SELECT require_two_factor FROM app_settings WHERE id = 1), 0)`
+			COALESCE((SELECT two_factor_policy FROM app_settings WHERE id = 1), 'none')`
 
 type twoFactorFlags struct {
 	enabled  int
-	required int
+	required string
 }
 
+// apply runs after the role is scanned: whether an app is required depends on it.
 func (f twoFactorFlags) apply(u *User) {
 	u.TwoFactorEnabled = f.enabled == 1
-	u.MustEnrollTwoFactor = f.required == 1 && !u.TwoFactorEnabled
+	u.TwoFactorPolicy = normalizeTwoFactorPolicy(f.required)
+	u.MustEnrollTwoFactor = !u.TwoFactorEnabled && appRequired(u.TwoFactorPolicy, u.Role)
 }
 
 func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {

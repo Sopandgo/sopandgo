@@ -40,9 +40,19 @@ sopandgo uses a hybrid token model. This allows the backend to verify common req
 
 ## 1a. Two-Factor Authentication
 
-Sign-in on an account with a confirmed authenticator takes two requests:
+**Policy.** `app_settings.two_factor_policy` is the organization's required second factor. `auth.SecondFactorMethods(user, mailOn)` is the one place that decides what a user may use; both sign-in steps call it, so a policy change also applies to a sign-in already under way.
 
-1. `POST /api/auth/login` with the password. Instead of tokens, it returns `{ "two_factor_required": true, "challenge_token", "methods", "expires_in" }`. `methods` lists `totp`, `email` only while a mail transport is switched on, and `recovery_code` only for admins with codes left.
+| Policy | Second step for users without an app | Users with an app | Admins without an app |
+| --- | --- | --- | --- |
+| `none` | none | `totp` (+ `recovery_code` for admins) | none |
+| `email` | `email` | `totp`, `email` | must enroll (`must_enroll_two_factor`) |
+| `totp` | must enroll | `totp` (+ `recovery_code` for admins) | must enroll |
+
+Email is never offered to admins, and only while an email transport is switched on. A user who must enroll signs in with the password and is then limited to setting up an app (see `withPasswordChangeGuard`).
+
+When a second factor applies, sign-in takes two requests:
+
+1. `POST /api/auth/login` with the password. Instead of tokens, it returns `{ "two_factor_required": true, "challenge_token", "methods", "email_sent", "expires_in" }`. When email is the only method, the code is mailed right away (`email_sent`). When the policy needs an emailed code but email is off, login fails closed with `503 second_factor_unavailable` and `login_failed` (`second_factor_unavailable`), and the server log says how to fix it.
 2. `POST /api/auth/login/two-factor` with `{ "challenge_token", "method", "code" }` returns the access and refresh tokens. `POST /api/auth/login/two-factor/email` with `{ "challenge_token" }` mails a code first.
 
 Both steps sit behind the strict login limiter. Step 2 also has a per-account limiter (burst 5, refill one per minute). The login audit event records `second_factor`; a wrong code writes `login_failed` with `failure_reason: invalid_second_factor`.
@@ -50,16 +60,16 @@ Both steps sit behind the strict login limiter. Step 2 also has a per-account li
 **Factors**
 
 * **TOTP:** RFC 6238 (SHA-1, 6 digits, 30 s, one step of drift either way), via `github.com/pquerna/otp`. The secret is sealed with `SECRET_ENCRYPTION_KEY` (AES-GCM). `last_used_step` rejects a replayed code, even in a race. A new authenticator stays pending (`pending_secret_enc`) until its first code is confirmed, so replacing one never leaves the account without a working factor.
-* **Email code:** 6 digits, SHA-256 hash stored, 10 minutes, five attempts, one send per minute. Only for accounts with TOTP on; it is a fallback, not a factor on its own.
+* **Email code:** 6 digits, SHA-256 hash stored, 10 minutes, five attempts, one send per minute. Accepted only under the `email` policy, for non-admins; the service checks the policy again when it issues and when it verifies a code.
 * **Recovery codes:** Admins only. 10 codes (`XXXXX-XXXXX`, 50 bits each), SHA-256 hashes stored, deleted when used, when replaced, when 2FA is turned off, and when the account stops being an admin.
 
-**Self-service** (`/profile/settings`): `GET /api/auth/me/two-factor` (status), `POST …/setup` (current password; returns the secret, `otpauth://` URI, and QR code once), `POST …/confirm` (first code; signs out the user's other sessions and returns recovery codes to admins), `DELETE /api/auth/me/two-factor` (current password; refused with `409 required_by_org` while the organization requires 2FA), `POST …/recovery-codes` (admins; current password). Endpoints that check the password share the strict login limiter, and a wrong password writes `login_failed` (`invalid_current_password`).
+**Self-service** (`/profile/settings`): `GET /api/auth/me/two-factor` (status), `POST …/setup` (current password; returns the secret, `otpauth://` URI, and QR code once), `POST …/confirm` (first code; signs out the user's other sessions and returns recovery codes to admins), `DELETE /api/auth/me/two-factor` (current password; refused with `409 required_by_org` while the policy requires an app for this account. Under `email`, a normal user may remove their app and sign in with emailed codes), `POST …/recovery-codes` (admins; current password). Endpoints that check the password share the strict login limiter, and a wrong password writes `login_failed` (`invalid_current_password`).
 
-**Admin:** `DELETE /api/admin/users/{userID}/two-factor` resets a normal user's 2FA and signs them out (`403 admin_target` for admins). `GET`/`PATCH /api/admin/settings/security` reads and sets `require_two_factor`; switching it on needs the encryption key and an admin who already uses 2FA.
+**Admin:** `DELETE /api/admin/users/{userID}/two-factor` resets a normal user's 2FA and signs them out (`403 admin_target` for admins). `GET`/`PATCH /api/admin/settings/security` reads and sets `two_factor_policy` (and reports `encryption_key_configured` and `email_transport_on`). Any level above `none` needs the encryption key and an admin who already uses an app (`409 actor_needs_two_factor`); `email` also needs a switched-on email transport (`409 email_transport_off`). Changes are audited as `two_factor_policy_updated`.
 
 **Break-glass:** `./sopandgo recover-admin --email <email>` in the container resets an admin's 2FA, password, active flag, and sessions in one transaction with its audit entry. It has no HTTP route. See `docs/concepts/security-model.md`.
 
-**Key loss:** If `SECRET_ENCRYPTION_KEY` is missing or changed, stored secrets cannot be read. The code step answers `409 authenticator_unavailable` and the server log names the recovery: reset normal users from Admin → Users, and admins with `recover-admin`. Email codes and recovery codes still work, because they do not depend on the key.
+**Key loss:** If `SECRET_ENCRYPTION_KEY` is missing or changed, stored secrets cannot be read. The code step answers `409 authenticator_unavailable` and the server log names the recovery: reset normal users from Admin → Users, and admins with `recover-admin`. Recovery codes, and email codes under the `email` policy, still work, because they do not depend on the key.
 
 ## 2. Password Security
 
@@ -102,7 +112,7 @@ The Go backend uses a "Chain of Responsibility" for API protection:
     * **General limiter:** Protects other rate-limited endpoints (token bucket: burst 10; refill 20 req/s).
     * **Proxy awareness:** Client IP for rate limits is `RemoteAddr`, unless that peer is the loopback proxy (Caddy on `127.0.0.1`). In that case the last `X-Forwarded-For` hop is used, because Caddy appends the address it observed. Client-supplied prefixes and `X-Real-Ip` are ignored.
 2. **`withAuth`:** Extracts the PASETO from the `Authorization` header, verifies the signature, and injects the `user_id` and token `role` into the Request Context.
-3. **`withPasswordChangeGuard`:** Loads the user. Inactive accounts are rejected. The context role is replaced with the role stored in the database, so a demotion applies before `requireScope` runs. Accounts flagged to change their password may only call `GET /api/auth/me`, `PATCH /api/auth/me/update-password`, `PATCH /api/auth/me/locale`, and `PATCH /api/auth/me/theme`. Avatar upload/delete is **not** on that allow-list. While the organization requires 2FA, accounts without a confirmed authenticator (`must_enroll_two_factor`) may additionally call `GET /api/auth/me/two-factor` and `POST /api/auth/me/two-factor/setup` and `…/confirm`; everything else returns `403`. The SvelteKit hook sends both kinds of account to `/profile/settings`.
+3. **`withPasswordChangeGuard`:** Loads the user. Inactive accounts are rejected. The context role is replaced with the role stored in the database, so a demotion applies before `requireScope` runs. Accounts flagged to change their password may only call `GET /api/auth/me`, `PATCH /api/auth/me/update-password`, `PATCH /api/auth/me/locale`, and `PATCH /api/auth/me/theme`. Avatar upload/delete is **not** on that allow-list. While the policy requires an app for an account that has none (`must_enroll_two_factor`), it may additionally call `GET /api/auth/me/two-factor` and `POST /api/auth/me/two-factor/setup` and `…/confirm`; everything else returns `403`. The SvelteKit hook sends both kinds of account to `/profile/settings`.
 4. **`requireScope`:** Checks the context role against a map of required permissions (Scopes). If the role lacks the necessary scope (e.g., a `viewer` trying to access `admin:integrity`), it returns `403 Forbidden`.
 
 
@@ -163,9 +173,9 @@ The `audit_events` table is the system's Tamper-Evident "Black Box."
 
 * Only SHA-256 hashes of codes are stored. Recovery codes are one row each (admins only); email codes are one row per user with `expires_at` and `attempts`.
 
-### `app_settings.require_two_factor`
+### `app_settings.two_factor_policy`
 
-* `0` or `1`. When `1`, users without a confirmed authenticator must set one up before using the app.
+* `none` (default), `email`, or `totp`; validated in Go, and an unknown stored value counts as `none`. See the policy table above.
 
 ### `password_reset_tokens` table
 

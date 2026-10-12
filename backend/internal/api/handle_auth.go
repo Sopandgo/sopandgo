@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
@@ -135,38 +136,68 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. Second factor: the password alone does not sign in. Hand back a
-	// short-lived challenge instead of a session.
-	if user.TwoFactorEnabled {
-		s.respondTwoFactorChallenge(w, user)
+	// 4. Second factor: the password alone does not sign in when the user has
+	// an app or the policy sends them email codes. Hand back a short-lived
+	// challenge instead of a session.
+	if auth.SecondFactorRequired(user) {
+		s.respondTwoFactorChallenge(w, r, user, logFailure)
 		return
 	}
 
 	s.completeLogin(w, r, user, "")
 }
 
-// respondTwoFactorChallenge answers a correct password for an account with 2FA.
-func (s *Server) respondTwoFactorChallenge(w http.ResponseWriter, user *auth.User) {
+// respondTwoFactorChallenge answers a correct password when a second factor is
+// required. When email is the only method, the code is sent right away.
+func (s *Server) respondTwoFactorChallenge(w http.ResponseWriter, r *http.Request, user *auth.User, logFailure func(string, *string)) {
+	methods, err := s.authService.SecondFactorMethods(user, s.emailTransportOn())
+	if err != nil {
+		http.Error(w, "Failed to start two-factor sign-in", http.StatusInternalServerError)
+		return
+	}
+	if len(methods) == 0 {
+		// The policy wants an emailed code, but no email transport is on.
+		// Fail closed: the password alone must not sign in.
+		log.Printf("ERROR: user %s needs an emailed sign-in code, but no email transport is switched on. "+
+			"Switch email on under Settings -> Email, or change the two-factor policy.", user.ID)
+		logFailure("second_factor_unavailable", &user.ID)
+		writeJSONError(w, http.StatusServiceUnavailable, "second_factor_unavailable",
+			"Sign-in codes cannot be sent right now. Ask your admin.")
+		return
+	}
 	challenge, err := auth.GenerateTwoFactorChallenge(user.ID)
 	if err != nil {
 		http.Error(w, "Failed to start two-factor sign-in", http.StatusInternalServerError)
 		return
 	}
-	methods, err := s.authService.SecondFactorMethods(user)
-	if err != nil {
-		http.Error(w, "Failed to start two-factor sign-in", http.StatusInternalServerError)
-		return
+
+	emailSent := false
+	if len(methods) == 1 && methods[0] == auth.SecondFactorEmail {
+		// A throttled or failed send leaves the "send again" button on the form.
+		if err := s.sendSignInCode(user); err == nil {
+			emailSent = true
+		} else if !errors.Is(err, auth.ErrEmailCodeThrottled) {
+			log.Printf("ERROR: sign-in code email to user %s failed: %v", user.ID, err)
+		}
 	}
-	if s.emailFallbackAvailable() {
-		methods = append(methods, auth.SecondFactorEmail)
-	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"two_factor_required": true,
 		"challenge_token":     challenge,
 		"methods":             methods,
+		"email_sent":          emailSent,
 		"expires_in":          int(auth.TwoFactorChallengeTTL.Seconds()),
 	})
+}
+
+// sendSignInCode creates an emailed sign-in code and sends it.
+func (s *Server) sendSignInCode(user *auth.User) error {
+	code, err := s.authService.IssueEmailCode(user.ID)
+	if err != nil {
+		return err
+	}
+	return s.mailService.SendTwoFactorCodeEmail(user.Email, user.ID, user.DisplayName, code, user.Locale)
 }
 
 // completeLogin issues the access and refresh tokens and writes the login event.
@@ -198,9 +229,9 @@ func (s *Server) completeLogin(w http.ResponseWriter, r *http.Request, user *aut
 	})
 }
 
-// emailFallbackAvailable reports whether sign-in codes can be mailed: only
-// when a mail transport is saved and switched on.
-func (s *Server) emailFallbackAvailable() bool {
+// emailTransportOn reports whether sign-in codes can be mailed: only when a
+// mail transport is saved and switched on.
+func (s *Server) emailTransportOn() bool {
 	if s.smtpSettings == nil || s.mailService == nil {
 		return false
 	}
@@ -251,8 +282,14 @@ func (s *Server) handleLoginTwoFactor(w http.ResponseWriter, r *http.Request) {
 	if method == "" {
 		method = auth.SecondFactorTOTP
 	}
-	if method == auth.SecondFactorEmail && !s.emailFallbackAvailable() {
-		writeJSONError(w, http.StatusBadRequest, "email_unavailable", "Email codes are not available on this server.")
+	// Recomputed here, so a policy change applies to a sign-in under way.
+	methods, err := s.authService.SecondFactorMethods(user, s.emailTransportOn())
+	if err != nil {
+		http.Error(w, "Failed to check the second factor", http.StatusInternalServerError)
+		return
+	}
+	if !slices.Contains(methods, method) {
+		writeJSONError(w, http.StatusBadRequest, "method_not_allowed", "This sign-in method is not available for this account.")
 		return
 	}
 
@@ -300,22 +337,23 @@ func (s *Server) handleLoginTwoFactorEmail(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	if !s.emailFallbackAvailable() {
-		writeJSONError(w, http.StatusBadRequest, "email_unavailable", "Email codes are not available on this server.")
+	methods, err := s.authService.SecondFactorMethods(user, s.emailTransportOn())
+	if err != nil {
+		http.Error(w, "Failed to create sign-in code", http.StatusInternalServerError)
+		return
+	}
+	if !slices.Contains(methods, auth.SecondFactorEmail) {
+		writeJSONError(w, http.StatusBadRequest, "email_unavailable", "Email codes are not available for this account.")
 		return
 	}
 
-	code, err := s.authService.IssueEmailCode(user.ID)
+	err = s.sendSignInCode(user)
 	switch {
 	case errors.Is(err, auth.ErrEmailCodeThrottled):
 		w.Header().Set("Retry-After", "60")
 		writeJSONError(w, http.StatusTooManyRequests, "email_throttled", err.Error())
 		return
 	case err != nil:
-		http.Error(w, "Failed to create sign-in code", http.StatusInternalServerError)
-		return
-	}
-	if err := s.mailService.SendTwoFactorCodeEmail(user.Email, user.ID, user.DisplayName, code, user.Locale); err != nil {
 		log.Printf("ERROR: sign-in code email to user %s failed: %v", user.ID, err)
 		writeJSONError(w, http.StatusBadGateway, "email_failed", "The code could not be sent.")
 		return

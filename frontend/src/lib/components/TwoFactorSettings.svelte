@@ -100,6 +100,8 @@
 
             {#if status.required && !status.enabled}
                 <Alert type="warning" message={m.two_factor_required_notice()} />
+            {:else if status.email_codes && !status.enabled}
+                <Alert type="info" message={m.two_factor_email_policy_notice()} />
             {/if}
             {#if disabledOk}
                 <Alert type="success" message={m.two_factor_disabled_ok()} />

@@ -50,10 +50,20 @@ Key properties:
 - **Password change needs the current password:** Changing the password from account settings asks for the current one. Someone who finds a session left open on a shared PC cannot use it to lock the owner out. Reset links do not ask for it, because the one-time token already proves identity.
 - **Brute-Force Protection:** Login, Password Reset, and the signed-in password change are protected by strict IP-based rate limiting to prevent credential guessing attacks.
 - **Administrative Recovery:** Admins can trigger password resets.
-- **Two-factor authentication (optional):** Each user can add an authenticator app (TOTP, RFC 6238). After a correct password, the server asks for a code before it creates a session. A code is accepted once; replaying it fails. Setting up, replacing, or turning off 2FA needs the current password. The TOTP secret is sealed with `SECRET_ENCRYPTION_KEY`, so 2FA cannot be turned on without that key, and a leaked database or backup alone does not reveal the secrets.
-- **Email fallback:** When a mail transport is switched on, the sign-in step can also mail a 6-digit code (valid 10 minutes, one use, five tries, one send per minute). With the fallback on, the second factor is "authenticator app **or** mailbox": someone with the password and access to the user's mailbox can sign in. Labs that do not want that leave mail off or accept the trade-off knowingly.
-- **Recovery codes (admins only):** Admins get 10 single-use recovery codes when they set up 2FA. Only SHA-256 hashes are stored. Codes stop working when the account is no longer an admin.
-- **Organization-wide requirement:** An admin can require 2FA for every account. Only an admin who already uses 2FA can switch it on. Accounts without an authenticator can then only set one up (plus change language, theme, or password) until they do.
+- **Two-factor authentication:** Each user can add an authenticator app (TOTP, RFC 6238). When a second factor applies, the server asks for a code after a correct password, before it creates a session. A code is accepted once; replaying it fails. Setting up, replacing, or turning off 2FA needs the current password. The TOTP secret is sealed with `SECRET_ENCRYPTION_KEY`, so 2FA cannot be turned on without that key, and a leaked database or backup alone does not reveal the secrets.
+- **Organization policy (required second factor):** An admin chooses one of three levels under **Settings → General → Security**:
+
+  | Level | Users without an app | Users with an app | Admins | Email codes |
+  | --- | --- | --- | --- | --- |
+  | **None** (default) | Password only | App code | App code if they set one up | Never |
+  | **Email code or app** | Emailed code at every sign-in | App code or emailed code | Must set up an app | Normal users only |
+  | **Authenticator app** | Must set up an app first | App code | Must set up an app | Never |
+
+  Anyone can add an app voluntarily at any level. Only an admin who already uses an app can raise the level above none. The email level can only be chosen while an email transport is switched on. Accounts that must set up an app can only do that (plus change language, theme, or password) until they have one. Every change is audited as `two_factor_policy_updated`.
+- **Email codes:** A 6-digit code mailed to the account's address (valid 10 minutes, one use, five tries, one send per minute). The invite or reset link already proved that the user controls that mailbox, so no setup is needed. At the email level the second factor is "authenticator app **or** mailbox": someone with the password and access to the user's mailbox can sign in. Labs that do not want that choose the app level.
+- **Why admins always need an app:** an admin's mailbox is the most valuable one to an attacker, the bootstrap admin has no real address, and an admin who signs in with an app can still change the policy if mail breaks.
+- **If email stops working at the email level:** users without an app cannot sign in (the server refuses rather than letting the password alone through) until email works again or an admin lowers the level. Settings → Email warns about this before you switch email off.
+- **Recovery codes (admins only):** Admins get 10 single-use recovery codes when they set up an app. Only SHA-256 hashes are stored. Codes stop working when the account is no longer an admin.
 - **Admin reset for normal users:** Admins can reset a normal user's 2FA from **Admin → Users**; the user is signed out and sets it up again. Admin accounts cannot be reset there, so a stolen admin session cannot quietly strip another admin's second factor through the UI.
 - **Rate limits on the second factor:** The code step uses the strict per-IP limiter plus a per-account limit, so guesses spread over many addresses still stop.
 

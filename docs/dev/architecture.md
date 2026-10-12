@@ -27,7 +27,7 @@ The system is built around these core entities:
 * **User:** A registered identity with an assigned role, status (RBAC), and `locale` (BCP 47 tag, default `en`).
 * **Session:** A server-tracked record of an active login (Refresh Token).
 * **Password Reset Token:** A hashed, time-boxed, single-use token used for user invites and password recovery.
-* **Two-factor authentication:** `user_two_factor` holds each user's TOTP secret sealed with `SECRET_ENCRYPTION_KEY`; `two_factor_recovery_codes` (admins only) and `two_factor_email_codes` hold SHA-256 hashes. `app_settings.require_two_factor` makes 2FA mandatory for every account. Details in `docs/dev/auth-architecture.md`.
+* **Two-factor authentication:** `user_two_factor` holds each user's TOTP secret sealed with `SECRET_ENCRYPTION_KEY`; `two_factor_recovery_codes` (admins only) and `two_factor_email_codes` hold SHA-256 hashes. `app_settings.two_factor_policy` (`none`, `email`, `totp`) is the organization's required second factor. Details in `docs/dev/auth-architecture.md`.
 * **SOP & Version:** An SOP is a logical container; a Version holds append-only Markdown content plus a lifecycle status (`draft` / `rc` / `published` / `rejected` / `superseded`).
 * **Tag:** Global label attachable to SOP containers; admins can deactivate tags.
 * **SOP favorite:** A private link between a **User** and an **SOP** (`sop_favorites` in SQLite). Used for bookmarks and list ordering; not shared between users.
@@ -67,7 +67,7 @@ The architecture uses a **Stateless/Stateful Hybrid**:
 * **Stateless Access:** PASETO tokens are verified by the API without database lookups for speed.
 * **Stateful Control:** Refresh sessions can be revoked immediately. Deactivation and role changes apply on the next API request. An access token already issued remains valid for at most 5 minutes after a session revoke.
 * **Brute Force Protection:** The API layer employs a Rate Limiter with strict policies for Auth endpoints and relaxed policies for general API usage.
-* **Optional second factor:** Accounts with an authenticator sign in in two steps (password, then a TOTP, emailed, or recovery code). Admins can require it organization-wide.
+* **Second factor:** When a second factor applies (the user has an app, or the policy sends them email codes), sign-in takes two steps: password, then a TOTP, emailed, or recovery code. Admins choose the organization's required level.
 * **Host-only recovery:** `./sopandgo recover-admin` (a subcommand of the backend binary, no HTTP route) resets a locked-out admin and writes the audit entry in the same transaction.
 
 ## Storage Model

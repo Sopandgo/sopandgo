@@ -26,7 +26,10 @@ var (
 	ErrTwoFactorNotEnabled     = errors.New("two-factor authentication is not enabled")
 	ErrNoPendingTwoFactor      = errors.New("no authenticator is waiting for confirmation")
 	ErrInvalidSecondFactor     = errors.New("invalid verification code")
-	ErrTwoFactorRequired       = errors.New("the organization requires two-factor authentication")
+	ErrTwoFactorRequired       = errors.New("the organization requires an authenticator app for this account")
+	ErrInvalidTwoFactorPolicy  = errors.New("two-factor policy must be none, email, or totp")
+	ErrEmailTransportOff       = errors.New("switch on an email transport before allowing email codes")
+	ErrEmailCodesNotAllowed    = errors.New("email codes are not allowed for this account")
 	ErrTwoFactorUnavailable    = errors.New("the stored authenticator secret cannot be read")
 	ErrCannotResetAdmin        = errors.New("admin accounts are recovered with recovery codes or the server's recover-admin command")
 	ErrRecoveryCodesAdminOnly  = errors.New("recovery codes are only available to admins")
@@ -41,6 +44,53 @@ const (
 	SecondFactorEmail        = "email"
 	SecondFactorRecoveryCode = "recovery_code"
 )
+
+// Organization-wide policy: the weakest second factor the organization accepts.
+// Users may always add an authenticator app on their own, whatever the policy.
+const (
+	// TwoFactorPolicyNone requires no second factor.
+	TwoFactorPolicyNone = "none"
+	// TwoFactorPolicyEmail requires a second factor and accepts an emailed
+	// code or an app. Admins must still use an app.
+	TwoFactorPolicyEmail = "email"
+	// TwoFactorPolicyTOTP requires an authenticator app; email codes are refused.
+	TwoFactorPolicyTOTP = "totp"
+)
+
+// ValidTwoFactorPolicy reports whether p is one of the three policies.
+func ValidTwoFactorPolicy(p string) bool {
+	return p == TwoFactorPolicyNone || p == TwoFactorPolicyEmail || p == TwoFactorPolicyTOTP
+}
+
+// normalizeTwoFactorPolicy treats an unknown stored value as none, so a bad
+// row cannot lock anyone out; the setter only ever writes valid values.
+func normalizeTwoFactorPolicy(p string) string {
+	if ValidTwoFactorPolicy(p) {
+		return p
+	}
+	return TwoFactorPolicyNone
+}
+
+// appRequired reports whether the policy requires an authenticator app for a
+// role. Admins need one at every level above none: their mailbox is the most
+// valuable to an attacker, the bootstrap admin has no real address, and an
+// admin who can still sign in during a mail outage can change the policy.
+func appRequired(policy, role string) bool {
+	return policy == TwoFactorPolicyTOTP || (policy == TwoFactorPolicyEmail && role == RoleAdmin)
+}
+
+// emailCodesAllowed reports whether the policy accepts emailed codes for a role.
+func emailCodesAllowed(policy, role string) bool {
+	return policy == TwoFactorPolicyEmail && role != RoleAdmin
+}
+
+// SecondFactorRequired reports whether the user must pass a second factor at
+// sign-in: when they have an app, or when the policy sends them email codes.
+// A user who must still set up an app signs in with the password only and is
+// then limited to that setup (MustEnrollTwoFactor).
+func SecondFactorRequired(user *User) bool {
+	return user.TwoFactorEnabled || emailCodesAllowed(user.TwoFactorPolicy, user.Role)
+}
 
 const (
 	totpIssuer           = "SOPandGO"
@@ -63,9 +113,13 @@ type TOTPSetup struct {
 
 // TwoFactorStatus describes one account's second factor for the settings page.
 type TwoFactorStatus struct {
-	Enabled                 bool `json:"enabled"`
-	PendingSetup            bool `json:"pending_setup"`
-	Required                bool `json:"required"`
+	Enabled      bool   `json:"enabled"`
+	PendingSetup bool   `json:"pending_setup"`
+	Policy       string `json:"policy"`
+	// Required: the policy requires an authenticator app for this account.
+	Required bool `json:"required"`
+	// EmailCodes: the policy accepts emailed sign-in codes for this account.
+	EmailCodes              bool `json:"email_codes"`
 	RecoveryCodesRemaining  int  `json:"recovery_codes_remaining"`
 	RecoveryCodesAvailable  bool `json:"recovery_codes_available"`
 	EncryptionKeyConfigured bool `json:"encryption_key_configured"`
@@ -189,13 +243,11 @@ func (s *Service) TwoFactorStatus(userID string) (*TwoFactorStatus, error) {
 	if err != nil {
 		return nil, err
 	}
-	required, err := getRequireTwoFactorRecord(s.db)
-	if err != nil {
-		return nil, err
-	}
 	st := &TwoFactorStatus{
 		Enabled:                 user.TwoFactorEnabled,
-		Required:                required,
+		Policy:                  user.TwoFactorPolicy,
+		Required:                appRequired(user.TwoFactorPolicy, user.Role),
+		EmailCodes:              emailCodesAllowed(user.TwoFactorPolicy, user.Role),
 		RecoveryCodesAvailable:  user.Role == RoleAdmin,
 		EncryptionKeyConfigured: s.EncryptionKeyConfigured(),
 	}
@@ -215,11 +267,11 @@ func (s *Service) TwoFactorStatus(userID string) (*TwoFactorStatus, error) {
 	return st, nil
 }
 
-// RequireTwoFactor reports whether the organization requires 2FA.
-func (s *Service) RequireTwoFactor() (bool, error) {
+// TwoFactorPolicy returns the organization's 2FA policy.
+func (s *Service) TwoFactorPolicy() (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return getRequireTwoFactorRecord(s.db)
+	return getTwoFactorPolicyRecord(s.db)
 }
 
 // BeginTOTPSetup creates a new authenticator secret and keeps it pending until
@@ -342,9 +394,11 @@ func (s *Service) ConfirmTOTPSetup(userID, code, keepSessionToken string) ([]str
 	return codes, tx.Commit()
 }
 
-// DisableTwoFactor turns 2FA off for the signed-in user. It needs the current
-// password, like a password change, and is refused while the organization
-// requires 2FA. It also cancels an unconfirmed setup.
+// DisableTwoFactor removes the signed-in user's authenticator app. It needs
+// the current password, like a password change, and is refused while the
+// policy requires an app for this account. Under the email policy a normal
+// user may remove the app and sign in with emailed codes instead. It also
+// cancels an unconfirmed setup.
 func (s *Service) DisableTwoFactor(userID, currentPassword string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -360,11 +414,11 @@ func (s *Service) DisableTwoFactor(userID, currentPassword string) error {
 		return err
 	}
 	if row.confirmed {
-		required, err := getRequireTwoFactorRecord(s.db)
+		user, err := getUserByIDRecord(s.db, userID)
 		if err != nil {
 			return err
 		}
-		if required {
+		if appRequired(user.TwoFactorPolicy, user.Role) {
 			return ErrTwoFactorRequired
 		}
 	}
@@ -426,11 +480,18 @@ func (s *Service) RegenerateRecoveryCodes(userID, currentPassword string) ([]str
 	return codes, tx.Commit()
 }
 
-// SecondFactorMethods lists what the user can use at the sign-in challenge.
-// Email is added by the caller, because only it knows whether mail is on.
-func (s *Service) SecondFactorMethods(user *User) ([]string, error) {
-	methods := []string{SecondFactorTOTP}
-	if user.Role == RoleAdmin {
+// SecondFactorMethods lists what the user may use at the sign-in challenge.
+// The caller passes whether an email transport is switched on. Both sign-in
+// steps call this, so a policy change applies to a sign-in already under way.
+func (s *Service) SecondFactorMethods(user *User, mailOn bool) ([]string, error) {
+	methods := []string{}
+	if user.TwoFactorEnabled {
+		methods = append(methods, SecondFactorTOTP)
+	}
+	if mailOn && emailCodesAllowed(user.TwoFactorPolicy, user.Role) {
+		methods = append(methods, SecondFactorEmail)
+	}
+	if user.TwoFactorEnabled && user.Role == RoleAdmin {
 		s.mu.RLock()
 		n, err := countRecoveryCodesRecord(s.db, user.ID)
 		s.mu.RUnlock()
@@ -455,6 +516,13 @@ func (s *Service) VerifySecondFactor(userID, method, code string) (remainingReco
 	case SecondFactorTOTP:
 		return 0, s.verifyTOTPLocked(userID, code)
 	case SecondFactorEmail:
+		user, err := getUserByIDRecord(s.db, userID)
+		if err != nil {
+			return 0, err
+		}
+		if !emailCodesAllowed(user.TwoFactorPolicy, user.Role) {
+			return 0, ErrEmailCodesNotAllowed
+		}
 		return 0, s.verifyEmailCodeLocked(userID, code)
 	case SecondFactorRecoveryCode:
 		return s.useRecoveryCodeLocked(userID, code)
@@ -546,18 +614,19 @@ func (s *Service) useRecoveryCodeLocked(userID, code string) (int, error) {
 	return remaining, tx.Commit()
 }
 
-// IssueEmailCode creates a 6-digit sign-in code for a user with 2FA on. It
-// replaces any earlier code and refuses to send more than one per minute.
+// IssueEmailCode creates a 6-digit sign-in code when the policy accepts email
+// codes for this account. It replaces any earlier code and refuses to send
+// more than one per minute.
 func (s *Service) IssueEmailCode(userID string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	row, err := getTwoFactorRecord(s.db, userID)
-	if err == sql.ErrNoRows || (err == nil && !row.confirmed) {
-		return "", ErrTwoFactorNotEnabled
-	}
+	user, err := getUserByIDRecord(s.db, userID)
 	if err != nil {
 		return "", err
+	}
+	if !emailCodesAllowed(user.TwoFactorPolicy, user.Role) {
+		return "", ErrEmailCodesNotAllowed
 	}
 	now := time.Now()
 	if prev, err := getEmailCodeRecord(s.db, userID); err == nil && now.Sub(prev.createdAt) < emailCodeResendGap {
@@ -612,21 +681,25 @@ func (s *Service) ResetTwoFactor(targetUserID string, actorUserID *string) error
 	return tx.Commit()
 }
 
-// SetRequireTwoFactor switches the organization-wide requirement. Turning it
-// on needs the encryption key and an admin who already uses 2FA, so the admin
-// cannot lock themselves out by flipping it.
-func (s *Service) SetRequireTwoFactor(required bool, actorUserID string) error {
+// SetTwoFactorPolicy changes the organization's required second factor. Any
+// level above none needs the encryption key and an acting admin who already
+// uses an authenticator app, because admins need one at those levels; the
+// email level also needs a switched-on email transport (mailOn).
+func (s *Service) SetTwoFactorPolicy(policy string, actorUserID string, mailOn bool) error {
+	if !ValidTwoFactorPolicy(policy) {
+		return ErrInvalidTwoFactorPolicy
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	current, err := getRequireTwoFactorRecord(s.db)
+	current, err := getTwoFactorPolicyRecord(s.db)
 	if err != nil {
 		return err
 	}
-	if current == required {
+	if current == policy {
 		return nil
 	}
-	if required {
+	if policy != TwoFactorPolicyNone {
 		if !s.EncryptionKeyConfigured() {
 			return ErrNoEncryptionKey
 		}
@@ -638,6 +711,9 @@ func (s *Service) SetRequireTwoFactor(required bool, actorUserID string) error {
 			return ErrActorNeedsTwoFactor
 		}
 	}
+	if policy == TwoFactorPolicyEmail && !mailOn {
+		return ErrEmailTransportOff
+	}
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -645,12 +721,12 @@ func (s *Service) SetRequireTwoFactor(required bool, actorUserID string) error {
 	}
 	defer tx.Rollback()
 
-	if err := setRequireTwoFactorRecord(tx, required, time.Now()); err != nil {
+	if err := setTwoFactorPolicyRecord(tx, policy, time.Now()); err != nil {
 		return err
 	}
-	if err := s.auditLogger.Log(tx, audit.EventTwoFactorRequirementUpdated, audit.EntitySystem, audit.EntitySystem, &actorUserID, map[string]any{
+	if err := s.auditLogger.Log(tx, audit.EventTwoFactorPolicyUpdated, audit.EntitySystem, audit.EntitySystem, &actorUserID, map[string]any{
 		"from": current,
-		"to":   required,
+		"to":   policy,
 	}); err != nil {
 		return err
 	}

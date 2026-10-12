@@ -538,6 +538,8 @@ var migrations = []migration{
 	// SECRET_ENCRYPTION_KEY; recovery and email codes store only SHA-256 hashes.
 	// pending_secret_enc holds a new authenticator until its first code is
 	// confirmed, so a replacement does not switch off the current one.
+	// two_factor_policy is the organization's required second factor:
+	// none, email (emailed code or app), or totp (app only); checked in Go.
 	{
 		version: 27,
 		up: func(tx *sql.Tx) error {
@@ -570,7 +572,7 @@ var migrations = []migration{
 					FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 				);
 
-				ALTER TABLE app_settings ADD COLUMN require_two_factor INTEGER NOT NULL DEFAULT 0;
+				ALTER TABLE app_settings ADD COLUMN two_factor_policy TEXT NOT NULL DEFAULT 'none';
 			`)
 			return err
 		},

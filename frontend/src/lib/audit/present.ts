@@ -33,7 +33,7 @@ const EVENT_TITLES: Record<string, () => string> = {
     two_factor_reset: () => m.audit_two_factor_reset(),
     two_factor_recovery_codes_generated: () => m.audit_two_factor_recovery_codes_generated(),
     two_factor_recovery_code_used: () => m.audit_two_factor_recovery_code_used(),
-    two_factor_requirement_updated: () => m.audit_two_factor_requirement_updated(),
+    two_factor_policy_updated: () => m.audit_two_factor_policy_updated(),
     admin_break_glass_reset: () => m.audit_admin_break_glass_reset(),
     admin_break_glass_failed: () => m.audit_admin_break_glass_failed()
 };
@@ -101,6 +101,12 @@ export function eventSummary(eventType: string, payload: string): string | null 
     if (key === 'admin_break_glass_reset' || key === 'admin_break_glass_failed') {
         const host = data.hostname;
         if (typeof host === 'string' && host.length > 0) return m.audit_on_host({ host });
+    }
+
+    if (key === 'two_factor_policy_updated') {
+        const from = data.from;
+        const to = data.to;
+        if (typeof from === 'string' && typeof to === 'string') return `${from} → ${to}`;
     }
 
     if (key === 'user_role_updated') {

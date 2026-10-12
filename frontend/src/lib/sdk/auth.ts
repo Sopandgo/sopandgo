@@ -78,6 +78,7 @@ export const auth = (client: Client, event: RequestEvent) => {
                 if (res.status === 401) throw new Error('INVALID_CREDENTIALS');
                 if (res.status === 403) throw new Error('ACCOUNT_INACTIVE');
                 if (res.status === 429) throw new Error('TOO_MANY_ATTEMPTS');
+                if (res.status === 503) throw new Error('SECOND_FACTOR_UNAVAILABLE');
                 throw new Error('LOGIN_FAILED');
             }
 
@@ -87,6 +88,7 @@ export const auth = (client: Client, event: RequestEvent) => {
                     kind: 'two_factor',
                     challenge_token: result.challenge_token,
                     methods: result.methods,
+                    email_sent: !!result.email_sent,
                     expires_in: result.expires_in
                 };
             }

@@ -2,6 +2,8 @@ package api_test
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -99,9 +101,15 @@ func TestAPI_TwoFactorLogin(t *testing.T) {
 	if !challenge.Required || challenge.Token == "" || challenge.Refresh != "" {
 		t.Fatalf("password alone must not sign in: %+v", challenge)
 	}
-	// testenv saves SMTP settings, so the email fallback is offered.
-	if fmt.Sprint(challenge.Methods) != "[totp email]" {
+	// Policy none: email codes are not offered, even with mail switched on.
+	if fmt.Sprint(challenge.Methods) != "[totp]" {
 		t.Fatalf("methods: %v", challenge.Methods)
+	}
+	rec = c.do(http.MethodPost, "/api/auth/login/two-factor", "", map[string]string{
+		"challenge_token": challenge.Token, "method": "email", "code": "123456",
+	})
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("method the policy does not allow: %d", rec.Code)
 	}
 
 	// The challenge is not an access token.
@@ -136,24 +144,60 @@ func TestAPI_TwoFactorLogin(t *testing.T) {
 	}
 }
 
-func TestAPI_TwoFactorEmailFallback(t *testing.T) {
+func TestAPI_TwoFactorEmailPolicyLogin(t *testing.T) {
 	env := testenv.New(t)
 	c := &tfClient{t: t, env: env}
-	userID := tfUser(t, env, "fallback@tf.local", auth.RoleViewer)
-	tfEnroll(t, env, userID)
-
-	challenge, err := auth.GenerateTwoFactorChallenge(userID)
-	if err != nil {
+	adminID := tfUser(t, env, "email-admin@tf.local", auth.RoleAdmin)
+	tfUser(t, env, "email-viewer@tf.local", auth.RoleViewer)
+	tfEnroll(t, env, adminID)
+	if err := env.AuthService.SetTwoFactorPolicy(auth.TwoFactorPolicyEmail, adminID, true); err != nil {
 		t.Fatal(err)
 	}
+
+	// A viewer without an app gets a code by email right after the password.
 	before := env.MockMailSender.SentCount
-	rec := c.do(http.MethodPost, "/api/auth/login/two-factor/email", "", map[string]string{"challenge_token": challenge})
-	if rec.Code != http.StatusNoContent || env.MockMailSender.SentCount != before+1 {
-		t.Fatalf("send code: %d sent=%d", rec.Code, env.MockMailSender.SentCount-before)
+	rec := c.do(http.MethodPost, "/api/auth/login", "", map[string]string{"email": "email-viewer@tf.local", "password": "SuperSecret123!"})
+	var challenge struct {
+		Token     string   `json:"challenge_token"`
+		Methods   []string `json:"methods"`
+		EmailSent bool     `json:"email_sent"`
 	}
-	rec = c.do(http.MethodPost, "/api/auth/login/two-factor/email", "", map[string]string{"challenge_token": challenge})
+	json.NewDecoder(rec.Body).Decode(&challenge)
+	if rec.Code != http.StatusOK || fmt.Sprint(challenge.Methods) != "[email]" || !challenge.EmailSent {
+		t.Fatalf("login under email policy: %d %+v", rec.Code, challenge)
+	}
+	if env.MockMailSender.SentCount != before+1 {
+		t.Fatalf("expected one sign-in email, got %d", env.MockMailSender.SentCount-before)
+	}
+	rec = c.do(http.MethodPost, "/api/auth/login/two-factor/email", "", map[string]string{"challenge_token": challenge.Token})
 	if rec.Code != http.StatusTooManyRequests {
 		t.Fatalf("resend within a minute: %d", rec.Code)
+	}
+
+	// Swap in a known code (the mock sender does not keep the body).
+	sum := sha256.Sum256([]byte("123456"))
+	env.Store.DB.Exec(`UPDATE two_factor_email_codes SET code_hash = ?`, hex.EncodeToString(sum[:]))
+	rec = c.do(http.MethodPost, "/api/auth/login/two-factor", "", map[string]string{
+		"challenge_token": challenge.Token, "method": "email", "code": "123456",
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("emailed code: %d %s", rec.Code, rec.Body)
+	}
+
+	// The admin is not offered email codes.
+	rec = c.do(http.MethodPost, "/api/auth/login", "", map[string]string{"email": "email-admin@tf.local", "password": "SuperSecret123!"})
+	json.NewDecoder(rec.Body).Decode(&challenge)
+	if fmt.Sprint(challenge.Methods) != "[totp recovery_code]" {
+		t.Fatalf("admin methods: %v", challenge.Methods)
+	}
+
+	// Email switched off later: the password alone must not sign in.
+	if err := env.SMTPSettings.SetMailMode("manual_links"); err != nil {
+		t.Fatal(err)
+	}
+	rec = c.do(http.MethodPost, "/api/auth/login", "", map[string]string{"email": "email-viewer@tf.local", "password": "SuperSecret123!"})
+	if rec.Code != http.StatusServiceUnavailable || bytes.Contains(rec.Body.Bytes(), []byte("refresh_token")) {
+		t.Fatalf("login with mail off: %d %s", rec.Code, rec.Body)
 	}
 }
 
@@ -185,9 +229,9 @@ func TestAPI_TwoFactorEnrollmentGuard(t *testing.T) {
 	adminToken, _ := auth.GenerateAccessToken(adminID, auth.RoleAdmin)
 	viewerToken, _ := auth.GenerateAccessToken(viewerID, auth.RoleViewer)
 
-	rec := c.do(http.MethodPatch, "/api/admin/settings/security", adminToken, map[string]bool{"require_two_factor": true})
+	rec := c.do(http.MethodPatch, "/api/admin/settings/security", adminToken, map[string]string{"two_factor_policy": "totp"})
 	if rec.Code != http.StatusOK {
-		t.Fatalf("require 2FA: %d %s", rec.Code, rec.Body)
+		t.Fatalf("require an app: %d %s", rec.Code, rec.Body)
 	}
 
 	if rec := c.do(http.MethodGet, "/api/sops", viewerToken, nil); rec.Code != http.StatusForbidden {
@@ -259,14 +303,18 @@ func TestAPI_SecuritySettingsNeedsOwnTwoFactor(t *testing.T) {
 	adminID := tfUser(t, env, "settings-admin@tf.local", auth.RoleAdmin)
 	adminToken, _ := auth.GenerateAccessToken(adminID, auth.RoleAdmin)
 
-	rec := c.do(http.MethodPatch, "/api/admin/settings/security", adminToken, map[string]bool{"require_two_factor": true})
+	rec := c.do(http.MethodPatch, "/api/admin/settings/security", adminToken, map[string]string{"two_factor_policy": "email"})
 	if rec.Code != http.StatusConflict {
-		t.Fatalf("require without own 2FA: %d", rec.Code)
+		t.Fatalf("raise without own app: %d", rec.Code)
+	}
+	rec = c.do(http.MethodPatch, "/api/admin/settings/security", adminToken, map[string]string{"two_factor_policy": "sms"})
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("unknown policy: %d", rec.Code)
 	}
 	rec = c.do(http.MethodGet, "/api/admin/settings/security", adminToken, nil)
-	var out map[string]bool
+	var out map[string]any
 	json.NewDecoder(rec.Body).Decode(&out)
-	if out["require_two_factor"] || !out["encryption_key_configured"] || !out["email_fallback_available"] {
+	if out["two_factor_policy"] != "none" || out["encryption_key_configured"] != true || out["email_transport_on"] != true {
 		t.Fatalf("settings: %v", out)
 	}
 }

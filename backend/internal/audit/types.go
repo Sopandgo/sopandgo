@@ -66,7 +66,7 @@ const (
 	EventTwoFactorReset               = "two_factor_reset"
 	EventTwoFactorRecoveryCodesIssued = "two_factor_recovery_codes_generated"
 	EventTwoFactorRecoveryCodeUsed    = "two_factor_recovery_code_used"
-	EventTwoFactorRequirementUpdated  = "two_factor_requirement_updated"
+	EventTwoFactorPolicyUpdated       = "two_factor_policy_updated"
 	EventAdminBreakGlassReset         = "admin_break_glass_reset"
 	EventAdminBreakGlassFailed        = "admin_break_glass_failed"
 )
@@ -122,7 +122,7 @@ var knownEventTypes = map[string]struct{}{
 	EventTwoFactorReset:               {},
 	EventTwoFactorRecoveryCodesIssued: {},
 	EventTwoFactorRecoveryCodeUsed:    {},
-	EventTwoFactorRequirementUpdated:  {},
+	EventTwoFactorPolicyUpdated:       {},
 	EventAdminBreakGlassReset:         {},
 	EventAdminBreakGlassFailed:        {},
 }
