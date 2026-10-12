@@ -187,7 +187,7 @@ All system data is stored in the `backend/data` folder (inside the container: `D
 ## Development
 
 If you wish to run the services outside of Docker:
-- **Backend:** `cd backend && go run cmd/sopandgo/main.go`  
+- **Backend:** `cd backend && go run ./cmd/sopandgo`  
   The Go binary does **not** read a `.env` file; export `SECRET_ENCRYPTION_KEY` (and other vars) in your shell or IDE if you need mail or to match production. Under `air`, put them in `backend/.env` instead (copy `backend/.env.example`).
 - **Frontend:** `cd frontend && npm run dev`
 - **Seeder:** `cd backend && go run cmd/seed-demo-data/main.go` (Only run on an empty `data` folder). Honors `SEED_DEMO_DATA=false`. Run it **before** the backend's first start: the backend creates `app.db` with the bootstrap admin, and the seeder skips once `app.db` exists.
