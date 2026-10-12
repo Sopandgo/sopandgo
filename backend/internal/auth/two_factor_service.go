@@ -565,19 +565,24 @@ func (s *Service) verifyEmailCodeLocked(userID, code string) error {
 	if err != nil {
 		return err
 	}
+	// A spent code keeps its row (empty hash), so IssueEmailCode still sees
+	// when it was sent and the one-per-minute cooldown holds.
+	if row.codeHash == "" {
+		return ErrInvalidSecondFactor
+	}
 	if time.Now().After(row.expiresAt) || row.attempts >= emailCodeMaxAttempts {
-		_ = deleteEmailCodeRecord(s.db, userID)
+		_ = spendEmailCodeRecord(s.db, userID)
 		return ErrInvalidSecondFactor
 	}
 	if subtle.ConstantTimeCompare([]byte(hashCode(normalizeNumericCode(code))), []byte(row.codeHash)) != 1 {
 		if row.attempts+1 >= emailCodeMaxAttempts {
-			_ = deleteEmailCodeRecord(s.db, userID)
+			_ = spendEmailCodeRecord(s.db, userID)
 		} else {
 			_ = incrementEmailCodeAttemptsRecord(s.db, userID)
 		}
 		return ErrInvalidSecondFactor
 	}
-	return deleteEmailCodeRecord(s.db, userID)
+	return spendEmailCodeRecord(s.db, userID)
 }
 
 func (s *Service) useRecoveryCodeLocked(userID, code string) (int, error) {
@@ -616,7 +621,9 @@ func (s *Service) useRecoveryCodeLocked(userID, code string) (int, error) {
 
 // IssueEmailCode creates a 6-digit sign-in code when the policy accepts email
 // codes for this account. It replaces any earlier code and refuses to send
-// more than one per minute.
+// more than one per minute, counted from the last send whether or not that
+// code was used, burned, or expired. The check and the write happen under the
+// service lock; only the server issues codes.
 func (s *Service) IssueEmailCode(userID string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

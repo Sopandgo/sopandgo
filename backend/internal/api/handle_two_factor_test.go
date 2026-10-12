@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -316,5 +317,120 @@ func TestAPI_SecuritySettingsNeedsOwnTwoFactor(t *testing.T) {
 	json.NewDecoder(rec.Body).Decode(&out)
 	if out["two_factor_policy"] != "none" || out["encryption_key_configured"] != true || out["email_transport_on"] != true {
 		t.Fatalf("settings: %v", out)
+	}
+}
+
+// tfAdminWithCodes enrolls an admin and returns the recovery codes.
+func tfAdminWithCodes(t *testing.T, env *testenv.Env, email string) (string, []string) {
+	t.Helper()
+	adminID := tfUser(t, env, email, auth.RoleAdmin)
+	setup, err := env.AuthService.BeginTOTPSetup(adminID, "SuperSecret123!")
+	if err != nil {
+		t.Fatal(err)
+	}
+	codes, err := env.AuthService.ConfirmTOTPSetup(adminID, tfCode(t, setup.Secret, time.Now()), "")
+	if err != nil || len(codes) < 3 {
+		t.Fatalf("confirm: %v (%d codes)", err, len(codes))
+	}
+	return adminID, codes
+}
+
+func TestAPI_TwoFactorChallengeIsSingleUse(t *testing.T) {
+	env := testenv.New(t)
+	c := &tfClient{t: t, env: env}
+	adminID, codes := tfAdminWithCodes(t, env, "single@tf.local")
+	challenge, _ := auth.GenerateTwoFactorChallenge(adminID)
+
+	verify := func(code string) int {
+		return c.do(http.MethodPost, "/api/auth/login/two-factor", "", map[string]string{
+			"challenge_token": challenge, "method": "recovery_code", "code": code,
+		}).Code
+	}
+	if got := verify(codes[0]); got != http.StatusOK {
+		t.Fatalf("first sign-in: %d", got)
+	}
+	// Same challenge, another valid code: no second session.
+	if got := verify(codes[1]); got != http.StatusUnauthorized {
+		t.Fatalf("reused challenge: %d", got)
+	}
+	// The rejected attempt did not spend codes[1]; it works with a fresh challenge.
+	challenge, _ = auth.GenerateTwoFactorChallenge(adminID)
+	if got := verify(codes[1]); got != http.StatusOK {
+		t.Fatalf("code after a rejected reuse: %d", got)
+	}
+	if got := c.do(http.MethodPost, "/api/auth/login/two-factor/email", "", map[string]string{"challenge_token": challenge}).Code; got != http.StatusUnauthorized {
+		t.Fatalf("email send with a used challenge: %d", got)
+	}
+}
+
+func TestAPI_TwoFactorChallengeRaceOpensOneSession(t *testing.T) {
+	env := testenv.New(t)
+	adminID, codes := tfAdminWithCodes(t, env, "race@tf.local")
+	challenge, _ := auth.GenerateTwoFactorChallenge(adminID)
+
+	// Two requests with the same challenge and different valid codes at once.
+	results := make(chan int, 2)
+	var wg sync.WaitGroup
+	for i, code := range codes[:2] {
+		wg.Add(1)
+		go func(i int, code string) {
+			defer wg.Done()
+			b, _ := json.Marshal(map[string]string{"challenge_token": challenge, "method": "recovery_code", "code": code})
+			req, _ := http.NewRequest(http.MethodPost, "/api/auth/login/two-factor", bytes.NewReader(b))
+			req.Header.Set("Content-Type", "application/json")
+			req.RemoteAddr = fmt.Sprintf("203.0.113.%d:4000", i+1)
+			rec := httptest.NewRecorder()
+			env.API.ServeHTTP(rec, req)
+			results <- rec.Code
+		}(i, code)
+	}
+	wg.Wait()
+	close(results)
+	ok := 0
+	for code := range results {
+		if code == http.StatusOK {
+			ok++
+		}
+	}
+	if ok != 1 {
+		t.Fatalf("expected exactly one session, got %d", ok)
+	}
+}
+
+func TestAPI_EmailCodeCooldownAfterUse(t *testing.T) {
+	env := testenv.New(t)
+	c := &tfClient{t: t, env: env}
+	adminID := tfUser(t, env, "cool-api-admin@tf.local", auth.RoleAdmin)
+	tfUser(t, env, "cool-api@tf.local", auth.RoleViewer)
+	tfEnroll(t, env, adminID)
+	if err := env.AuthService.SetTwoFactorPolicy(auth.TwoFactorPolicyEmail, adminID, true); err != nil {
+		t.Fatal(err)
+	}
+
+	login := func() (string, bool) {
+		rec := c.do(http.MethodPost, "/api/auth/login", "", map[string]string{"email": "cool-api@tf.local", "password": "SuperSecret123!"})
+		var ch struct {
+			Token     string `json:"challenge_token"`
+			EmailSent bool   `json:"email_sent"`
+		}
+		json.NewDecoder(rec.Body).Decode(&ch)
+		return ch.Token, ch.EmailSent
+	}
+	token, sent := login()
+	if !sent {
+		t.Fatal("first sign-in should mail a code")
+	}
+	sum := sha256.Sum256([]byte("123456"))
+	env.Store.DB.Exec(`UPDATE two_factor_email_codes SET code_hash = ?`, hex.EncodeToString(sum[:]))
+	if got := c.do(http.MethodPost, "/api/auth/login/two-factor", "", map[string]string{
+		"challenge_token": token, "method": "email", "code": "123456",
+	}).Code; got != http.StatusOK {
+		t.Fatalf("sign in with the emailed code: %d", got)
+	}
+
+	// Signing in again right away does not mail another code.
+	before := env.MockMailSender.SentCount
+	if _, sent := login(); sent || env.MockMailSender.SentCount != before {
+		t.Fatalf("a second code was mailed within the cooldown (sent=%v)", sent)
 	}
 }

@@ -525,3 +525,61 @@ func TestBreakGlass_AuditFailureRollsBack(t *testing.T) {
 		t.Fatalf("nothing may change without an audit entry: %+v", user)
 	}
 }
+
+func TestTwoFactor_EmailCooldownSurvivesUseAndBurn(t *testing.T) {
+	env := testenv.New(t)
+	adminID := newUser(t, env, "cool-admin@tf.local", auth.RoleAdmin)
+	userID := newUser(t, env, "cool@tf.local", auth.RoleViewer)
+	setPolicy(t, env, adminID, auth.TwoFactorPolicyEmail)
+
+	// Moves the last send two minutes into the past, as if the cooldown ran out.
+	rewind := func() {
+		t.Helper()
+		if _, err := env.Store.DB.Exec(`UPDATE two_factor_email_codes SET created_at = ?`,
+			time.Now().Add(-2*time.Minute).UTC().Format(time.RFC3339Nano)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// A code used successfully still counts toward the cooldown.
+	code, err := env.AuthService.IssueEmailCode(userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := env.AuthService.VerifySecondFactor(userID, auth.SecondFactorEmail, code); err != nil {
+		t.Fatalf("verify: %v", err)
+	}
+	if _, err := env.AuthService.IssueEmailCode(userID); !errors.Is(err, auth.ErrEmailCodeThrottled) {
+		t.Fatalf("resend right after a successful use: got %v", err)
+	}
+
+	// A code burned by five wrong guesses still counts toward the cooldown.
+	rewind()
+	code, err = env.AuthService.IssueEmailCode(userID)
+	if err != nil {
+		t.Fatalf("send after the cooldown: %v", err)
+	}
+	wrong := "000000"
+	if code == wrong {
+		wrong = "111111"
+	}
+	for i := 0; i < 5; i++ {
+		env.AuthService.VerifySecondFactor(userID, auth.SecondFactorEmail, wrong)
+	}
+	if _, err := env.AuthService.IssueEmailCode(userID); !errors.Is(err, auth.ErrEmailCodeThrottled) {
+		t.Fatalf("resend right after burning a code: got %v", err)
+	}
+	if _, err := env.AuthService.VerifySecondFactor(userID, auth.SecondFactorEmail, code); !errors.Is(err, auth.ErrInvalidSecondFactor) {
+		t.Fatalf("burned code: got %v", err)
+	}
+
+	// Once a minute has passed, a new code is sent and works.
+	rewind()
+	code, err = env.AuthService.IssueEmailCode(userID)
+	if err != nil {
+		t.Fatalf("send after the cooldown: %v", err)
+	}
+	if _, err := env.AuthService.VerifySecondFactor(userID, auth.SecondFactorEmail, code); err != nil {
+		t.Fatalf("fresh code: %v", err)
+	}
+}

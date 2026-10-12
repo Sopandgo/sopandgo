@@ -175,8 +175,11 @@ func incrementEmailCodeAttemptsRecord(db audit.DBTX, userID string) error {
 	return err
 }
 
-func deleteEmailCodeRecord(db audit.DBTX, userID string) error {
-	_, err := db.Exec(`DELETE FROM two_factor_email_codes WHERE user_id = ?`, userID)
+// spendEmailCodeRecord makes the code unusable but keeps the row, so its
+// created_at still counts toward the resend cooldown. Deleting it would let
+// a new code be sent right after one was used or burned.
+func spendEmailCodeRecord(db audit.DBTX, userID string) error {
+	_, err := db.Exec(`UPDATE two_factor_email_codes SET code_hash = '' WHERE user_id = ?`, userID)
 	return err
 }
 

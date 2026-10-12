@@ -239,23 +239,24 @@ func (s *Server) emailTransportOn() bool {
 	return err == nil && mode == mail.MailModeSMTP
 }
 
-// challengeUser resolves the challenge token to an active account.
-func (s *Server) challengeUser(w http.ResponseWriter, challengeToken string) (*auth.User, bool) {
-	userID, err := auth.VerifyTwoFactorChallenge(challengeToken)
+// challengeUser resolves the challenge token to an active account. Expired,
+// invalid, and already-used challenges all mean "enter your password again".
+func (s *Server) challengeUser(w http.ResponseWriter, challengeToken string) (*auth.User, *auth.ChallengeClaims, bool) {
+	claims, err := auth.VerifyTwoFactorChallenge(challengeToken)
 	if err != nil {
 		writeJSONError(w, http.StatusUnauthorized, "challenge_expired", "The sign-in took too long. Enter your password again.")
-		return nil, false
+		return nil, nil, false
 	}
-	user, err := s.authService.GetUserByID(userID)
+	user, err := s.authService.GetUserByID(claims.UserID)
 	if err != nil {
 		writeJSONError(w, http.StatusUnauthorized, "challenge_expired", "The sign-in took too long. Enter your password again.")
-		return nil, false
+		return nil, nil, false
 	}
 	if !user.IsActive {
 		writeJSONError(w, http.StatusForbidden, "account_inactive", "Account is inactive")
-		return nil, false
+		return nil, nil, false
 	}
-	return user, true
+	return user, claims, true
 }
 
 func (s *Server) handleLoginTwoFactor(w http.ResponseWriter, r *http.Request) {
@@ -268,7 +269,7 @@ func (s *Server) handleLoginTwoFactor(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	user, ok := s.challengeUser(w, req.ChallengeToken)
+	user, challenge, ok := s.challengeUser(w, req.ChallengeToken)
 	if !ok {
 		return
 	}
@@ -319,6 +320,20 @@ func (s *Server) handleLoginTwoFactor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// One password step opens one session. Two requests racing with different
+	// valid codes both get here; only the first to consume the challenge wins.
+	if !auth.ConsumeTwoFactorChallenge(challenge) {
+		s.writeAudit(audit.EventLoginFailed, audit.EntityUser, user.ID, nil, map[string]string{
+			"attempted_email": user.Email,
+			"failure_reason":  "challenge_already_used",
+			"second_factor":   method,
+			"ip_address":      r.RemoteAddr,
+			"user_agent":      r.UserAgent(),
+		})
+		writeJSONError(w, http.StatusUnauthorized, "challenge_expired", "This sign-in was already completed. Enter your password again.")
+		return
+	}
+
 	if method == auth.SecondFactorRecoveryCode {
 		w.Header().Set("X-Recovery-Codes-Remaining", fmt.Sprintf("%d", remaining))
 	}
@@ -333,7 +348,7 @@ func (s *Server) handleLoginTwoFactorEmail(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	user, ok := s.challengeUser(w, req.ChallengeToken)
+	user, _, ok := s.challengeUser(w, req.ChallengeToken)
 	if !ok {
 		return
 	}

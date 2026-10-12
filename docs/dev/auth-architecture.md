@@ -38,6 +38,8 @@ sopandgo uses a hybrid token model. This allows the backend to verify common req
 
 **Purpose:** Proves only the password step of a sign-in on an account with 2FA. The SvelteKit app keeps it in an httpOnly, `SameSite=Strict` cookie scoped to `/login`.
 
+**Single use:** Each challenge carries a random ID (`jti`). When the second factor succeeds, the ID is marked used (check and mark in one step, in memory until the challenge expires) before the session is created. A used challenge can neither open a second session nor send more email codes; the client gets `401 challenge_expired`, and a reuse is audited as `login_failed` (`challenge_already_used`). The ID is marked only after a correct code, so a typo does not cost the password step.
+
 ## 1a. Two-Factor Authentication
 
 **Policy.** `app_settings.two_factor_policy` is the organization's required second factor. `auth.SecondFactorMethods(user, mailOn)` is the one place that decides what a user may use; both sign-in steps call it, so a policy change also applies to a sign-in already under way.
@@ -60,7 +62,7 @@ Both steps sit behind the strict login limiter. Step 2 also has a per-account li
 **Factors**
 
 * **TOTP:** RFC 6238 (SHA-1, 6 digits, 30 s, one step of drift either way), via `github.com/pquerna/otp`. The secret is sealed with `SECRET_ENCRYPTION_KEY` (AES-GCM). `last_used_step` rejects a replayed code, even in a race. A new authenticator stays pending (`pending_secret_enc`) until its first code is confirmed, so replacing one never leaves the account without a working factor.
-* **Email code:** 6 digits, SHA-256 hash stored, 10 minutes, five attempts, one send per minute. Accepted only under the `email` policy, for non-admins; the service checks the policy again when it issues and when it verifies a code.
+* **Email code:** 6 digits, SHA-256 hash stored, 10 minutes, five attempts, one send per minute. Accepted only under the `email` policy, for non-admins; the service checks the policy again when it issues and when it verifies a code. A used, burned, or expired code keeps its row with an empty hash, so the one-minute cooldown counts from the last send no matter how that code ended.
 * **Recovery codes:** Admins only. 10 codes (`XXXXX-XXXXX`, 50 bits each), SHA-256 hashes stored, deleted when used, when replaced, when 2FA is turned off, and when the account stops being an admin.
 
 **Self-service** (`/profile/settings`): `GET /api/auth/me/two-factor` (status), `POST …/setup` (current password; returns the secret, `otpauth://` URI, and QR code once), `POST …/confirm` (first code; signs out the user's other sessions and returns recovery codes to admins), `DELETE /api/auth/me/two-factor` (current password; refused with `409 required_by_org` while the policy requires an app for this account. Under `email`, a normal user may remove their app and sign in with emailed codes), `POST …/recovery-codes` (admins; current password). Endpoints that check the password share the strict login limiter, and a wrong password writes `login_failed` (`invalid_current_password`).
