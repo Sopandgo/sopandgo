@@ -36,6 +36,7 @@
   let archiving = $state(false);
   let unarchiving = $state(false);
   let archiveFailed = $derived(form?.action === 'archive');
+  let unarchiveFailed = $derived(form?.action === 'unarchive');
   $effect(() => {
     if (archiveFailed) archiveOpen = true;
   });
@@ -69,6 +70,10 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
+  {#if archive}
+    <SopArchivedNotice {archive} />
+  {/if}
+
   <Card>
     <div class="card-body gap-4">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -104,20 +109,8 @@
           </p>
         </div>
 
-        {#if published || (canEdit && !archive) || (canArchive && !archive)}
+        {#if published || (canEdit && !archive)}
           <div class="flex shrink-0 flex-wrap gap-2">
-            {#if canArchive && !archive}
-              <button
-                type="button"
-                class="btn btn-ghost"
-                aria-expanded={archiveOpen}
-                aria-controls={`${tagListId}-archive`}
-                onclick={() => (archiveOpen = !archiveOpen)}
-              >
-                <ArchiveIcon class="size-4" />
-                {m.sop_archive_button()}
-              </button>
-            {/if}
             {#if canEdit && !archive}
               <a href={`/sops/${data.sop.id}/new`} class="btn {published ? '' : 'btn-primary'}">
                 <PlusIcon class="size-4" />
@@ -127,101 +120,12 @@
             {#if published}
               <a href={`/sops/${data.sop.id}/v/latest`} class="btn btn-primary">
                 <BookOpenIcon class="size-4" />
-                {m.sop_read_current()}
+                {archive ? m.sop_read_archived() : m.sop_read_current()}
               </a>
             {/if}
           </div>
         {/if}
       </div>
-
-      {#if archive}
-        <SopArchivedNotice {archive}>
-          {#snippet actions()}
-            {#if canArchive}
-              <form
-                method="POST"
-                action="?/unarchive"
-                use:enhance={() => {
-                  unarchiving = true;
-                  return async ({ update }) => {
-                    await update();
-                    unarchiving = false;
-                  };
-                }}
-              >
-                <button class="btn btn-sm" disabled={unarchiving}>
-                  {#if unarchiving}
-                    <span class="loading loading-spinner loading-xs"></span>
-                    {m.sop_unarchiving()}
-                  {:else}
-                    <ArchiveRestoreIcon class="size-4" />
-                    {m.sop_unarchive_button()}
-                  {/if}
-                </button>
-              </form>
-            {/if}
-          {/snippet}
-        </SopArchivedNotice>
-      {:else if canArchive && archiveOpen}
-        <form
-          id={`${tagListId}-archive`}
-          method="POST"
-          action="?/archive"
-          class="flex flex-col gap-3 border-t border-base-300 pt-4"
-          use:enhance={() => {
-            archiving = true;
-            return async ({ update, result }) => {
-              await update();
-              archiving = false;
-              if (result.type === 'success') archiveOpen = false;
-            };
-          }}
-        >
-          <div>
-            <h2 class="font-semibold">{m.sop_archive_title()}</h2>
-            <p class="mt-1 text-sm text-base-content/70">{m.sop_archive_body()}</p>
-          </div>
-
-          {#if reviewPending}
-            <Alert type="info" compact message={m.sop_archive_rc_hint()} />
-          {/if}
-
-          <div>
-            <label class="label" for={`${tagListId}-reason`}>
-              <span class="label-text">{m.sop_archive_reason_label()}</span>
-            </label>
-            <textarea
-              id={`${tagListId}-reason`}
-              name="reason"
-              rows="2"
-              maxlength="500"
-              class="textarea mt-2 w-full {archiveFailed ? 'textarea-error' : ''}"
-              placeholder={m.sop_archive_reason_placeholder()}
-              value={form && 'reason' in form ? String(form.reason ?? '') : ''}
-              required
-              autocomplete="off"
-              disabled={reviewPending}
-            ></textarea>
-            <p class="mt-1 text-xs text-base-content/70">{m.sop_archive_reason_help()}</p>
-          </div>
-
-          <div class="flex justify-end gap-2">
-            <button type="button" class="btn btn-ghost" onclick={() => (archiveOpen = false)}>
-              {m.common_cancel()}
-            </button>
-            <!-- Archiving is undone with one click, so it is not styled as destructive -->
-            <button class="btn" disabled={archiving || reviewPending}>
-              {#if archiving}
-                <span class="loading loading-spinner loading-xs"></span>
-                {m.sop_archiving()}
-              {:else}
-                <ArchiveIcon class="size-4" />
-                {m.sop_archive_confirm()}
-              {/if}
-            </button>
-          </div>
-        </form>
-      {/if}
 
       {#if tags.length > 0 || canEdit}
         <div class="flex flex-wrap items-center gap-2">
@@ -274,7 +178,7 @@
         </div>
       {/if}
 
-      {#if form?.message}
+      {#if form?.message && !archiveFailed && !unarchiveFailed}
         <Alert type="error" message={form.message} />
       {/if}
     </div>
@@ -283,4 +187,120 @@
   <ListSopVersions sopId={data.sop.id} items={versions} />
 
   <ListAssociatedAssets items={data.assets} />
+
+  {#if canArchive && !archive}
+    <!-- Rare and consequential: kept out of the header, and explained before it is used -->
+    <Card title={m.sop_archive_title()} description={m.sop_archive_body()}>
+      {#snippet actions()}
+        {#if !archiveOpen}
+          <button
+            type="button"
+            class="btn"
+            aria-expanded="false"
+            aria-controls={`${tagListId}-archive`}
+            disabled={reviewPending}
+            onclick={() => (archiveOpen = true)}
+          >
+            <ArchiveIcon class="size-4" />
+            {m.sop_archive_button()}
+          </button>
+        {/if}
+      {/snippet}
+
+      {#if reviewPending && !archiveOpen}
+        <div class="card-body">
+          <Alert type="info" compact message={m.sop_archive_rc_hint()} />
+        </div>
+      {/if}
+
+      {#if archiveOpen}
+        <form
+          id={`${tagListId}-archive`}
+          method="POST"
+          action="?/archive"
+          class="card-body gap-3"
+          use:enhance={() => {
+            archiving = true;
+            return async ({ update, result }) => {
+              await update();
+              archiving = false;
+              if (result.type === 'success') archiveOpen = false;
+            };
+          }}
+        >
+          {#if archiveFailed && form?.message}
+            <Alert type="error" message={form.message} />
+          {/if}
+
+          <div>
+            <label class="label" for={`${tagListId}-reason`}>
+              <span class="label-text">{m.sop_archive_reason_label()}</span>
+            </label>
+            <textarea
+              id={`${tagListId}-reason`}
+              name="reason"
+              rows="2"
+              maxlength="500"
+              class="textarea mt-2 w-full {archiveFailed ? 'textarea-error' : ''}"
+              placeholder={m.sop_archive_reason_placeholder()}
+              value={form && 'reason' in form ? String(form.reason ?? '') : ''}
+              required
+              autocomplete="off"
+            ></textarea>
+            <p class="mt-1 text-xs text-base-content/70">{m.sop_archive_reason_help()}</p>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button type="button" class="btn btn-ghost" onclick={() => (archiveOpen = false)}>
+              {m.common_cancel()}
+            </button>
+            <!-- Archiving is undone with one click, so it is not styled as destructive -->
+            <button class="btn" disabled={archiving}>
+              {#if archiving}
+                <span class="loading loading-spinner loading-xs"></span>
+                {m.sop_archiving()}
+              {:else}
+                <ArchiveIcon class="size-4" />
+                {m.sop_archive_confirm()}
+              {/if}
+            </button>
+          </div>
+        </form>
+      {/if}
+    </Card>
+  {/if}
+
+  {#if canArchive && archive}
+    <Card title={m.sop_unarchive_title()} description={m.sop_unarchive_body()}>
+      {#snippet actions()}
+        <form
+          method="POST"
+          action="?/unarchive"
+          use:enhance={() => {
+            unarchiving = true;
+            return async ({ update }) => {
+              await update();
+              unarchiving = false;
+            };
+          }}
+        >
+          <button class="btn" disabled={unarchiving}>
+            {#if unarchiving}
+              <span class="loading loading-spinner loading-xs"></span>
+              {m.sop_unarchiving()}
+            {:else}
+              <ArchiveRestoreIcon class="size-4" />
+              {m.sop_unarchive_button()}
+            {/if}
+          </button>
+        </form>
+      {/snippet}
+
+      {#if unarchiveFailed && form?.message}
+        <div class="card-body">
+          <Alert type="error" message={form.message} />
+        </div>
+      {/if}
+    </Card>
+  {/if}
 </div>

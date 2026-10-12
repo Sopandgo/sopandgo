@@ -109,6 +109,10 @@
 
 
 <div class="flex flex-col gap-6">
+{#if archive}
+    <SopArchivedNotice {archive} />
+{/if}
+
 <Card>
     <div class="card-body gap-4">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -163,9 +167,8 @@
             <p>{version.change_summary}</p>
         {/if}
 
-        {#if archive}
-            <SopArchivedNotice {archive} />
-        {:else if !isPublished}
+        <!-- On an archived SOP the notice above the card is the page's one notice -->
+        {#if !archive && !isPublished}
             <Alert
                 type={noticeType}
                 title={version.rejection
@@ -192,7 +195,7 @@
                     {m.version_none_published()}
                 {/if}
             </Alert>
-        {:else if pending}
+        {:else if !archive && pending}
             <Alert type="info">
                 {pending.status === 'rc'
                     ? m.version_pending_rc({ version: String(pending.version) })
