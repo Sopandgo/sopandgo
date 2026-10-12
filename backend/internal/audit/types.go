@@ -61,6 +61,14 @@ const (
 	EventNotificationSent             = "notification_sent"
 	EventNotificationFailed           = "notification_failed"
 	EventIntegrationSettingsUpdated   = "integration_settings_updated"
+	EventTwoFactorEnabled             = "two_factor_enabled"
+	EventTwoFactorDisabled            = "two_factor_disabled"
+	EventTwoFactorReset               = "two_factor_reset"
+	EventTwoFactorRecoveryCodesIssued = "two_factor_recovery_codes_generated"
+	EventTwoFactorRecoveryCodeUsed    = "two_factor_recovery_code_used"
+	EventTwoFactorPolicyUpdated       = "two_factor_policy_updated"
+	EventAdminBreakGlassReset         = "admin_break_glass_reset"
+	EventAdminBreakGlassFailed        = "admin_break_glass_failed"
 )
 
 var knownEventTypes = map[string]struct{}{
@@ -109,6 +117,14 @@ var knownEventTypes = map[string]struct{}{
 	EventNotificationSent:             {},
 	EventNotificationFailed:           {},
 	EventIntegrationSettingsUpdated:   {},
+	EventTwoFactorEnabled:             {},
+	EventTwoFactorDisabled:            {},
+	EventTwoFactorReset:               {},
+	EventTwoFactorRecoveryCodesIssued: {},
+	EventTwoFactorRecoveryCodeUsed:    {},
+	EventTwoFactorPolicyUpdated:       {},
+	EventAdminBreakGlassReset:         {},
+	EventAdminBreakGlassFailed:        {},
 }
 
 var knownEntityTypes = map[string]struct{}{

@@ -9,17 +9,24 @@ var ErrSelfDisable = errors.New("cannot change own active status")
 var ErrSessionNotFound = errors.New("session not found")
 
 type User struct {
-	ID                 string    `json:"id"`
-	DisplayName        string    `json:"display_name"`
-	Email              string    `json:"email"`
-	Role               string    `json:"role"`
-	IsActive           bool      `json:"is_active"`
-	MustChangePassword bool      `json:"must_change_password"`
-	Locale             string    `json:"locale"`
-	Theme              string    `json:"theme"`
-	HasAvatar          bool      `json:"has_avatar"`
-	AvatarContentHash  string    `json:"avatar_content_hash,omitempty"`
-	CreatedAt          time.Time `json:"created_at"`
+	ID                 string `json:"id"`
+	DisplayName        string `json:"display_name"`
+	Email              string `json:"email"`
+	Role               string `json:"role"`
+	IsActive           bool   `json:"is_active"`
+	MustChangePassword bool   `json:"must_change_password"`
+	Locale             string `json:"locale"`
+	Theme              string `json:"theme"`
+	HasAvatar          bool   `json:"has_avatar"`
+	AvatarContentHash  string `json:"avatar_content_hash,omitempty"`
+	TwoFactorEnabled   bool   `json:"two_factor_enabled"`
+	// MustEnrollTwoFactor is true while the organization's policy requires an
+	// authenticator app for this account and it has not confirmed one yet.
+	MustEnrollTwoFactor bool `json:"must_enroll_two_factor"`
+	// TwoFactorPolicy is the organization's policy (none, email, totp), loaded
+	// with the account so sign-in can decide its methods in one place.
+	TwoFactorPolicy string    `json:"-"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 type Session struct {

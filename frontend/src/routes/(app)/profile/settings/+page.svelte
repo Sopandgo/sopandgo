@@ -8,6 +8,7 @@
     import CardPageHeading from '#lib/components/CardPageHeading.svelte';
     import ChangePassword from '#lib/components/ChangePassword.svelte';
     import LocaleSelect from '#lib/components/LocaleSelect.svelte';
+    import TwoFactorSettings from '#lib/components/TwoFactorSettings.svelte';
     import * as m from '#lib/paraglide/messages.js';
     import { applyTheme } from '#lib/theme.js';
     import {
@@ -27,6 +28,8 @@
 
     const user = $derived(data.user);
     const mustChange = $derived(!!user.must_change_password);
+    // While the organization requires 2FA, set-up is the only thing left to do here.
+    const mustEnroll = $derived(!mustChange && !!user.must_enroll_two_factor);
     const localeError = $derived(form?.setLocale?.error);
     const themeError = $derived(form?.setTheme?.error);
     const signOutResult = $derived(form?.signOutOthers);
@@ -111,10 +114,12 @@
 
     {#if mustChange}
         <Alert type="warning" message={m.profile_bootstrap_warning()} />
+    {:else if mustEnroll}
+        <Alert type="warning" message={m.two_factor_enroll_warning()} />
     {/if}
 
     <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-        <div class="flex flex-col gap-6 {mustChange ? 'order-2 lg:order-1' : ''}">
+        <div class="flex flex-col gap-6 {mustChange || mustEnroll ? 'order-2 lg:order-1' : ''}">
             <Card>
                 <div class="card-body gap-4">
             <h2 class="flex items-center gap-2 text-lg font-semibold">
@@ -274,10 +279,14 @@
             </Card>
         </div>
 
-        <div class="flex flex-col gap-6 {mustChange ? 'order-1 lg:order-2' : ''}">
+        <div class="flex flex-col gap-6 {mustChange || mustEnroll ? 'order-1 lg:order-2' : ''}">
+            {#if !mustChange}
+                <TwoFactorSettings status={data.twoFactor} {form} />
+            {/if}
+
             {@render passwordCard()}
 
-            {#if !mustChange}
+            {#if !mustChange && !mustEnroll}
                 <Card>
                     <div class="card-body gap-4">
                         <h2 class="flex items-center gap-2 text-lg font-semibold">

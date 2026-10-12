@@ -27,6 +27,10 @@ The SMTP password and integration secrets are stored encrypted; recovery still r
 `SECRET_ENCRYPTION_KEY` (or re-entered secrets after key rotation) when
 an email transport or outbound integrations are switched on.
 With no email transport on, invites/resets use manual links and do not need SMTP delivery.
+Two-factor authenticator secrets are sealed with the same key. If you restore onto a server
+with a different `SECRET_ENCRYPTION_KEY`, authenticator codes stop working: admins sign in with a recovery code, users with an
+emailed code when the policy allows email, and everyone then sets up their app again; normal users can be reset from
+**Admin → Users**, and admins with `./sopandgo recover-admin` (see `docs/ops/deployment.md`).
 
 If the full data directory is backed up, the entire system state is preserved.
 

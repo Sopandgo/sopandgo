@@ -3,12 +3,15 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"slices"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/i18n"
+	"github.com/sopandgo/sopandgo/backend/internal/mail"
 )
 
 type LoginRequest struct {
@@ -133,31 +136,244 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. Generate PASETO
+	// 4. Second factor: the password alone does not sign in when the user has
+	// an app or the policy sends them email codes. Hand back a short-lived
+	// challenge instead of a session.
+	if auth.SecondFactorRequired(user) {
+		s.respondTwoFactorChallenge(w, r, user, logFailure)
+		return
+	}
+
+	s.completeLogin(w, r, user, "")
+}
+
+// respondTwoFactorChallenge answers a correct password when a second factor is
+// required. When email is the only method, the code is sent right away.
+func (s *Server) respondTwoFactorChallenge(w http.ResponseWriter, r *http.Request, user *auth.User, logFailure func(string, *string)) {
+	methods, err := s.authService.SecondFactorMethods(user, s.emailTransportOn())
+	if err != nil {
+		http.Error(w, "Failed to start two-factor sign-in", http.StatusInternalServerError)
+		return
+	}
+	if len(methods) == 0 {
+		// The policy wants an emailed code, but no email transport is on.
+		// Fail closed: the password alone must not sign in.
+		log.Printf("ERROR: user %s needs an emailed sign-in code, but no email transport is switched on. "+
+			"Switch email on under Settings -> Email, or change the two-factor policy.", user.ID)
+		logFailure("second_factor_unavailable", &user.ID)
+		writeJSONError(w, http.StatusServiceUnavailable, "second_factor_unavailable",
+			"Sign-in codes cannot be sent right now. Ask your admin.")
+		return
+	}
+	challenge, err := auth.GenerateTwoFactorChallenge(user.ID)
+	if err != nil {
+		http.Error(w, "Failed to start two-factor sign-in", http.StatusInternalServerError)
+		return
+	}
+
+	emailSent := false
+	if len(methods) == 1 && methods[0] == auth.SecondFactorEmail {
+		// A throttled or failed send leaves the "send again" button on the form.
+		if err := s.sendSignInCode(user); err == nil {
+			emailSent = true
+		} else if !errors.Is(err, auth.ErrEmailCodeThrottled) {
+			log.Printf("ERROR: sign-in code email to user %s failed: %v", user.ID, err)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"two_factor_required": true,
+		"challenge_token":     challenge,
+		"methods":             methods,
+		"email_sent":          emailSent,
+		"expires_in":          int(auth.TwoFactorChallengeTTL.Seconds()),
+	})
+}
+
+// sendSignInCode creates an emailed sign-in code and sends it.
+func (s *Server) sendSignInCode(user *auth.User) error {
+	code, err := s.authService.IssueEmailCode(user.ID)
+	if err != nil {
+		return err
+	}
+	return s.mailService.SendTwoFactorCodeEmail(user.Email, user.ID, user.DisplayName, code, user.Locale)
+}
+
+// completeLogin issues the access and refresh tokens and writes the login event.
+func (s *Server) completeLogin(w http.ResponseWriter, r *http.Request, user *auth.User, secondFactor string) {
 	accessToken, err := auth.GenerateAccessToken(user.ID, user.Role)
 	if err != nil {
-		// System errors usually aren't logged as "security failures" but you could if you want
 		http.Error(w, "Failed to generate access token", http.StatusInternalServerError)
 		return
 	}
 
-	// 5. Create Session (Service Call)
 	refreshToken, err := s.authService.CreateSession(user.ID)
 	if err != nil {
 		http.Error(w, "Failed to create session", http.StatusInternalServerError)
 		return
 	}
 
-	// 6. Log Login
-	s.writeAudit(audit.EventLogin, audit.EntityUser, user.ID, &user.ID, map[string]string{
+	payload := map[string]string{
 		"ip_address": r.RemoteAddr,
-	})
+	}
+	if secondFactor != "" {
+		payload["second_factor"] = secondFactor
+	}
+	s.writeAudit(audit.EventLogin, audit.EntityUser, user.ID, &user.ID, payload)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 	})
+}
+
+// emailTransportOn reports whether sign-in codes can be mailed: only when a
+// mail transport is saved and switched on.
+func (s *Server) emailTransportOn() bool {
+	if s.smtpSettings == nil || s.mailService == nil {
+		return false
+	}
+	mode, err := s.smtpSettings.EffectiveMailMode()
+	return err == nil && mode == mail.MailModeSMTP
+}
+
+// challengeUser resolves the challenge token to an active account. Expired,
+// invalid, and already-used challenges all mean "enter your password again".
+func (s *Server) challengeUser(w http.ResponseWriter, challengeToken string) (*auth.User, *auth.ChallengeClaims, bool) {
+	claims, err := auth.VerifyTwoFactorChallenge(challengeToken)
+	if err != nil {
+		writeJSONError(w, http.StatusUnauthorized, "challenge_expired", "The sign-in took too long. Enter your password again.")
+		return nil, nil, false
+	}
+	user, err := s.authService.GetUserByID(claims.UserID)
+	if err != nil {
+		writeJSONError(w, http.StatusUnauthorized, "challenge_expired", "The sign-in took too long. Enter your password again.")
+		return nil, nil, false
+	}
+	if !user.IsActive {
+		writeJSONError(w, http.StatusForbidden, "account_inactive", "Account is inactive")
+		return nil, nil, false
+	}
+	return user, claims, true
+}
+
+func (s *Server) handleLoginTwoFactor(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ChallengeToken string `json:"challenge_token"`
+		Method         string `json:"method"`
+		Code           string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	user, challenge, ok := s.challengeUser(w, req.ChallengeToken)
+	if !ok {
+		return
+	}
+	// The IP limiter alone does not stop guesses spread over many addresses.
+	if !s.twoFactorLimiter.getLimiter("user:" + user.ID).Allow() {
+		http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+		return
+	}
+
+	method := req.Method
+	if method == "" {
+		method = auth.SecondFactorTOTP
+	}
+	// Recomputed here, so a policy change applies to a sign-in under way.
+	methods, err := s.authService.SecondFactorMethods(user, s.emailTransportOn())
+	if err != nil {
+		http.Error(w, "Failed to check the second factor", http.StatusInternalServerError)
+		return
+	}
+	if !slices.Contains(methods, method) {
+		writeJSONError(w, http.StatusBadRequest, "method_not_allowed", "This sign-in method is not available for this account.")
+		return
+	}
+
+	remaining, err := s.authService.VerifySecondFactor(user.ID, method, req.Code)
+	switch {
+	case errors.Is(err, auth.ErrTwoFactorUnavailable):
+		log.Printf("ERROR: cannot read the authenticator secret of user %s (SECRET_ENCRYPTION_KEY missing or changed?). "+
+			"Reset normal users from Admin -> Users; reset an admin with `./sopandgo recover-admin --email <email>`: %v", user.ID, err)
+		writeJSONError(w, http.StatusConflict, "authenticator_unavailable", "The authenticator for this account cannot be checked. Use another method or contact your admin.")
+		return
+	case errors.Is(err, auth.ErrUnknownSecondFactorType):
+		writeJSONError(w, http.StatusBadRequest, "unknown_method", err.Error())
+		return
+	case err != nil:
+		if !errors.Is(err, auth.ErrInvalidSecondFactor) && !errors.Is(err, auth.ErrTwoFactorNotEnabled) &&
+			!errors.Is(err, auth.ErrRecoveryCodesAdminOnly) {
+			log.Printf("ERROR: second factor check failed for user %s: %v", user.ID, err)
+		}
+		s.writeAudit(audit.EventLoginFailed, audit.EntityUser, user.ID, nil, map[string]string{
+			"attempted_email": user.Email,
+			"failure_reason":  "invalid_second_factor",
+			"second_factor":   method,
+			"ip_address":      r.RemoteAddr,
+			"user_agent":      r.UserAgent(),
+		})
+		writeJSONError(w, http.StatusUnauthorized, "invalid_code", "Invalid verification code")
+		return
+	}
+
+	// One password step opens one session. Two requests racing with different
+	// valid codes both get here; only the first to consume the challenge wins.
+	if !auth.ConsumeTwoFactorChallenge(challenge) {
+		s.writeAudit(audit.EventLoginFailed, audit.EntityUser, user.ID, nil, map[string]string{
+			"attempted_email": user.Email,
+			"failure_reason":  "challenge_already_used",
+			"second_factor":   method,
+			"ip_address":      r.RemoteAddr,
+			"user_agent":      r.UserAgent(),
+		})
+		writeJSONError(w, http.StatusUnauthorized, "challenge_expired", "This sign-in was already completed. Enter your password again.")
+		return
+	}
+
+	if method == auth.SecondFactorRecoveryCode {
+		w.Header().Set("X-Recovery-Codes-Remaining", fmt.Sprintf("%d", remaining))
+	}
+	s.completeLogin(w, r, user, method)
+}
+
+func (s *Server) handleLoginTwoFactorEmail(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ChallengeToken string `json:"challenge_token"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	user, _, ok := s.challengeUser(w, req.ChallengeToken)
+	if !ok {
+		return
+	}
+	methods, err := s.authService.SecondFactorMethods(user, s.emailTransportOn())
+	if err != nil {
+		http.Error(w, "Failed to create sign-in code", http.StatusInternalServerError)
+		return
+	}
+	if !slices.Contains(methods, auth.SecondFactorEmail) {
+		writeJSONError(w, http.StatusBadRequest, "email_unavailable", "Email codes are not available for this account.")
+		return
+	}
+
+	err = s.sendSignInCode(user)
+	switch {
+	case errors.Is(err, auth.ErrEmailCodeThrottled):
+		w.Header().Set("Retry-After", "60")
+		writeJSONError(w, http.StatusTooManyRequests, "email_throttled", err.Error())
+		return
+	case err != nil:
+		log.Printf("ERROR: sign-in code email to user %s failed: %v", user.ID, err)
+		writeJSONError(w, http.StatusBadGateway, "email_failed", "The code could not be sent.")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {

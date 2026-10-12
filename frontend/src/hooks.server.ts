@@ -61,7 +61,10 @@ const handleAuth: Handle = async ({ event, resolve }) => {
         throw redirect(303, '/login');
     }
 
-    if (user?.must_change_password) {
+    // A forced password change comes first; then, while the organization
+    // requires 2FA, setting up an authenticator. Both happen in account settings.
+    const mustVisitSettings = !!user && (user.must_change_password || user.must_enroll_two_factor);
+    if (mustVisitSettings) {
         const allowedWhileForced = pathname === '/profile/settings' || pathname === '/logout';
         if (!allowedWhileForced) {
             throw redirect(303, '/profile/settings');
@@ -69,7 +72,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
     }
 
     if (routeId.includes('(guest)') && user) {
-        throw redirect(303, user.must_change_password ? '/profile/settings' : '/dashboard');
+        throw redirect(303, mustVisitSettings ? '/profile/settings' : '/dashboard');
     }
 
     return resolve({ ...event, request });

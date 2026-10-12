@@ -46,6 +46,9 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 // Inactive users are rejected, and authorization uses the stored role.
 // Accounts flagged to change their password may only call GET /api/auth/me,
 // PATCH /api/auth/me/update-password, PATCH /api/auth/me/locale, and PATCH /api/auth/me/theme.
+// While the organization requires 2FA, accounts without a confirmed
+// authenticator may additionally only set one up (GET /api/auth/me/two-factor,
+// POST .../setup and .../confirm).
 func (s *Server) withPasswordChangeGuard(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := GetUserID(r.Context())
@@ -72,6 +75,19 @@ func (s *Server) withPasswordChangeGuard(next http.HandlerFunc) http.HandlerFunc
 				(r.Method == http.MethodPatch && path == "/api/auth/me/theme")
 			if !allowed {
 				http.Error(w, "password change required", http.StatusForbidden)
+				return
+			}
+		} else if user.MustEnrollTwoFactor {
+			path := r.URL.Path
+			allowed := (r.Method == http.MethodGet && path == "/api/auth/me") ||
+				(r.Method == http.MethodGet && path == "/api/auth/me/two-factor") ||
+				(r.Method == http.MethodPost && path == "/api/auth/me/two-factor/setup") ||
+				(r.Method == http.MethodPost && path == "/api/auth/me/two-factor/confirm") ||
+				(r.Method == http.MethodPatch && path == "/api/auth/me/update-password") ||
+				(r.Method == http.MethodPatch && path == "/api/auth/me/locale") ||
+				(r.Method == http.MethodPatch && path == "/api/auth/me/theme")
+			if !allowed {
+				http.Error(w, "two-factor enrollment required", http.StatusForbidden)
 				return
 			}
 		}

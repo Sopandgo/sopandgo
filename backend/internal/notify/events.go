@@ -13,7 +13,9 @@ const (
 	EventSOPRejected          = "sop_rejected"
 	EventBackupS3Failed       = "backup_s3_failed"
 	EventIntegrityCheckFailed = "integrity_check_failed"
-	EventTest                 = "test"
+	// EventBreakGlassUsed is sent when the host-only recover-admin command resets an admin.
+	EventBreakGlassUsed = "break_glass_used"
+	EventTest           = "test"
 )
 
 // KnownEvents lists all subscribable event types (excluding test).
@@ -23,6 +25,7 @@ var KnownEvents = []string{
 	EventSOPRejected,
 	EventBackupS3Failed,
 	EventIntegrityCheckFailed,
+	EventBreakGlassUsed,
 }
 
 var knownEventSet = map[string]struct{}{
@@ -31,6 +34,7 @@ var knownEventSet = map[string]struct{}{
 	EventSOPRejected:          {},
 	EventBackupS3Failed:       {},
 	EventIntegrityCheckFailed: {},
+	EventBreakGlassUsed:       {},
 	EventTest:                 {},
 }
 
@@ -38,7 +42,7 @@ var knownEventSet = map[string]struct{}{
 const DefaultSOPEvents = "sop_published,sop_rc,sop_rejected"
 
 // DefaultAllEvents includes lifecycle and ops alerts.
-const DefaultAllEvents = "sop_published,sop_rc,sop_rejected,backup_s3_failed,integrity_check_failed"
+const DefaultAllEvents = "sop_published,sop_rc,sop_rejected,backup_s3_failed,integrity_check_failed,break_glass_used"
 
 // Event is a channel-agnostic notification payload.
 type Event struct {

@@ -37,5 +37,9 @@
   "pdf.stage.rc": "rc",
   "pdf.stage.published": "published",
   "pdf.stage.rejected": "rejected",
-  "pdf.stage.superseded": "superseded"
+  "pdf.stage.superseded": "superseded",
+  "mail.two_factor_code.subject": "Your SOPandGO sign-in code",
+  "mail.two_factor_code.body": "Hi {name},\n\nYour sign-in code is:\n\n{code}\n\nIt works once and expires in 10 minutes.\n\nIf you did not try to sign in, change your password and tell your admin.\n\nBest,\nThe SOPandGO Team",
+  "notify.break_glass.title": "Admin sign-in reset on the server",
+  "notify.break_glass.message": "The recover-admin command reset the sign-in of {email} on host {hostname}. If nobody on your team did this, check the audit log."
 }

@@ -37,5 +37,9 @@
   "pdf.stage.rc": "releasekandidat",
   "pdf.stage.published": "publicerad",
   "pdf.stage.rejected": "avvisad",
-  "pdf.stage.superseded": "ersatt"
+  "pdf.stage.superseded": "ersatt",
+  "mail.two_factor_code.subject": "Din inloggningskod för SOPandGO",
+  "mail.two_factor_code.body": "Hej {name},\n\nDin inloggningskod är:\n\n{code}\n\nDen fungerar en gång och går ut om 10 minuter.\n\nOm du inte försökte logga in, byt lösenord och meddela din administratör.\n\nHälsningar,\nSOPandGO-teamet",
+  "notify.break_glass.title": "Administratörsinloggning återställd på servern",
+  "notify.break_glass.message": "Kommandot recover-admin återställde inloggningen för {email} på värden {hostname}. Om ingen i ditt team gjorde detta, kontrollera granskningsloggen."
 }

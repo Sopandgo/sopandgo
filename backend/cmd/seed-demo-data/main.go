@@ -120,7 +120,7 @@ func seed(dataDir, sopsRoot string) error {
 	}
 
 	sopService := sop.NewService(store.DB, auditLogger, dataDir, "1", false, nil)
-	authService := auth.NewService(store.DB, auditLogger, dataDir)
+	authService := auth.NewService(store.DB, auditLogger, dataDir, nil)
 
 	avatarsDir := filepath.Join(filepath.Dir(sopsRoot), "avatars")
 	userIDs, err := ensureDemoUsers(authService, avatarsDir)

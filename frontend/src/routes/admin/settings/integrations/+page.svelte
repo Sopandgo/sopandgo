@@ -28,7 +28,8 @@
         sop_rc: m.notify_event_rc(),
         sop_rejected: m.notify_event_rejected(),
         backup_s3_failed: m.notify_event_backup(),
-        integrity_check_failed: m.notify_event_integrity()
+        integrity_check_failed: m.notify_event_integrity(),
+        break_glass_used: m.notify_event_break_glass()
     };
 
     const knownEvents = $derived(

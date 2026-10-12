@@ -37,5 +37,9 @@
   "pdf.stage.rc": "candidato a publicação",
   "pdf.stage.published": "publicado",
   "pdf.stage.rejected": "rejeitado",
-  "pdf.stage.superseded": "substituído"
+  "pdf.stage.superseded": "substituído",
+  "mail.two_factor_code.subject": "Seu código de login do SOPandGO",
+  "mail.two_factor_code.body": "Olá {name},\n\nSeu código de login é:\n\n{code}\n\nEle funciona uma vez e expira em 10 minutos.\n\nSe você não tentou entrar, altere sua senha e avise seu administrador.\n\nAtenciosamente,\nEquipe SOPandGO",
+  "notify.break_glass.title": "Login de administrador redefinido no servidor",
+  "notify.break_glass.message": "O comando recover-admin redefiniu o login de {email} no host {hostname}. Se ninguém da sua equipe fez isso, verifique o log de auditoria."
 }

@@ -139,6 +139,12 @@
             {#if smtp && !smtp.encryption_key_set}
                 <Alert type="error" message={m.settings_encryption_missing()} />
             {/if}
+            {#if data.twoFactorPolicy === 'email'}
+                <Alert
+                    type="warning"
+                    message={manualFallback ? m.security_policy_email_off_warning() : m.settings_email_policy_warning()}
+                />
+            {/if}
             {#if manualFallback}
                 <Alert type="info" message={m.settings_email_manual_fallback()} />
             {/if}

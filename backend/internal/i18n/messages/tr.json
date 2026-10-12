@@ -37,5 +37,9 @@
   "pdf.stage.rc": "yayım adayı",
   "pdf.stage.published": "yayımlanmış",
   "pdf.stage.rejected": "reddedilmiş",
-  "pdf.stage.superseded": "yerine geçmiş"
+  "pdf.stage.superseded": "yerine geçmiş",
+  "mail.two_factor_code.subject": "SOPandGO oturum açma kodunuz",
+  "mail.two_factor_code.body": "Merhaba {name},\n\nOturum açma kodunuz:\n\n{code}\n\nKod yalnızca bir kez çalışır ve 10 dakika içinde geçerliliğini yitirir.\n\nOturum açmayı siz denemediyseniz parolanızı değiştirin ve yöneticinize bildirin.\n\nSaygılarımızla,\nSOPandGO Ekibi",
+  "notify.break_glass.title": "Sunucuda yönetici oturum açma bilgileri sıfırlandı",
+  "notify.break_glass.message": "recover-admin komutu {hostname} ana makinesinde {email} hesabının oturum açma bilgilerini sıfırladı. Ekibinizden kimse bunu yapmadıysa denetim günlüğünü kontrol edin."
 }

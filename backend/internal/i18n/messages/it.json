@@ -37,5 +37,9 @@
   "pdf.stage.rc": "release candidate",
   "pdf.stage.published": "pubblicato",
   "pdf.stage.rejected": "rifiutato",
-  "pdf.stage.superseded": "sostituito"
+  "pdf.stage.superseded": "sostituito",
+  "mail.two_factor_code.subject": "Il tuo codice di accesso SOPandGO",
+  "mail.two_factor_code.body": "Ciao {name},\n\nil tuo codice di accesso è:\n\n{code}\n\nFunziona una sola volta e scade tra 10 minuti.\n\nSe non hai provato ad accedere, cambia la password e avvisa il tuo amministratore.\n\nCordiali saluti,\nIl team SOPandGO",
+  "notify.break_glass.title": "Accesso amministratore reimpostato sul server",
+  "notify.break_glass.message": "Il comando recover-admin ha reimpostato l'accesso di {email} sull'host {hostname}. Se nessuno del tuo team l'ha fatto, controlla il registro di audit."
 }

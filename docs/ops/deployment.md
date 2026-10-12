@@ -64,7 +64,7 @@ Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left o
 | `BODY_SIZE_LIMIT` | `52428800` | Max request size (bytes). Default is ~50MB. |
 | `AUDIT_STRICT_TYPES` | `false` | If `true`, audit writes reject unknown `event_type`/`entity_type` values (recommended once all extensions use canonical types). |
 | `AUDIT_BUSY_TIMEOUT` | `5s` | Maximum SQLite lock wait for standalone audit writes, as a Go duration. A timeout is reported in the application log; increase this only if legitimate write transactions regularly exceed five seconds. |
-| `SECRET_ENCRYPTION_KEY` | - | **Required to save outbound secrets in the UI** (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key) **and to send mail or integration notifications that need those secrets.** A 32-byte AES-256 key, provided as **base64** or **hex** (64 hex chars, optional `0x` prefix). Used only to encrypt secrets stored in SQLite—not for signing JWTs. Generate: `openssl rand -base64 32`. If unset, the server starts, but the admin UI cannot persist those credentials until this is set and the process is restarted. |
+| `SECRET_ENCRYPTION_KEY` | - | **Required to save outbound secrets in the UI** (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key), **to send mail or integration notifications that need those secrets, and to use two-factor authentication** (it seals each user's authenticator secret). A 32-byte AES-256 key, provided as **base64** or **hex** (64 hex chars, optional `0x` prefix). Used only to encrypt secrets stored in SQLite—not for signing JWTs. Generate: `openssl rand -base64 32`. If unset, the server starts, but the admin UI cannot persist those credentials until this is set and the process is restarted. |
 | `APP_VERSION` | baked into the image | Label on the public footer, in the signed-in sidebar, and in admin **export** `manifest.json`. Release images set this at build time (for example `1.0.1`). Labs do not set it. Contributor source builds and `go run` use `dev`. Local `npm run dev` ignores this and shows `git describe` instead. The root `package.json` version is not used. |
 | `PDF_EXPORT_ENABLED` | `true` | When `true`, PDF artifact generation/download is enabled (requires a renderer when not `none`). A renderer failure never fails a version create or lifecycle change; it is logged, and the startup backfill generates the missing PDFs. Set `false` for local `go run` / `air` without Gotenberg. |
 | `PDF_RENDERER` | `gotenberg` | `gotenberg` or `none`. |
@@ -102,9 +102,9 @@ Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTI
 | Gotify | Server base URL + application token, enable, events | POST `{url}/message?token=...` |
 | Generic webhook | Destination URL, optional bearer token (enter `-` to clear), enable, events | POST JSON envelope (`event`, `occurred_at`, `title`, `message`, `url`, `sop_id`, …) |
 
-**Events:** `sop_published`, `sop_rc`, `sop_rejected`, `backup_s3_failed`, `integrity_check_failed`. Use **Send test** per channel to verify. Delivery failures are audited and never roll back SOP publish/promote/reject.
+**Events:** `sop_published`, `sop_rc`, `sop_rejected`, `backup_s3_failed`, `integrity_check_failed`, `break_glass_used` (an admin was reset with `recover-admin`). Use **Send test** per channel to verify. Delivery failures are audited and never roll back SOP publish/promote/reject.
 
-If you **rotate** `SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save.
+If you **rotate** `SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save. Authenticator apps stop working too: admins sign in with a recovery code, users with an emailed code if the policy allows email, and then set up their app again; reset normal users from **Admin → Users** and admins with [`recover-admin`](#locked-out-admin-break-glass).
 
 ### Audit Taxonomy Hardening
 
@@ -129,6 +129,41 @@ The application does not enforce network-level restrictions. Operators should:
 - **VPN Deployment**: Deploy behind a VPN (like Tailscale or WireGuard) rather than opening ports to the public internet.
 
 - **HTTPS/TLS:** If exposing to a network, terminate TLS at an external reverse proxy and forward **HTTP** to the **published app port** (compose default **`HOST_WEB_PORT` 8087** → Caddy **:80** inside the **`sopandgo`** container). Do **not** point the outer proxy at the Go process port **8080** unless you intentionally bypass Caddy (unsupported for normal deployments).
+
+### Two-factor authentication
+
+Users add an authenticator app in **Account settings**. Under **Settings → General → Security**, an admin chooses the organization's required second factor:
+
+- **None** (default): password only, unless someone adds an app on their own.
+- **Email code or app**: every sign-in needs an app code or a code mailed to the account's address. Admins must use an app. Needs a switched-on email transport; while this level is active, switching email off stops users without an app from signing in (Settings → Email warns about this).
+- **Authenticator app**: every sign-in needs an app code; email codes are not accepted.
+
+Levels above none need `SECRET_ENCRYPTION_KEY` and an admin who already uses an app. Admins get recovery codes when they set up an app. A normal user who lost their phone is reset from **Admin → Users**.
+
+### Locked-out admin (break-glass)
+
+If an admin lost their password, authenticator, and recovery codes, the server operator resets that admin from a shell in the container. There is no web route for this.
+
+**Coolify:** open the application, choose **Terminal**, select the `sopandgo` container, then run:
+
+```bash
+cd /app
+./sopandgo recover-admin --list
+./sopandgo recover-admin --email admin@lab.example.org
+```
+
+**Docker Compose:**
+
+```bash
+docker compose exec sopandgo ./sopandgo recover-admin --list
+docker compose exec sopandgo ./sopandgo recover-admin --email admin@lab.example.org
+```
+
+The command asks you to type the email again (`--yes` skips this). It then removes the admin's 2FA and recovery codes, sets a temporary password, reactivates the account, and signs out every session. It prints the temporary password once. Sign in with it, choose a new password, and set up 2FA again.
+
+- It runs safely while the server is up and uses `DATA_DIR` (`/app/data` in the image). It refuses to start when there is no `app.db` there, so a wrong path cannot create an empty database.
+- Each reset writes `admin_break_glass_reset` to the audit log in the same transaction, with the host name and OS user. Refused or cancelled runs write `admin_break_glass_failed`. Integrations subscribed to `break_glass_used` get an alert. Review these with the other admin events.
+- It only resets admin accounts. Anyone who can open this terminal can already read the database, so protect host and Coolify access accordingly (see `docs/concepts/security-model.md`).
 
 ## Maintenance
 

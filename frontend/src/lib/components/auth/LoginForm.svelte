@@ -14,7 +14,8 @@
         {/if}
 
         <form 
-            method="POST" 
+            method="POST"
+            action="?/password"
             use:enhance={() => {
                 loading = true;
                 return async ({ update }) => {

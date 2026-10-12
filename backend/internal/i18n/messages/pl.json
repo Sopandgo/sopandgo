@@ -37,5 +37,9 @@
   "pdf.stage.rc": "kandydat do wydania",
   "pdf.stage.published": "opublikowana",
   "pdf.stage.rejected": "odrzucona",
-  "pdf.stage.superseded": "zastąpiona"
+  "pdf.stage.superseded": "zastąpiona",
+  "mail.two_factor_code.subject": "Twój kod logowania SOPandGO",
+  "mail.two_factor_code.body": "Cześć {name},\n\nTwój kod logowania to:\n\n{code}\n\nDziała jeden raz i wygasa za 10 minut.\n\nJeśli to nie Ty próbowałeś się zalogować, zmień hasło i poinformuj administratora.\n\nPozdrawiamy,\nZespół SOPandGO",
+  "notify.break_glass.title": "Logowanie administratora zresetowane na serwerze",
+  "notify.break_glass.message": "Polecenie recover-admin zresetowało logowanie konta {email} na hoście {hostname}. Jeśli nikt z Twojego zespołu tego nie zrobił, sprawdź dziennik audytu."
 }

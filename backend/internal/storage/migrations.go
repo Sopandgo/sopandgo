@@ -534,6 +534,49 @@ var migrations = []migration{
 			return err
 		},
 	},
+	// v27: two-factor authentication. TOTP secrets are sealed with
+	// SECRET_ENCRYPTION_KEY; recovery and email codes store only SHA-256 hashes.
+	// pending_secret_enc holds a new authenticator until its first code is
+	// confirmed, so a replacement does not switch off the current one.
+	// two_factor_policy is the organization's required second factor:
+	// none, email (emailed code or app), or totp (app only); checked in Go.
+	{
+		version: 27,
+		up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`
+				CREATE TABLE user_two_factor (
+					user_id TEXT PRIMARY KEY,
+					totp_secret_enc BLOB,
+					pending_secret_enc BLOB,
+					confirmed_at TEXT,
+					last_used_step INTEGER NOT NULL DEFAULT 0,
+					created_at TEXT NOT NULL,
+					FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+				);
+
+				CREATE TABLE two_factor_recovery_codes (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					user_id TEXT NOT NULL,
+					code_hash TEXT NOT NULL UNIQUE,
+					created_at TEXT NOT NULL,
+					FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+				);
+				CREATE INDEX idx_two_factor_recovery_codes_user ON two_factor_recovery_codes(user_id);
+
+				CREATE TABLE two_factor_email_codes (
+					user_id TEXT PRIMARY KEY,
+					code_hash TEXT NOT NULL,
+					expires_at TEXT NOT NULL,
+					attempts INTEGER NOT NULL DEFAULT 0,
+					created_at TEXT NOT NULL,
+					FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+				);
+
+				ALTER TABLE app_settings ADD COLUMN two_factor_policy TEXT NOT NULL DEFAULT 'none';
+			`)
+			return err
+		},
+	},
 }
 
 func LatestSchemaVersion() int {

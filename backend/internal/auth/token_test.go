@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -63,5 +64,40 @@ func TestPASETOTokenLifecycle(t *testing.T) {
 	_, err = auth.VerifyToken(jwtSpoof)
 	if err == nil {
 		t.Fatal("Expected PASETO parser to reject a fake JWT token format")
+	}
+}
+
+func TestTwoFactorChallenge_SingleUse(t *testing.T) {
+	token, err := auth.GenerateTwoFactorChallenge("user-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	claims, err := auth.VerifyTwoFactorChallenge(token)
+	if err != nil || claims.UserID != "user-1" || claims.ID == "" {
+		t.Fatalf("verify: %+v %v", claims, err)
+	}
+	if !auth.ConsumeTwoFactorChallenge(claims) {
+		t.Fatal("first consume should succeed")
+	}
+	if auth.ConsumeTwoFactorChallenge(claims) {
+		t.Fatal("second consume must fail")
+	}
+	if _, err := auth.VerifyTwoFactorChallenge(token); !errors.Is(err, auth.ErrChallengeUsed) {
+		t.Fatalf("verify a used challenge: got %v", err)
+	}
+
+	// Another challenge for the same user is independent.
+	other, _ := auth.GenerateTwoFactorChallenge("user-1")
+	if _, err := auth.VerifyTwoFactorChallenge(other); err != nil {
+		t.Fatalf("fresh challenge: %v", err)
+	}
+
+	// A challenge is not an access token, and an access token is not a challenge.
+	if _, err := auth.VerifyToken(token); err == nil {
+		t.Fatal("challenge accepted as access token")
+	}
+	access, _ := auth.GenerateAccessToken("user-1", auth.RoleViewer)
+	if _, err := auth.VerifyTwoFactorChallenge(access); err == nil {
+		t.Fatal("access token accepted as challenge")
 	}
 }

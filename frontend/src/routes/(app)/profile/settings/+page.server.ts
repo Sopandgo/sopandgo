@@ -7,11 +7,41 @@ import type { Actions, PageServerLoad } from './$types';
 /** Matches the backend limit; the cropper exports far less. */
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
+/** Maps a 2FA error code from the SDK to a message for the form. */
+function twoFactorMessage(err: unknown): string {
+    const code = err instanceof Error ? err.message : '';
+    switch (code) {
+        case 'WRONG_PASSWORD':
+            return m.error_current_password_wrong();
+        case 'TOO_MANY_ATTEMPTS':
+            return m.error_too_many_attempts();
+        case 'INVALID_CODE':
+            return m.two_factor_code_invalid();
+        case 'NO_PENDING_SETUP':
+            return m.two_factor_setup_expired();
+        case 'ENCRYPTION_KEY_MISSING':
+            return m.two_factor_key_missing();
+        case 'REQUIRED_BY_ORG':
+            return m.two_factor_required_cannot_disable();
+        case 'AUTHENTICATOR_UNAVAILABLE':
+            return m.two_factor_authenticator_unavailable();
+        default:
+            console.error('Two-factor settings error:', err);
+            return m.two_factor_action_failed();
+    }
+}
+
 export const load: PageServerLoad = async ({ locals }) => {
     if (!locals.user) {
         throw redirect(303, '/login');
     }
-    return { user: locals.user };
+    let twoFactor = null;
+    try {
+        twoFactor = await locals.api.auth.getTwoFactorStatus();
+    } catch (err) {
+        console.error('Two-factor status failed:', err);
+    }
+    return { user: locals.user, twoFactor };
 };
 
 export const actions: Actions = {
@@ -111,6 +141,46 @@ export const actions: Actions = {
             return fail(400, { removeAvatar: { ok: false, error: 'failed' } });
         }
         return { removeAvatar: { ok: true, error: null } };
+    },
+
+    beginTwoFactor: async ({ locals, request }) => {
+        const fd = await request.formData();
+        try {
+            const setup = await locals.api.auth.beginTwoFactorSetup(String(fd.get('current_password') ?? ''));
+            return { beginTwoFactor: { ok: true, setup } };
+        } catch (err) {
+            return fail(400, { beginTwoFactor: { error: twoFactorMessage(err) } });
+        }
+    },
+
+    confirmTwoFactor: async ({ locals, request }) => {
+        const fd = await request.formData();
+        try {
+            const recoveryCodes = await locals.api.auth.confirmTwoFactorSetup(String(fd.get('code') ?? '').trim());
+            return { confirmTwoFactor: { ok: true, recoveryCodes } };
+        } catch (err) {
+            return fail(400, { confirmTwoFactor: { error: twoFactorMessage(err) } });
+        }
+    },
+
+    disableTwoFactor: async ({ locals, request }) => {
+        const fd = await request.formData();
+        try {
+            await locals.api.auth.disableTwoFactor(String(fd.get('current_password') ?? ''));
+            return { disableTwoFactor: { ok: true } };
+        } catch (err) {
+            return fail(400, { disableTwoFactor: { error: twoFactorMessage(err) } });
+        }
+    },
+
+    regenerateRecoveryCodes: async ({ locals, request }) => {
+        const fd = await request.formData();
+        try {
+            const recoveryCodes = await locals.api.auth.regenerateRecoveryCodes(String(fd.get('current_password') ?? ''));
+            return { regenerateRecoveryCodes: { ok: true, recoveryCodes } };
+        } catch (err) {
+            return fail(400, { regenerateRecoveryCodes: { error: twoFactorMessage(err) } });
+        }
     },
 
     signOutOthers: async ({ locals }) => {

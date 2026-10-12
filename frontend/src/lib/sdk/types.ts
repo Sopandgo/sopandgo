@@ -18,8 +18,60 @@ export interface User {
     has_avatar: boolean;
     /** Content hash of the current picture; use as a cache-busting `v` value */
     avatar_content_hash?: string;
+    /** True when the user has a confirmed authenticator app */
+    two_factor_enabled: boolean;
+    /** True while the organization requires 2FA and this user has not set it up */
+    must_enroll_two_factor: boolean;
     /** ISO 8601 Timestamp */
     created_at: string;
+}
+
+/** Ways to pass the second sign-in step. `recovery_code` is offered to admins only. */
+export type TwoFactorMethod = 'totp' | 'email' | 'recovery_code';
+
+/**
+ * The organization's required second factor: `none`, `email` (an emailed code
+ * or an app; admins need an app), or `totp` (an app for everyone).
+ */
+export type TwoFactorPolicy = 'none' | 'email' | 'totp';
+
+/** Answer to a correct password when a second factor is required. */
+export interface TwoFactorChallenge {
+    challenge_token: string;
+    methods: TwoFactorMethod[];
+    /** True when email was the only method and the code was sent already */
+    email_sent: boolean;
+    /** Seconds until the challenge expires */
+    expires_in: number;
+}
+
+export interface TwoFactorStatus {
+    enabled: boolean;
+    /** A new authenticator is waiting for its first code */
+    pending_setup: boolean;
+    policy: TwoFactorPolicy;
+    /** The policy requires an authenticator app for this account */
+    required: boolean;
+    /** The policy accepts emailed sign-in codes for this account */
+    email_codes: boolean;
+    recovery_codes_remaining: number;
+    /** Recovery codes exist for admins only */
+    recovery_codes_available: boolean;
+    encryption_key_configured: boolean;
+}
+
+/** Returned once when an authenticator is set up. */
+export interface TwoFactorSetup {
+    secret: string;
+    otpauth_uri: string;
+    qr_code_data_url: string;
+}
+
+export interface SecuritySettings {
+    two_factor_policy: TwoFactorPolicy;
+    encryption_key_configured: boolean;
+    /** An email transport is saved and switched on */
+    email_transport_on: boolean;
 }
     
 export interface Acknowledgment {
@@ -219,7 +271,8 @@ export type IntegrationEvent =
     | 'sop_rc'
     | 'sop_rejected'
     | 'backup_s3_failed'
-    | 'integrity_check_failed';
+    | 'integrity_check_failed'
+    | 'break_glass_used';
 
 export interface PublicIntegrationChannel {
     enabled: boolean;

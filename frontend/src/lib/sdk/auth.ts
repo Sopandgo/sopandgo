@@ -1,11 +1,38 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import type { SerializeOptions } from 'cookie';
 import type { Client } from './client';
-import type { User, UserSignatureStatus } from './types';
+import type {
+    TwoFactorChallenge,
+    TwoFactorMethod,
+    TwoFactorSetup,
+    TwoFactorStatus,
+    User,
+    UserSignatureStatus
+} from './types';
 
 interface AuthResult {
     access_token: string;
     refresh_token?: string;
+}
+
+/** A password sign-in either opens a session or asks for the second factor. */
+export type LoginResult =
+    | { kind: 'session' }
+    | ({ kind: 'two_factor' } & TwoFactorChallenge);
+
+/**
+ * Turns a failed 2FA response into an Error whose message is the API's error
+ * code in upper case (e.g. INVALID_CODE, WRONG_PASSWORD, REQUIRED_BY_ORG).
+ */
+async function twoFactorError(res: Response, fallback: string): Promise<Error> {
+    if (res.status === 429) return new Error('TOO_MANY_ATTEMPTS');
+    try {
+        const body = (await res.json()) as { error?: string };
+        if (body?.error) return new Error(body.error.toUpperCase());
+    } catch {
+        /* plain-text error */
+    }
+    return new Error(fallback);
 }
 
 export const auth = (client: Client, event: RequestEvent) => {
@@ -41,7 +68,7 @@ export const auth = (client: Client, event: RequestEvent) => {
     };
 
     return {
-        login: async (email: string, password: string): Promise<AuthResult> => {
+        login: async (email: string, password: string): Promise<LoginResult> => {
             const res = await client.fetch('/auth/login', {
                 method: 'POST',
                 body: { email, password }
@@ -50,12 +77,91 @@ export const auth = (client: Client, event: RequestEvent) => {
             if (!res.ok) {
                 if (res.status === 401) throw new Error('INVALID_CREDENTIALS');
                 if (res.status === 403) throw new Error('ACCOUNT_INACTIVE');
+                if (res.status === 429) throw new Error('TOO_MANY_ATTEMPTS');
+                if (res.status === 503) throw new Error('SECOND_FACTOR_UNAVAILABLE');
                 throw new Error('LOGIN_FAILED');
             }
 
-            const result: AuthResult = await res.json();
-            setSession(result); 
-            return result;
+            const result: AuthResult | ({ two_factor_required: true } & TwoFactorChallenge) = await res.json();
+            if ('two_factor_required' in result && result.two_factor_required) {
+                return {
+                    kind: 'two_factor',
+                    challenge_token: result.challenge_token,
+                    methods: result.methods,
+                    email_sent: !!result.email_sent,
+                    expires_in: result.expires_in
+                };
+            }
+            setSession(result as AuthResult);
+            return { kind: 'session' };
+        },
+
+        /** Second sign-in step: opens the session when the code is right. */
+        verifyTwoFactor: async (challengeToken: string, method: TwoFactorMethod, code: string): Promise<void> => {
+            const res = await client.fetch('/auth/login/two-factor', {
+                method: 'POST',
+                body: { challenge_token: challengeToken, method, code }
+            }, false);
+            if (!res.ok) throw await twoFactorError(res, 'LOGIN_FAILED');
+            setSession(await res.json());
+        },
+
+        /** Mails a one-time sign-in code (only offered when mail is set up). */
+        sendTwoFactorEmail: async (challengeToken: string): Promise<void> => {
+            const res = await client.fetch('/auth/login/two-factor/email', {
+                method: 'POST',
+                body: { challenge_token: challengeToken }
+            }, false);
+            if (!res.ok) throw await twoFactorError(res, 'EMAIL_FAILED');
+        },
+
+        getTwoFactorStatus: async (): Promise<TwoFactorStatus> => {
+            const res = await client.fetch('/auth/me/two-factor', { method: 'GET' });
+            if (!res.ok) throw await twoFactorError(res, 'TWO_FACTOR_STATUS_FAILED');
+            return await res.json();
+        },
+
+        /** Starts adding an authenticator. The secret is shown once. */
+        beginTwoFactorSetup: async (currentPassword: string): Promise<TwoFactorSetup> => {
+            const res = await client.fetch('/auth/me/two-factor/setup', {
+                method: 'POST',
+                body: { current_password: currentPassword }
+            });
+            if (!res.ok) throw await twoFactorError(res, 'TWO_FACTOR_SETUP_FAILED');
+            return await res.json();
+        },
+
+        /**
+         * Confirms the new authenticator with its first code and signs out every
+         * other session. Admins get recovery codes back, once.
+         */
+        confirmTwoFactorSetup: async (code: string): Promise<string[]> => {
+            const res = await client.fetch('/auth/me/two-factor/confirm', {
+                method: 'POST',
+                body: { code, refresh_token: event.cookies.get('refresh_token') ?? '' }
+            });
+            if (!res.ok) throw await twoFactorError(res, 'TWO_FACTOR_CONFIRM_FAILED');
+            const result: { recovery_codes: string[] | null } = await res.json();
+            return result.recovery_codes ?? [];
+        },
+
+        disableTwoFactor: async (currentPassword: string): Promise<void> => {
+            const res = await client.fetch('/auth/me/two-factor', {
+                method: 'DELETE',
+                body: { current_password: currentPassword }
+            });
+            if (!res.ok) throw await twoFactorError(res, 'TWO_FACTOR_DISABLE_FAILED');
+        },
+
+        /** Admins only: replaces the recovery codes. */
+        regenerateRecoveryCodes: async (currentPassword: string): Promise<string[]> => {
+            const res = await client.fetch('/auth/me/two-factor/recovery-codes', {
+                method: 'POST',
+                body: { current_password: currentPassword }
+            });
+            if (!res.ok) throw await twoFactorError(res, 'RECOVERY_CODES_FAILED');
+            const result: { recovery_codes: string[] } = await res.json();
+            return result.recovery_codes;
         },
 
         refresh: async (refreshToken: string): Promise<AuthResult> => {

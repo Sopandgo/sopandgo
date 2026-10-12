@@ -37,5 +37,9 @@
   "pdf.stage.rc": "待发布候选",
   "pdf.stage.published": "已发布",
   "pdf.stage.rejected": "已拒绝",
-  "pdf.stage.superseded": "已取代"
+  "pdf.stage.superseded": "已取代",
+  "mail.two_factor_code.subject": "您的 SOPandGO 登录验证码",
+  "mail.two_factor_code.body": "{name}，您好：\n\n您的登录验证码是：\n\n{code}\n\n该验证码只能使用一次，10 分钟后失效。\n\n如果您没有尝试登录，请修改密码并告知管理员。\n\nSOPandGO 团队",
+  "notify.break_glass.title": "服务器上的管理员登录已被重置",
+  "notify.break_glass.message": "recover-admin 命令在主机 {hostname} 上重置了 {email} 的登录凭据。如果您的团队中没有人执行此操作，请检查审计日志。"
 }

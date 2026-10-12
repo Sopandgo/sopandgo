@@ -30,7 +30,10 @@ type Server struct {
 	backupSvc           *backup.Service
 	s3Settings          *backup.S3SettingsStore
 	s3Backup            *backup.S3Scheduler
-	mux                 *http.ServeMux
+	// twoFactorLimiter is keyed by user, not IP, so second-factor guesses
+	// spread over many addresses still hit a ceiling.
+	twoFactorLimiter *IPRateLimiter
+	mux              *http.ServeMux
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -71,6 +74,7 @@ func New(
 		backupSvc:           backupSvc,
 		s3Settings:          s3Settings,
 		s3Backup:            s3Backup,
+		twoFactorLimiter:    NewIPRateLimiter(rate.Every(time.Minute), 5),
 		mux:                 http.NewServeMux(),
 	}
 
@@ -90,6 +94,9 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("POST /api/auth/refresh", generalLimiter.Middleware(s.handleRefresh))
 	s.mux.HandleFunc("POST /api/auth/logout", s.handleLogout)
 	s.mux.HandleFunc("PATCH /api/auth/reset-password", loginLimiter.Middleware(s.handleResetPassword))
+	// Second sign-in step, after a correct password on an account with 2FA.
+	s.mux.HandleFunc("POST /api/auth/login/two-factor", loginLimiter.Middleware(s.handleLoginTwoFactor))
+	s.mux.HandleFunc("POST /api/auth/login/two-factor/email", loginLimiter.Middleware(s.handleLoginTwoFactorEmail))
 
 	// protected routes
 	protected := func(h http.HandlerFunc) http.HandlerFunc {
@@ -107,6 +114,12 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("DELETE /api/auth/me/avatar", protected(s.handleDeleteMyAvatar))
 	s.mux.HandleFunc("GET /api/auth/me", protected(s.handleGetMe))
 	s.mux.HandleFunc("GET /api/auth/me/signature-status", protected(s.handleGetMySignatureStatus))
+	// two-factor (self-service). Endpoints that check the password share the login limiter.
+	s.mux.HandleFunc("GET /api/auth/me/two-factor", protected(s.handleGetMyTwoFactor))
+	s.mux.HandleFunc("POST /api/auth/me/two-factor/setup", loginLimiter.Middleware(protected(s.handleBeginTwoFactorSetup)))
+	s.mux.HandleFunc("POST /api/auth/me/two-factor/confirm", loginLimiter.Middleware(protected(s.handleConfirmTwoFactorSetup)))
+	s.mux.HandleFunc("DELETE /api/auth/me/two-factor", loginLimiter.Middleware(protected(s.handleDisableTwoFactor)))
+	s.mux.HandleFunc("POST /api/auth/me/two-factor/recovery-codes", loginLimiter.Middleware(protected(s.handleRegenerateRecoveryCodes)))
 	s.mux.HandleFunc("GET /api/users/{userID}/avatar", protected(s.handleGetUserAvatar))
 
 	// sops
@@ -200,6 +213,9 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("PATCH /api/admin/users/{userID}/update-status", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminUpdateStatus)),
 	)
+	s.mux.HandleFunc("DELETE /api/admin/users/{userID}/two-factor", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminResetUserTwoFactor)),
+	)
 	s.mux.HandleFunc("GET /api/admin/sessions", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminListSessions)),
 	)
@@ -245,6 +261,13 @@ func (s *Server) registerRoutes() {
 	)
 	s.mux.HandleFunc("PATCH /api/admin/settings/default-locale", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPatchDefaultLocale)),
+	)
+	// admin / security (organization-wide 2FA requirement)
+	s.mux.HandleFunc("GET /api/admin/settings/security", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminGetSecuritySettings)),
+	)
+	s.mux.HandleFunc("PATCH /api/admin/settings/security", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminPatchSecuritySettings)),
 	)
 	// admin / integrations (Slack, Gotify, generic webhook)
 	s.mux.HandleFunc("GET /api/admin/settings/integrations", protected(

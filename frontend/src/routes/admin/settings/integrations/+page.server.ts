@@ -8,7 +8,8 @@ const ALL_EVENTS: IntegrationEvent[] = [
     'sop_rc',
     'sop_rejected',
     'backup_s3_failed',
-    'integrity_check_failed'
+    'integrity_check_failed',
+    'break_glass_used'
 ];
 
 function parseEvents(fd: FormData): IntegrationEvent[] {

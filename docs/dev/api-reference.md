@@ -25,7 +25,9 @@ Protected routes expect `Authorization: Bearer <access_token>`. Login/refresh re
 
 ## Auth and scopes (summary)
 
-- Public: `GET /api/health`, login, refresh, logout, reset-password completion.
+- Public: `GET /api/health`, login, refresh, logout, reset-password completion, and the two-factor sign-in step (`POST /api/auth/login/two-factor`, `…/two-factor/email`, which take the challenge token from login instead of a bearer token).
+- Two-factor: login returns `two_factor_required` with a `challenge_token` instead of tokens for accounts with 2FA. Self-service lives under `/api/auth/me/two-factor`, the admin reset at `DELETE /api/admin/users/{userID}/two-factor`, the organization policy (`two_factor_policy`: `none`, `email`, `totp`) at `/api/admin/settings/security`. 2FA errors are JSON `{ "error": "<code>" }` (for example `invalid_code`, `wrong_password`, `required_by_org`, `method_not_allowed`). Login answers `503 second_factor_unavailable` when the policy needs an emailed code but email is off. Details in [`auth-architecture.md`](./auth-architecture.md#1a-two-factor-authentication).
+- While the organization's policy requires an app for an account without one (`must_enroll_two_factor`), it may also only call `GET /api/auth/me/two-factor`, `POST /api/auth/me/two-factor/setup`, and `…/confirm`, besides the password-change allow-list below.
 - Everything else: bearer access token, plus optional `requireScope(...)` (see `api.go`).
 - Bootstrap / `must_change_password`: only `GET /api/auth/me`, `PATCH /api/auth/me/update-password`, `PATCH /api/auth/me/locale`, and `PATCH /api/auth/me/theme` until the password is changed (not avatar upload/delete).
 - `GET /api/auth/me` includes `locale`, `theme`, `has_avatar`, and `avatar_content_hash`. `PATCH /api/auth/me/locale` with `{ "locale": "<tag>" }` stores a tag from the supported list (`en`, `de`, `fr`, `es`, `pt`, `zh`, `it`, `nl`, `pl`, `ja`, `ko`, `tr`, `sv`, `cs`, `sk`) and rejects anything else with 400. `PATCH /api/auth/me/theme` with `{ "theme": "light" }`, `"dark"`, or `"system"` stores that preference and rejects anything else with 400.
@@ -42,7 +44,7 @@ Protected routes expect `Authorization: Bearer <access_token>`. Login/refresh re
 | `401` | Missing/invalid token |
 | `403` | Missing scope, password-change gate, or wrong current password |
 | `404` | Missing resource |
-| `409` | Invalid lifecycle or backup conflict |
+| `409` | Invalid lifecycle or backup conflict; 2FA precondition (`required_by_org`, `encryption_key_missing`, `authenticator_unavailable`, `email_transport_off`, `actor_needs_two_factor`) |
 | `412` | Encryption key / credentials precondition |
 | `422` | Backup archive validation failed |
 | `429` | Rate limit (strict on login/reset/password change; general elsewhere) |

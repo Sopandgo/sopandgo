@@ -14,7 +14,9 @@ import type {
     BackupImportValidation,
     BackupApplyResponse,
     BackupS3Settings,
-    BackupS3SettingsInput
+    BackupS3SettingsInput,
+    SecuritySettings,
+    TwoFactorPolicy
 } from './types';
 
 export const admin = (client: Client) => ({
@@ -182,6 +184,43 @@ export const admin = (client: Client) => ({
             method: 'GET'
         });
         if (!res.ok) throw new Error('INTEGRITY_CHECK_FAILED');
+        return await res.json();
+    },
+
+    /**
+     * Clears a normal user's 2FA so they set it up again. Admin accounts are
+     * refused (ADMIN_TARGET); they recover with recovery codes or recover-admin.
+     */
+    resetUserTwoFactor: async (userId: string): Promise<void> => {
+        const res = await client.fetch(`/admin/users/${userId}/two-factor`, { method: 'DELETE' });
+        if (res.status === 403) throw new Error('ADMIN_TARGET');
+        if (!res.ok) throw new Error('RESET_TWO_FACTOR_FAILED');
+    },
+
+    // --- Security (organization-wide 2FA) ---
+
+    getSecuritySettings: async (): Promise<SecuritySettings> => {
+        const res = await client.fetch('/admin/settings/security', { method: 'GET' });
+        if (!res.ok) throw new Error('SECURITY_SETTINGS_FETCH_FAILED');
+        return await res.json();
+    },
+
+    /** Errors carry the API code in upper case, e.g. ACTOR_NEEDS_TWO_FACTOR. */
+    updateSecuritySettings: async (two_factor_policy: TwoFactorPolicy): Promise<SecuritySettings> => {
+        const res = await client.fetch('/admin/settings/security', {
+            method: 'PATCH',
+            body: { two_factor_policy }
+        });
+        if (!res.ok) {
+            let code = 'SECURITY_SETTINGS_UPDATE_FAILED';
+            try {
+                const body = (await res.json()) as { error?: string };
+                if (body?.error) code = body.error.toUpperCase();
+            } catch {
+                /* plain-text error */
+            }
+            throw new Error(code);
+        }
         return await res.json();
     },
 

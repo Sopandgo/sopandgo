@@ -37,5 +37,9 @@
   "pdf.stage.rc": "candidato a publicación",
   "pdf.stage.published": "publicado",
   "pdf.stage.rejected": "rechazado",
-  "pdf.stage.superseded": "reemplazado"
+  "pdf.stage.superseded": "reemplazado",
+  "mail.two_factor_code.subject": "Tu código de inicio de sesión de SOPandGO",
+  "mail.two_factor_code.body": "Hola {name}:\n\nTu código de inicio de sesión es:\n\n{code}\n\nSolo se puede usar una vez y caduca en 10 minutos.\n\nSi no intentaste iniciar sesión, cambia tu contraseña y avisa a tu administrador.\n\nSaludos,\nEl equipo de SOPandGO",
+  "notify.break_glass.title": "Inicio de sesión de administrador restablecido en el servidor",
+  "notify.break_glass.message": "El comando recover-admin restableció el inicio de sesión de {email} en el host {hostname}. Si nadie de tu equipo lo hizo, revisa el registro de auditoría."
 }

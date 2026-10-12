@@ -50,8 +50,34 @@ Key properties:
 - **Password change needs the current password:** Changing the password from account settings asks for the current one. Someone who finds a session left open on a shared PC cannot use it to lock the owner out. Reset links do not ask for it, because the one-time token already proves identity.
 - **Brute-Force Protection:** Login, Password Reset, and the signed-in password change are protected by strict IP-based rate limiting to prevent credential guessing attacks.
 - **Administrative Recovery:** Admins can trigger password resets.
+- **Two-factor authentication:** Each user can add an authenticator app (TOTP, RFC 6238). When a second factor applies, the server asks for a code after a correct password, before it creates a session. A code is accepted once; replaying it fails. One password step opens at most one session, even if more valid codes are presented. Setting up, replacing, or turning off 2FA needs the current password. The TOTP secret is sealed with `SECRET_ENCRYPTION_KEY`, so 2FA cannot be turned on without that key, and a leaked database or backup alone does not reveal the secrets.
+- **Organization policy (required second factor):** An admin chooses one of three levels under **Settings → General → Security**:
+
+  | Level | Users without an app | Users with an app | Admins | Email codes |
+  | --- | --- | --- | --- | --- |
+  | **None** (default) | Password only | App code | App code if they set one up | Never |
+  | **Email code or app** | Emailed code at every sign-in | App code or emailed code | Must set up an app | Normal users only |
+  | **Authenticator app** | Must set up an app first | App code | Must set up an app | Never |
+
+  Anyone can add an app voluntarily at any level. Only an admin who already uses an app can raise the level above none. The email level can only be chosen while an email transport is switched on. Accounts that must set up an app can only do that (plus change language, theme, or password) until they have one. Every change is audited as `two_factor_policy_updated`.
+- **Email codes:** A 6-digit code mailed to the account's address (valid 10 minutes, one use, five tries, at most one send per minute, counted from the last send whether or not that code was used). The invite or reset link already proved that the user controls that mailbox, so no setup is needed. At the email level the second factor is "authenticator app **or** mailbox": someone with the password and access to the user's mailbox can sign in. Labs that do not want that choose the app level.
+- **Why admins always need an app:** an admin's mailbox is the most valuable one to an attacker, the bootstrap admin has no real address, and an admin who signs in with an app can still change the policy if mail breaks.
+- **If email stops working at the email level:** users without an app cannot sign in (the server refuses rather than letting the password alone through) until email works again or an admin lowers the level. Settings → Email warns about this before you switch email off.
+- **Recovery codes (admins only):** Admins get 10 single-use recovery codes when they set up an app. Only SHA-256 hashes are stored. Codes stop working when the account is no longer an admin.
+- **Admin reset for normal users:** Admins can reset a normal user's 2FA from **Admin → Users**; the user is signed out and sets it up again. Admin accounts cannot be reset there, so a stolen admin session cannot quietly strip another admin's second factor through the UI.
+- **Rate limits on the second factor:** The code step uses the strict per-IP limiter plus a per-account limit, so guesses spread over many addresses still stop.
 
 External identity providers (SSO, LDAP, OAuth) are **out of scope**.
+
+
+## Break-glass recovery for admins
+
+An admin who lost their password, authenticator, and recovery codes is recovered on the host, not in the web app. The operator opens a shell in the `sopandgo` container (for example the Coolify **Terminal**, or `docker compose exec`) and runs `./sopandgo recover-admin --email <email>`. In one transaction it removes the admin's second factor and recovery codes, sets a temporary password that must be changed at the next sign-in, reactivates the account, and signs out every session. Steps are in [deployment.md](../ops/deployment.md#locked-out-admin-break-glass).
+
+- **No web route.** The command is part of the backend binary and has no HTTP endpoint. Nobody can reach it over the network, with or without an admin session.
+- **Always audited.** Each reset writes `admin_break_glass_reset` in the same transaction as the change; if that audit write fails, nothing changes. Refused or cancelled runs write `admin_break_glass_failed`. Both carry the host name and OS user and enter the hash chain like every other event. The temporary password is never logged. Integrations subscribed to `break_glass_used` get an alert.
+- **Admin accounts only.** Normal users are reset from **Admin → Users**.
+- **Who can use it:** anyone with a shell in the container or write access to the data directory. That is already outside what sopandgo defends (see below). The image runs Caddy, the SvelteKit server, and the Go API in one container, so code execution in any of them counts as host access: it could read `app.db` directly even without this command. Break-glass makes recovery possible and visible; it does not add a new boundary.
 
 
 ## Authorization and access control
@@ -125,6 +151,7 @@ sopandgo does **not** protect against:
 
 - A compromised host operating system on the server.
 - Malicious administrators or users with direct file/database access, although hash chained audit logs make this detectable.
+- Someone with a shell in the container resetting an admin's sign-in with `recover-admin`. This is the intended recovery path; it is audited and alerted, not prevented.
 - Physical access to the server.
 - Institutional network breaches or 'Man-in-the-Middle' attacks between the client and the server. While the internal Caddy instance handles routing, end-to-end encryption depends on the operator correctly configuring external SSL/TLS termination.
 

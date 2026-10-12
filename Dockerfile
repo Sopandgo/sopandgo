@@ -31,7 +31,7 @@ RUN go mod download
 COPY backend/ .
 
 # Build the main application and the data seeder
-RUN go build -o /sopandgo ./cmd/sopandgo/main.go
+RUN go build -o /sopandgo ./cmd/sopandgo
 RUN go build -o /seeder ./cmd/seed-demo-data/main.go
 
 # --- Stage 3: Final Runtime Image ---
