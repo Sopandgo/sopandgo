@@ -10,7 +10,7 @@ organization operating it.
 
 ## Scope and intent
 
-sopandgo is designed as a **self-hosted internal tool** for managing SOPs within small
+SOPandGO is designed as a **self-hosted internal tool** for managing SOPs within small
 labs and research organizations.
 
 Its security model focuses on:
@@ -24,7 +24,7 @@ IT infrastructure.
 
 ## Trust assumptions
 
-sopandgo operates under the following assumptions:
+SOPandGO operates under the following assumptions:
 
 - The host system (server, VM, or workstation) is trusted and maintained by the
   organization.
@@ -32,7 +32,7 @@ sopandgo operates under the following assumptions:
 - Network access to the service is intentionally limited (e.g. internal network,
   VPN, reverse proxy).
 
-If these assumptions do not hold, sopandgo cannot provide meaningful protection.
+If these assumptions do not hold, SOPandGO cannot provide meaningful protection.
 
 
 ## Identity and authentication
@@ -77,7 +77,7 @@ An admin who lost their password, authenticator, and recovery codes is recovered
 - **No web route.** The command is part of the backend binary and has no HTTP endpoint. Nobody can reach it over the network, with or without an admin session.
 - **Always audited.** Each reset writes `admin_break_glass_reset` in the same transaction as the change; if that audit write fails, nothing changes. Refused or cancelled runs write `admin_break_glass_failed`. Both carry the host name and OS user and enter the hash chain like every other event. The temporary password is never logged. Integrations subscribed to `break_glass_used` get an alert.
 - **Admin accounts only.** Normal users are reset from **Admin → Users**.
-- **Who can use it:** anyone with a shell in the container or write access to the data directory. That is already outside what sopandgo defends (see below). The image runs Caddy, the SvelteKit server, and the Go API in one container, so code execution in any of them counts as host access: it could read `app.db` directly even without this command. Break-glass makes recovery possible and visible; it does not add a new boundary.
+- **Who can use it:** anyone with a shell in the container or write access to the data directory. That is already outside what SOPandGO defends (see below). The image runs Caddy, the SvelteKit server, and the Go API in one container, so code execution in any of them counts as host access: it could read `app.db` directly even without this command. Break-glass makes recovery possible and visible; it does not add a new boundary.
 
 
 ## Authorization and access control
@@ -94,7 +94,7 @@ Access to SOPs and administrative actions is controlled by **roles** and **scope
 
 ## Session management
 
-sopandgo uses **short-lived access tokens** combined with **server-tracked login sessions**.
+SOPandGO uses **short-lived access tokens** combined with **server-tracked login sessions**.
 The system uses Platform-Agnostic Security Tokens (PASETO) instead of JWT, avoids common JWT footguns.
 
 This allows for:
@@ -111,6 +111,17 @@ Admins may configure instance-level destinations (Slack Incoming Webhooks, Gotif
 - **Best-effort delivery:** failed notification sends are audited (`notification_failed`) and do not undo publish/promote/reject.
 - **Not a bot platform:** Incoming Webhooks / HTTP push only — no OAuth Slack apps, slash commands, or interactive components.
 
+## Branding
+
+Admins can set the organization's name, logo, and primary colour under **Settings → Branding**.
+
+- **Public by design:** the sign-in page shows the name and logo, so `GET /api/branding` and `GET /api/branding/logo` need no session. Anyone who can reach the server can read the name, the colours, and the logo. Do not put anything confidential in them.
+- **Images are re-encoded:** uploads must be PNG, JPEG, or WebP (at most 2 MB and 4096 pixels per side). The server decodes them and stores freshly encoded PNGs, so metadata and any non-pixel bytes are dropped. SVG is refused because it can carry script and the logo is served without a session. Responses carry `X-Content-Type-Options: nosniff`.
+- **Readable colours:** a custom primary colour must reach 4.5:1 contrast against the theme's background; the server rejects anything else.
+- **Name in emails:** the name replaces "SOPandGO" in invite, reset, sign-in code, and test messages. Line breaks and other control characters are rejected, so the name cannot add mail headers. A misleading name is an admin's choice, like any other admin power.
+- **Attribution stays:** "Powered by SOPandGO" remains in the footer and sidebar.
+- **Audited:** changes are logged as `branding_updated`, `branding_logo_updated`, `branding_logo_removed`, and `branding_reset` (back to every default; the event keeps the old values).
+
 ## Scheduled S3 backups
 
 Admins configure automatic backups to an S3 bucket under **Settings → Backup**. Each run uploads the same full archive as **Export**: the database (including password hashes and the audit log) and every SOP file.
@@ -122,9 +133,9 @@ Admins configure automatic backups to an S3 bucket under **Settings → Backup**
 
 ## Data integrity and auditability
 
-sopandgo assumes a "Trust but Verify" approach to the filesystem. While the application logic is trusted, the underlying filesystem state is considered potentially volatile (e.g., bit-rot, manual file edits, or external sync errors).
+SOPandGO assumes a "Trust but Verify" approach to the filesystem. While the application logic is trusted, the underlying filesystem state is considered potentially volatile (e.g., bit-rot, manual file edits, or external sync errors).
 
-sopandgo distinguishes between **content** and **metadata**:
+SOPandGO distinguishes between **content** and **metadata**:
 
 - **Filesystem Storage:** SOP content and assets are stored as versioned files.
 - **Database Metadata:** Metadata, acknowledgments, and audit events are stored in a database.
@@ -135,20 +146,20 @@ sopandgo distinguishes between **content** and **metadata**:
 - **System Scan:** Admins can run a full scan at **Admin → Integrity** (`/admin/integrity`). It re-hashes every version and asset and verifies the audit hash chain. Each run is written to the audit log, and a failed run sends `integrity_check_failed` to enabled integrations. The scan runs only when an admin starts it; nothing schedules it.
 
 
-## What sopandgo protects against
+## What SOPandGO protects against
 
-sopandgo is designed to reduce risk from:
+SOPandGO is designed to reduce risk from:
 
 - Accidental or unauthorized SOP modification.
 - Missing or disputed Acknowledgment records
 - Confusion regarding which SOP version was active at a specific time.
 - Unauthorized viewing of internal SOPs
 - Brute-force credential attacks.
-- Undetected tampering of audit history, although external anchoring is not enforced by sopandgo yet.
+- Undetected tampering of audit history, although external anchoring is not enforced by SOPandGO yet.
 
-## What sopandgo does NOT protect against
+## What SOPandGO does NOT protect against
 
-sopandgo does **not** protect against:
+SOPandGO does **not** protect against:
 
 - A compromised host operating system on the server.
 - Malicious administrators or users with direct file/database access, although hash chained audit logs make this detectable.
@@ -161,7 +172,7 @@ It is **not** a hardened security application.
 
 ## Operational responsibilities
 
-Operators of sopandgo are responsible for:
+Operators of SOPandGO are responsible for:
 - **Host Security:** Securing the OS and controlling physical/SSH access.
 - **External SSL/TLS:** The container includes an internal Caddy instance for routing, an external reverse proxy is not included.
 - **Data Persistence:** Operators must ensure the backend/data volume is correctly mounted to persistent storage. If the volume is lost, all audit logs and user identities are lost.
@@ -171,4 +182,4 @@ Operators of sopandgo are responsible for:
 
 ## Regulatory considerations
 
-sopandgo is **not validated** for use in regulated environments such as GMP, GLP, or ISO-certified processes. While it provides traceability and audit-friendly records, responsibility for regulatory compliance remains entirely with the organization.
+SOPandGO is **not validated** for use in regulated environments such as GMP, GLP, or ISO-certified processes. While it provides traceability and audit-friendly records, responsibility for regulatory compliance remains entirely with the organization.

@@ -22,6 +22,6 @@ You should receive an acknowledgment within a reasonable time. Please give us ti
 
 ## Trust model (summary)
 
-sopandgo is a **self-hosted** tool. Operators are responsible for host hardening, network exposure, TLS termination, and backups. The application focuses on authentication, RBAC, session revocation, and tamper-evident audit trails — not enterprise SSO or QMS validation.
+SOPandGO is a **self-hosted** tool. Operators are responsible for host hardening, network exposure, TLS termination, and backups. The application focuses on authentication, RBAC, session revocation, and tamper-evident audit trails — not enterprise SSO or QMS validation.
 
 See [`docs/concepts/security-model.md`](docs/concepts/security-model.md) for assumptions and limitations.

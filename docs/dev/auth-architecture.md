@@ -2,7 +2,7 @@
 
 ## 1. Token Strategy: Stateless Access, Stateful Refresh
 
-sopandgo uses a hybrid token model. This allows the backend to verify common requests (like viewing an SOP) without hitting the database, while still maintaining the ability to revoke access within minutes.
+SOPandGO uses a hybrid token model. This allows the backend to verify common requests (like viewing an SOP) without hitting the database, while still maintaining the ability to revoke access within minutes.
 
 ### Access Tokens (Stateless)
 
@@ -75,7 +75,7 @@ Both steps sit behind the strict login limiter. Step 2 also has a per-account li
 
 ## 2. Password Security
 
-sopandgo follows current industry standards for credential storage:
+SOPandGO follows current industry standards for credential storage:
 
 * **Algorithm:** Bcrypt (`golang.org/x/crypto/bcrypt`).
 * **Cost Factor:** 12 (balancing resistance to brute-force with server performance).

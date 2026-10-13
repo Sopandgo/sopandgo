@@ -1,6 +1,6 @@
 # Changelog
 
-All notable releases of sopandgo are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
+All notable releases of SOPandGO are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
 
 ## 1.1.1
 

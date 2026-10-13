@@ -1,6 +1,6 @@
-# Evaluating sopandgo
+# Evaluating SOPandGO
 
-Use this guide if you want to try sopandgo on your own machine before deploying it for a lab. There is no hosted multi-tenant demo — evaluation means running the Docker stack locally with sample data.
+Use this guide if you want to try SOPandGO on your own machine before deploying it for a lab. There is no hosted multi-tenant demo — evaluation means running the Docker stack locally with sample data.
 
 ## Prerequisites
 
@@ -73,7 +73,7 @@ Six short sample SOPs, each tagged *Demo* plus topic tags (*Molecular Biology*, 
 
 You do not need real SMTP for a first look: with no email transport switched on, inviting another user gives you a **manual link** to share.
 
-To try two-factor authentication, set `SECRET_ENCRYPTION_KEY` in `.env` and restart, then set it up under **Account settings** with any authenticator app. As admin, keep the recovery codes; if you lock yourself out of a trial anyway, run `docker compose exec sopandgo ./sopandgo recover-admin --email admin`.
+To try two-factor authentication, set `SECRET_ENCRYPTION_KEY` in `.env` and restart, then set it up under **Account settings** with any authenticator app. As admin, keep the recovery codes; if you lock yourself out of a trial anyway, run `docker compose exec SOPandGO ./sopandgo recover-admin --email admin`.
 
 Before sign-in, the top bar has a language menu and a light/dark toggle. Supported locales include English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, Swedish, Czech, and Slovak. The appearance choice stays in the browser until sign-in. After sign-in, the avatar menu at the top right switches appearance (light, dark, or system) and links to **Account settings** (`/profile/settings`), where you can also change your language and set a profile picture (crop, then upload). Admins set the organization language on **Settings**; that language is used for shared notifications and PDF chrome. The seeded sample SOPs stay in the English Markdown they were written in.
 

@@ -8,6 +8,7 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
+	"github.com/sopandgo/sopandgo/backend/internal/branding"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
@@ -30,6 +31,7 @@ type Server struct {
 	backupSvc           *backup.Service
 	s3Settings          *backup.S3SettingsStore
 	s3Backup            *backup.S3Scheduler
+	brandingService     *branding.Service
 	// twoFactorLimiter is keyed by user, not IP, so second-factor guesses
 	// spread over many addresses still hit a ceiling.
 	twoFactorLimiter *IPRateLimiter
@@ -61,6 +63,7 @@ func New(
 	backupSvc *backup.Service,
 	s3Settings *backup.S3SettingsStore,
 	s3Backup *backup.S3Scheduler,
+	brandingService *branding.Service,
 ) *Server {
 	s := &Server{
 		Config:              config,
@@ -74,6 +77,7 @@ func New(
 		backupSvc:           backupSvc,
 		s3Settings:          s3Settings,
 		s3Backup:            s3Backup,
+		brandingService:     brandingService,
 		twoFactorLimiter:    NewIPRateLimiter(rate.Every(time.Minute), 5),
 		mux:                 http.NewServeMux(),
 	}
@@ -88,6 +92,10 @@ func (s *Server) registerRoutes() {
 
 	// health
 	s.mux.HandleFunc("GET /api/health", generalLimiter.Middleware(s.handleHealth))
+
+	// branding (public: the sign-in page shows the organization's name and logo)
+	s.mux.HandleFunc("GET /api/branding", generalLimiter.Middleware(s.handleGetBranding))
+	s.mux.HandleFunc("GET /api/branding/logo", generalLimiter.Middleware(s.handleGetBrandingLogo))
 
 	// auth
 	s.mux.HandleFunc("POST /api/auth/login", loginLimiter.Middleware(s.handleLogin))
@@ -275,6 +283,19 @@ func (s *Server) registerRoutes() {
 	)
 	s.mux.HandleFunc("PATCH /api/admin/settings/security", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPatchSecuritySettings)),
+	)
+	// admin / branding (name, logo, primary colour)
+	s.mux.HandleFunc("PUT /api/admin/settings/branding", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutBranding)),
+	)
+	s.mux.HandleFunc("DELETE /api/admin/settings/branding", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminResetBranding)),
+	)
+	s.mux.HandleFunc("POST /api/admin/settings/branding/logo", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminUploadBrandingLogo)),
+	)
+	s.mux.HandleFunc("DELETE /api/admin/settings/branding/logo", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminDeleteBrandingLogo)),
 	)
 	// admin / integrations (Slack, Gotify, generic webhook)
 	s.mux.HandleFunc("GET /api/admin/settings/integrations", protected(

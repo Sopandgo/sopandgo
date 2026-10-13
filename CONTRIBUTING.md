@@ -1,6 +1,8 @@
 # Contributing
 
-Thanks for helping improve sopandgo. This project targets small labs that need versioned SOPs with acknowledgments — keep changes aligned with that scope (see the README “What this is not” section).
+Thanks for helping improve SOPandGO. This project targets small labs that need versioned SOPs with acknowledgments — keep changes aligned with that scope (see the README “What this is not” section).
+
+The product name is always **SOPandGO**, never split or re-cased; identifiers stay lowercase `sopandgo`. See [Product name](docs/design/style-guide.md#product-name).
 
 ## Development setup
 

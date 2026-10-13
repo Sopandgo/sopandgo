@@ -67,6 +67,24 @@ export interface TwoFactorSetup {
     qr_code_data_url: string;
 }
 
+/** Organization branding. Empty or missing fields mean the SOPandGO default. */
+export interface Branding {
+    name: string;
+    has_logo: boolean;
+    /** Content hash of the logo; changes with every upload, so it busts caches. */
+    logo_hash?: string;
+    primary_light?: string;
+    primary_light_content?: string;
+    primary_dark?: string;
+    primary_dark_content?: string;
+}
+
+export interface BrandingInput {
+    name: string;
+    primary_light: string;
+    primary_dark: string;
+}
+
 export interface SecuritySettings {
     two_factor_policy: TwoFactorPolicy;
     encryption_key_configured: boolean;

@@ -1,4 +1,7 @@
-# sopandgo
+# SOPandGO
+
+Website: [sopandgo.com](https://sopandgo.com)
+
 > [!NOTE]
 > **Stability:** From **1.0.0** onward, upgrades are intended to be forward-compatible: take a backup, pull the image, restart, and let append-only database migrations run. The compose file stays on version **1**. See [Upgrading](#upgrading) below.
 
@@ -8,7 +11,7 @@ A small, self-hosted SOP management system for labs and small research organizat
 
 ## What this is
 
-sopandgo is a lightweight tool for managing **standard operating procedures (SOPs)** as
+SOPandGO is a lightweight tool for managing **standard operating procedures (SOPs)** as
 structured, versioned documents with explicit acknowledgment and auditability.
 
 It is designed for environments where SOPs matter, but full QMS software is unnecessary
@@ -31,7 +34,7 @@ Core ideas:
 - Not a document editor replacement
 - Not cloud-hosted
 
-sopandgo does **not** claim to make an organization compliant with GMP, GLP, ISO, or any
+SOPandGO does **not** claim to make an organization compliant with GMP, GLP, ISO, or any
 other regulatory framework. It is a tooling aid, not a regulatory solution.
 
 ---
@@ -75,6 +78,7 @@ The system implements a **Stateless/Stateful Hybrid** security model:
 - **Locked-out admin:** The host operator resets an admin's sign-in with `./sopandgo recover-admin` in the container terminal. There is no web route for it, and every run is audited.
 - **Revocation:** Deactivating a user or changing their role applies on the next request. Revoking a refresh session stops new tokens immediately; an access token already issued lasts at most 5 minutes.
 - **Profile pictures:** Users upload their own picture; the server stores small re-encoded JPEGs. Any signed-in user can view them the same way they see display names.
+- **Branding:** Admins can set the organization's name, logo, and primary colour under **Settings → Branding**. Name and logo are public (the sign-in page shows them); logos are re-encoded PNGs, never SVG. A "Powered by SOPandGO" link stays in the footer and sidebar.
 - **RBAC:** Role-Based Access Control limits actions (e.g., only "Editors" can create drafts).
 - **Self-Contained:** No external identity providers required.
 
@@ -122,6 +126,7 @@ Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/eval
   - `PDF_RENDERER=gotenberg|none` selects renderer mode.
   - `GOTENBERG_URL` points to the Gotenberg service URL (default in Docker: `http://gotenberg:3000`).
   - `PDF_GENERATOR_VERSION` controls append-only artifact generation/backfill versioning.
+- **Branding:** On **Settings → Branding** (`/admin/settings/branding`), optionally replace the SOPandGO name, logo (also the browser tab icon), and primary colour. The name is also used in emails and notifications.
 - **Backups:** Admins can use **Settings → Backup** (`/admin/settings/backup`) to export a `.zip`, validate archives, and stage a restore (restart required). Optional automatic uploads to S3 (or S3-compatible storage) are set up on the same page, with a connection test and a run-now button; see `docs/ops/backup-and-restore.md`.
 
 See `docs/ops/deployment.md` for the full environment variable reference. How versions ship: `docs/ops/releasing.md`.
@@ -226,5 +231,5 @@ The demo data bundled with this application includes media files used under
 different licenses:
 * Sample images are sourced from Wikimedia Commons and are licensed under 
   Creative Commons (CC BY 4.0 / CC BY-SA 3.0). 
-* See `backend/demo/sops/87de1162-589b-4c91-8c37-8fae346a1ccc/assets/ATTRIBUTIONS.md` for full credits and license links used in the sopandgo backend.
+* See `backend/demo/sops/87de1162-589b-4c91-8c37-8fae346a1ccc/assets/ATTRIBUTIONS.md` for full credits and license links used in the SOPandGO backend.
 * The Gopher image is based on the Go Gopher created by Renee French. Licensed under Creative Commons Attribution 4.0 International License. https://creativecommons.org/licenses/by/4.0/

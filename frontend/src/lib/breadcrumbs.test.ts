@@ -43,6 +43,10 @@ describe('breadcrumbsFor', () => {
 			{ label: 'Settings', href: '/admin/settings' },
 			{ label: 'Email' }
 		]);
+		expect(breadcrumbsFor('/admin/settings/branding', {})).toEqual([
+			{ label: 'Settings', href: '/admin/settings' },
+			{ label: 'Branding' }
+		]);
 	});
 
 	it('returns no trail for unknown routes', () => {

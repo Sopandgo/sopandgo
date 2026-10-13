@@ -1,8 +1,23 @@
-# SOP and GO style guide
+# SOPandGO style guide
 
 The rules for the frontend's look and language. Token values live in [`tokens.json`](tokens.json) next to this file; token names match the daisyUI theme variables (`base-100` is `--color-base-100`, and so on). The theme itself is in `frontend/src/routes/layout.css`.
 
-SOP and GO is a self-hosted SOP system for labs and small research teams. People open it to find the procedure they need, sign that they have read it, and prove later that they did. The interface should feel like a well-kept lab notebook: calm, flat, precise, and trustworthy enough to show an auditor.
+SOPandGO is a self-hosted SOP system for labs and small research teams. People open it to find the procedure they need, sign that they have read it, and prove later that they did. The interface should feel like a well-kept lab notebook: calm, flat, precise, and trustworthy enough to show an auditor.
+
+## Product name
+
+The product is **SOPandGO**: one word, with "SOP" and "GO" in capitals and "and" in lower case.
+
+Never write it as SOP and GO, SOP & GO, SOP+GO, SopAndGo, Sopandgo, SOPANDGO, or (as a name in prose) sopandgo.
+
+- **Wherever a person reads the name, write SOPandGO.** That covers the interface, emails, notifications, docs, headings, log lines, code comments and alt text. At the start of a sentence it stays as written: "SOPandGO stores…".
+- **Identifiers stay lowercase `sopandgo`:** the repository, Go module path, binary (`./sopandgo`), Docker image and compose service, the `/sopandgo/` proxy prefix, npm package names and file names (`sopandgo-backup-….zip`). In docs, put them in code spans so they read as identifiers, not as the name: "Stop the `sopandgo` container".
+- **The GitHub organization is `Sopandgo`.** Keep its URLs exactly as they are, and never borrow that capitalisation for prose.
+- **Translations never translate, split or inflect the name.** Languages that build compounds join with a hyphen ("SOPandGO-Profil", "SOPandGO-herstelcodes"). Other languages keep it as a separate word.
+- **Text about a branded install uses the organization's name.** Use `brandName()` in the frontend and `{app_name}` in backend messages. An organization that types the product name in any spelling on the Branding tab gets the default, so it still reads SOPandGO. Write SOPandGO literally only where the product itself is meant: the "Powered by SOPandGO" attribution, the authenticator issuer, the recovery-code file and the docs.
+- **Link the name to [sopandgo.com](https://sopandgo.com)** wherever it is a link: the footer name, "Powered by SOPandGO", the sidebar's About row, and the top of the README. Use `PRODUCT_URL` from `frontend/src/lib/product.ts`. Navigation inside the app (the navbar logo, the sidebar header) stays inside the app.
+- **A version always links to GitHub:** a tagged version to its release, a build between tags to its commit, a dev build to the repository. Use `versionLabel()` and `versionUrl()` from `frontend/src/lib/product.ts`. The GitHub icon links to the repository.
+- **One source in code:** `DEFAULT_BRAND_NAME` in `frontend/src/lib/branding.ts` and `i18n.DefaultAppName` in `backend/internal/i18n`. `frontend/src/lib/productName.test.ts` fails on a split or mis-cased name in messages, code (except Go tests), config or docs. A line that lists wrong spellings on purpose must say "never", as this section does.
 
 ## Principles
 
@@ -27,6 +42,7 @@ SOP and GO is a self-hosted SOP system for labs and small research teams. People
 - Page background is `base-200`. Cards, the navbar, the sidebar, menus and inputs are `base-100`.
 - Body text is `base-content`. Metadata, timestamps and help text are `base-content-muted`. Do not dim text with `opacity-40/50/60`: those fail contrast. Use `text-base-content/70` at the least.
 - `primary` is the logo's ink (the same value as `base-content` in each theme), so the blue mascot is the only hue in the UI. It is for the main action on a page, the active nav item, the focus ring and selection (`primary-soft` behind it).
+- An organization may replace `primary` per theme under **Settings → Branding**. The value must reach 4.5:1 against that theme's `base-100`; `primary-content` becomes `base-100`. Components keep using `primary` and never assume it is ink. The logo and product name come from branding too: use `BrandLogo` and `brandName()`, never a hard-coded product name (see [Product name](#product-name)).
 - Colour no longer marks links: links are always underlined (`underline`, including in `prose`), in `base-content`. Hover may thicken the underline; it never removes it.
 - Because the primary button is now dark ink on paper (light on ink in dark), it stands out only by being the sole filled button. Keep at most one filled `btn-primary` per view; this rule matters more than before. Other actions are `btn-ghost` or outline.
 - Selected and active states use `primary-soft` plus a non-colour cue (a 2px `primary` marker, bold label or check icon), not tint alone.

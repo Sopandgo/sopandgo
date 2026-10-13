@@ -28,7 +28,7 @@ Login (password verify + session create) is orchestrated in the **API** layer (`
 | **`service.go`** | Constructor | `NewService(db, logger, dataDir, encKey)` |
 | **`user_service.go`** | Users and password reset | `RegisterUser`, `UpdateUserRole`, `SetUserActiveStatus`, `UpdateUserPassword`, `ChangeOwnPassword`, `GeneratePasswordResetToken`, `ResetPassword` |
 | **`avatar_service.go`** | Profile pictures on disk | `SetAvatar`, `RemoveAvatar`, `AvatarAbsolutePath` |
-| **`avatar_image.go`** | Decode / crop / resize / JPEG | `processAvatarSizes` (96/256/512/1024) |
+| **`avatar_image.go`** | Crop / resize / JPEG (decoding and type sniffing in `backend/internal/imageutil`) | `processAvatarSizes` (96/256/512/1024) |
 | **`two_factor_service.go`** | TOTP, email codes, recovery codes, organization policy | `BeginTOTPSetup`, `ConfirmTOTPSetup`, `DisableTwoFactor`, `SecondFactorMethods`, `VerifySecondFactor`, `IssueEmailCode`, `RegenerateRecoveryCodes`, `ResetTwoFactor`, `SetTwoFactorPolicy` |
 | **`two_factor_store.go`** | Unexported 2FA SQL | `getTwoFactorRecord`, `advanceTwoFactorStepRecord`, … |
 | **`break_glass.go`** | Host-only admin recovery (no HTTP route) | `BreakGlassResetAdmin`, `ListAdmins` |

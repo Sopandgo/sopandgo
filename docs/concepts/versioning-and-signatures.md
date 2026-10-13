@@ -1,6 +1,6 @@
 # Versioning and Signatures
 
-This document describes how SOP versions and acknowledgments are handled in sopandgo,
+This document describes how SOP versions and acknowledgments are handled in SOPandGO,
 and which guarantees the system provides.
 
 It is intended for lab managers, technical staff, and auditors who want to understand
@@ -10,7 +10,7 @@ how SOP changes and confirmations are tracked.
 
 ## Core principles
 
-sopandgo is built around the following principles:
+SOPandGO is built around the following principles:
 
 - SOP **content** history is **append-only**
 - Past version **content and assets** are **immutable**
@@ -24,7 +24,7 @@ Convenience is deliberately traded for clarity and auditability.
 
 ## SOP versions
 
-An SOP in sopandgo consists of one or more **versions**.
+An SOP in SOPandGO consists of one or more **versions**.
 
 Each version holds a complete snapshot of the SOP content at a point in time.
 
@@ -112,7 +112,7 @@ After a version is created:
 
 The system records a content hash for each version. Whenever an SOP is retrieved, the system recalculates this hash. If files are modified outside the application, the mismatch is detected and flagged immediately.
 
-This allows sopandgo to proactively identify integrity issues without silently serving corrupted content.
+This allows SOPandGO to proactively identify integrity issues without silently serving corrupted content.
 
 Users can also re-check a version's checksum or an asset file from the version page without reloading it. A failed check distinguishes a **corrupt** file (hash mismatch) from a **missing** file and from a check that **could not run**. Admins can scan all versions, assets, and the audit chain at once from **Admin → Integrity**.
 
@@ -158,7 +158,7 @@ The categories are:
 
 ## What acknowledgments mean
 
-An acknowledgment in sopandgo means:
+An acknowledgment in SOPandGO means:
 
 > “This user confirmed awareness of this exact SOP version at this time.”
 
@@ -185,7 +185,7 @@ This preserves historical traceability even as team members change.
 
 ## Auditability
 
-At any point, sopandgo can answer questions such as:
+At any point, SOPandGO can answer questions such as:
 - Which version of an SOP was active (published) at a given time?
 - Who promoted, approved, or rejected a version, and why was it rejected?
 - Who acknowledged that version (and as author, approver, or reader)?
@@ -205,7 +205,7 @@ No reconstruction or inference is required.
 
 ## Non-goals
 
-sopandgo does not attempt to:
+SOPandGO does not attempt to:
 - automatically enforce SOP usage
 - infer compliance status
 - replace formal training systems
@@ -217,7 +217,7 @@ It provides **traceability**, not certification.
 
 ## Summary
 
-sopandgo treats SOPs as living documents with a permanent, inspectable history.
+SOPandGO treats SOPs as living documents with a permanent, inspectable history.
 
 Versioning and acknowledgments are explicit by design, favoring clarity and
 accountability over silent updates or implicit assumptions. Publishing is a

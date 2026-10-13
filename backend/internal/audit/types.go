@@ -71,6 +71,10 @@ const (
 	EventTwoFactorPolicyUpdated       = "two_factor_policy_updated"
 	EventAdminBreakGlassReset         = "admin_break_glass_reset"
 	EventAdminBreakGlassFailed        = "admin_break_glass_failed"
+	EventBrandingUpdated              = "branding_updated"
+	EventBrandingLogoUpdated          = "branding_logo_updated"
+	EventBrandingLogoRemoved          = "branding_logo_removed"
+	EventBrandingReset                = "branding_reset"
 )
 
 var knownEventTypes = map[string]struct{}{
@@ -129,6 +133,10 @@ var knownEventTypes = map[string]struct{}{
 	EventTwoFactorPolicyUpdated:       {},
 	EventAdminBreakGlassReset:         {},
 	EventAdminBreakGlassFailed:        {},
+	EventBrandingUpdated:              {},
+	EventBrandingLogoUpdated:          {},
+	EventBrandingLogoRemoved:          {},
+	EventBrandingReset:                {},
 }
 
 var knownEntityTypes = map[string]struct{}{

@@ -1,6 +1,6 @@
 # Architecture Overview
 
-**sopandgo** employs a **Layered Architecture** to ensure separation of concerns, testability, and maintainability.
+**SOPandGO** employs a **Layered Architecture** to ensure separation of concerns, testability, and maintainability.
 
 ## System Layers
 
@@ -68,12 +68,18 @@ The architecture uses a **Stateless/Stateful Hybrid**:
 * **Stateful Control:** Refresh sessions can be revoked immediately. Deactivation and role changes apply on the next API request. An access token already issued remains valid for at most 5 minutes after a session revoke.
 * **Brute Force Protection:** The API layer employs a Rate Limiter with strict policies for Auth endpoints and relaxed policies for general API usage.
 * **Second factor:** When a second factor applies (the user has an app, or the policy sends them email codes), sign-in takes two steps: password, then a TOTP, emailed, or recovery code. Admins choose the organization's required level.
+* **Public branding:** `GET /api/branding` and `GET /api/branding/logo` are the only data routes without a session, because the sign-in page shows the organization's name and logo. They return nothing that is not shown on that page.
 * **Host-only recovery:** `./sopandgo recover-admin` (a subcommand of the backend binary, no HTTP route) resets a locked-out admin and writes the audit entry in the same transaction.
 
 ## Storage Model
 
 * **Database (SQLite):** Stores relational data—user profiles, session status, audit logs, SOP metadata, tags, acknowledgments, and **`sop_favorites`** (user ↔ SOP bookmarks with composite primary key).
 * **Filesystem:** Stores raw Markdown files and binary assets.
+* **Branding:** One `branding` row in SQLite holds the organization's name, the two primary colours, and the processed logo PNGs (BLOBs), so backups carry it without extra files.
+
+### Branding
+
+The root `+layout.server.ts` loads branding on every request through `frontend/src/lib/server/branding.ts`, which caches it in the SvelteKit process for 60 seconds; the Branding tab clears the cache after each save. `Navbar`, `AppSidebar`, `Footer`, and the root layout read `page.data.branding`. The logo is served same-origin by `routes/branding/logo/+server.ts`, a public proxy to the backend. A primary colour becomes a `<style>` block that overrides `--color-primary` and `--color-primary-content` per theme. The backend only accepts `#rrggbb` values with at least 4.5:1 contrast against that theme's `base-100`, and the frontend checks the format again before writing the style. In emails and notifications, `{app_name}` in the backend catalog is filled with the organization's name (`i18n.SetAppName`, set at startup and after every change).
 
 ## Languages
 

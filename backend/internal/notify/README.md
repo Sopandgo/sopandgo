@@ -16,7 +16,7 @@ Credentials and event subscriptions live in SQLite (`integration_settings`), enc
 
 Subscribable types: `sop_published`, `sop_rc`, `sop_rejected`, `backup_s3_failed`, `integrity_check_failed`. Admin test pings use `test` (not stored as a subscription).
 
-Titles and sentences use the organization language (`app_settings.default_locale`) from `backend/internal/i18n`. SOP titles, change summaries, and reject reasons are appended as stored. One message is sent per event; the actor's language is not used.
+Titles and sentences use the organization language (`app_settings.default_locale`) from `backend/internal/i18n`; `{app_name}` is the organization's name from Settings → Branding. SOP titles, change summaries, and reject reasons are appended as stored. One message is sent per event; the actor's language is not used.
 
 ## Core pieces
 

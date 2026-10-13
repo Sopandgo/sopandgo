@@ -1,3 +1,4 @@
+import { DEFAULT_BRAND_NAME } from '#lib/branding.js';
 import * as m from '#lib/paraglide/messages.js';
 import { getLocale } from '#lib/paraglide/runtime.js';
 
@@ -37,7 +38,11 @@ const EVENT_TITLES: Record<string, () => string> = {
     two_factor_recovery_code_used: () => m.audit_two_factor_recovery_code_used(),
     two_factor_policy_updated: () => m.audit_two_factor_policy_updated(),
     admin_break_glass_reset: () => m.audit_admin_break_glass_reset(),
-    admin_break_glass_failed: () => m.audit_admin_break_glass_failed()
+    admin_break_glass_failed: () => m.audit_admin_break_glass_failed(),
+    branding_updated: () => m.audit_branding_updated(),
+    branding_logo_updated: () => m.audit_branding_logo_updated(),
+    branding_logo_removed: () => m.audit_branding_logo_removed(),
+    branding_reset: () => m.audit_branding_reset()
 };
 
 export const auditEventOptions = Object.entries(EVENT_TITLES)
@@ -109,6 +114,13 @@ export function eventSummary(eventType: string, payload: string): string | null 
         const from = data.from;
         const to = data.to;
         if (typeof from === 'string' && typeof to === 'string') return `${from} → ${to}`;
+    }
+
+    if (key === 'branding_updated') {
+        // Empty means the default name.
+        const from = typeof data.old_name === 'string' ? data.old_name || DEFAULT_BRAND_NAME : null;
+        const to = typeof data.new_name === 'string' ? data.new_name || DEFAULT_BRAND_NAME : null;
+        if (from && to && from !== to) return `${from} → ${to}`;
     }
 
     if (key === 'user_role_updated') {

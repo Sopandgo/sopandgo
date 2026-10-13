@@ -1,13 +1,13 @@
 # Backup and Restore
 
-This document describes how to back up and restore sopandgo installations.
+This document describes how to back up and restore SOPandGO installations.
 
 It is intended for administrators and technical staff responsible for operating
 the system.
 
 ## Overview
 
-sopandgo is designed to make backup and restore **simple and reliable**.
+SOPandGO is designed to make backup and restore **simple and reliable**.
 
 All persistent state is stored in a single **data directory** (`DATA_DIR` in the
 process environment; in Docker Compose this is usually mounted as `./backend/data`
@@ -22,6 +22,8 @@ The data directory contains:
 - the SQLite database (`app.db`) — metadata, audit events, acknowledgments, encrypted SMTP and integration settings
 - SOP content — Markdown version files and assets under `sops/`
 - Profile pictures — processed JPEGs under `users/<userID>/` (`avatar-96.jpg`, `avatar-256.jpg`, `avatar-512.jpg`, `avatar-1024.jpg`)
+
+Branding (name, colours, and the processed logo) lives in `app.db`, so every backup and restore includes it.
 
 The SMTP password and integration secrets are stored encrypted; recovery still requires the same
 `SECRET_ENCRYPTION_KEY` (or re-entered secrets after key rotation) when
@@ -159,7 +161,7 @@ filesystem copies depending on your environment.
 
 The safest manual method is to **stop the container** before copying data.
 
-1. Stop the sopandgo container
+1. Stop the `sopandgo` container
 2. Copy the entire data directory to a backup location
 3. Restart the container
 
@@ -177,7 +179,7 @@ docker start sopandgo
 
 For environments where downtime is not acceptable, online backups are possible.
 
-sopandgo uses SQLite in WAL (write-ahead logging) mode. Copying only `app.db`
+SOPandGO uses SQLite in WAL (write-ahead logging) mode. Copying only `app.db`
 while the app runs is **not** sufficient; use SQLite backup APIs or rely on the
 admin **export** path, which snapshots via `VACUUM INTO`.
 
@@ -207,7 +209,7 @@ The appropriate frequency depends on how often SOPs are updated.
 
 Restoring from a backup consists of replacing the data directory.
 
-- Stop the sopandgo container
+- Stop the `sopandgo` container
 - Replace the data directory with a backup copy
 - Start the container
 
@@ -224,7 +226,7 @@ After restoring:
 - check that acknowledgments are present
 - confirm that recent changes match expectations
 
-If integrity checks are enabled, sopandgo may warn if file hashes do not match
+If integrity checks are enabled, SOPandGO may warn if file hashes do not match
 recorded metadata.
 
 ---
@@ -233,7 +235,7 @@ recorded metadata.
 
 Because SOP content is stored as plain files:
 
-- SOPs remain readable even outside sopandgo
+- SOPs remain readable even outside SOPandGO
 - backups can be inspected without special tools
 - long-term archiving is straightforward
 
@@ -245,7 +247,7 @@ whose schema is **newer** than the app supports is rejected by validate and rest
 
 ## What is not backed up automatically
 
-Unless **S3 automatic backups** are enabled, sopandgo does not upload archives by
+Unless **S3 automatic backups** are enabled, SOPandGO does not upload archives by
 itself. In all cases, operators must still preserve:
 
 - configuration **outside** the data directory (e.g. `docker-compose.yml`, `ORIGIN`, `SECRET_ENCRYPTION_KEY`)

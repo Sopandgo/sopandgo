@@ -4,6 +4,8 @@
     import { page } from '$app/state';
     import { breadcrumbsFor } from '#lib/breadcrumbs.js';
     import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+    import BrandLogo from '#lib/components/BrandLogo.svelte';
+    import { brandName } from '#lib/branding.js';
     import { CircleUserIcon, LogOutIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, SettingsIcon } from '@lucide/svelte';
     import AccountThemeSwitch from '#lib/components/AccountThemeSwitch.svelte';
     import Avatar from '#lib/components/Avatar.svelte';
@@ -122,9 +124,9 @@
 
 {#snippet logo()}
     <a href={resolve('/')} class="flex min-w-0 flex-1 items-center gap-4">
-        <img src="/favicon.svg" alt={m.page_home()} class="size-8 shrink-0" />
+        <BrandLogo branding={page.data.branding} class="size-8 shrink-0" />
         <span class="min-w-0 truncate font-semibold">
-            SOP and GO
+            {brandName(page.data.branding)}
         </span>
     </a>
 {/snippet}

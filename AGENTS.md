@@ -18,6 +18,10 @@ Check these when they apply:
 
 `CONTRIBUTING.md` states the same rule for human contributors.
 
+## Product name
+
+Write the product name as **SOPandGO** in anything a person reads (UI, messages, docs, comments). Never split or re-case it. Identifiers stay lowercase `sopandgo`. The full rules are in [`docs/design/style-guide.md`](docs/design/style-guide.md#product-name), and `frontend/src/lib/productName.test.ts` enforces them.
+
 ## Releases
 
 Merging to `main` is not a release. Do not create a tag, edit `CHANGELOG.md` for a version, or tell the user that labs received the change unless they explicitly asked to cut a release.
