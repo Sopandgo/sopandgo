@@ -16,9 +16,7 @@ The **home dashboard** (`/dashboard`) is the default landing page after a succes
 
 4. **What’s new in the lab** — Recent currently published versions (`GET /api/activity/publishes`): title, version, change summary (cut to two lines), who published it, and when. Each row opens **`/sops/{sop_id}/v/latest`**.
 
-5. **Who still needs to sign** — Shown to **admin** and **approver** only. For each published SOP, active users who can reader-sign are split into signed and not yet signed (`GET /api/training/coverage`). SOPs with the most unsigned people come first; each row has a badge with the unsigned count, or “All signed”. SOPs without a published version, and archived SOPs, are left out.
-
-6. **Favorite SOPs** — A list of the user’s starred SOPs (up to 24, from `GET /api/sops?favorites_only=true`). Each row opens the latest version, shows up to three tags (each opens `/sops` filtered by that tag; the rest sit behind “+N”), and has a star to remove the favorite. A link to **`/sops?favorites_only=true`** opens the full filtered list; with more than 24 favorites, the card header says how many are shown. With no favorites, the card explains how to add one and links to `/sops`. Archived SOPs drop out of this card while they stay favorites; they are listed under **Archived** on `/sops`.
+5. **Favorite SOPs** — A list of the user’s starred SOPs (up to 24, from `GET /api/sops?favorites_only=true`). Each row opens the latest version, shows up to three tags (each opens `/sops` filtered by that tag; the rest sit behind “+N”), and has a star to remove the favorite. A link to **`/sops?favorites_only=true`** opens the full filtered list; with more than 24 favorites, the card header says how many are shown. With no favorites, the card explains how to add one and links to `/sops`. Archived SOPs drop out of this card while they stay favorites; they are listed under **Archived** on `/sops`.
 
 ## Data sources
 
@@ -28,7 +26,6 @@ The dashboard loader uses the same APIs as other UI. Each card loads on its own:
 | --- | --- |
 | Signature groups | `GET /api/auth/me/signature-status` |
 | Recent publishes | `GET /api/activity/publishes` |
-| Team signature gaps (admin, approver) | `GET /api/training/coverage` |
 | Favorites list | `GET /api/sops?favorites_only=true` (`limit=24`) |
 
 Detailed field semantics for signature status are described in `docs/concepts/versioning-and-signatures.md`. Route registration lives in `backend/internal/api/api.go`; see `docs/dev/api-reference.md` for how to navigate the HTTP surface.

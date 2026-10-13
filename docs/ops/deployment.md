@@ -90,7 +90,7 @@ Outgoing mail (user invites, password resets) is **not** configured via `SMTP_HO
 
 To go back to manual links, switch the transport off; its saved settings stay. The API still exposes `mail_mode` and `mail_transport`; `effective_mail_mode` in `GET /api/admin/settings/email` is what invites and resets actually use.
 
-**What mail does in 1.0:** invites, password resets, test email, and **optional notices when a version is published** (to other active users who can reader-sign). Publish notices are skipped in `manual_links` mode; a failed send does **not** unpublish the version. Pending-acknowledgment reminder digests and emails for RC/reject/archive are **not** included — use the home dashboard and training coverage views instead.
+**What mail does in 1.0:** invites, password resets, test email, and **optional notices when a version is published** (to other active users who can reader-sign). Publish notices are skipped in `manual_links` mode; a failed send does **not** unpublish the version. Pending-acknowledgment reminder digests and emails for RC/reject/archive are **not** included — use the home dashboard, which lists each person’s own pending signatures.
 
 ### Outbound integrations (Slack, Gotify, webhook)
 

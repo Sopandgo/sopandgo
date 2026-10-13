@@ -66,7 +66,7 @@ Six short sample SOPs, each tagged *Demo* plus topic tags (*Molecular Biology*, 
 1. Sign in as **`researcher@demo.local`** (or change the admin password, then explore as admin).
 2. Open the **home dashboard** — two SOPs wait for a signature, plus favorites and recently published versions.
 3. Browse the **library** (`/sops`), filter by a tag, and open a seeded SOP. On *Chemical Spill Response*, compare v1 with v2.
-4. Open a published version: read the Markdown, check acknowledgments / training coverage if your role allows it.
+4. Open a published version: read the Markdown, and check acknowledgments if your role allows it.
 5. Sign in as **`manager@demo.local`** and continue the *Bacterial Glycerol Stock Preparation* **draft** (Word import is available in the editor when you want to try it).
 6. Sign in as **`qa@demo.local`** (or admin) and approve the waiting *Autoclave Operation* release candidate. The researcher then has a new SOP version to sign.
 7. As **admin**, skim **Settings** (language, email, optional Slack / Gotify / webhook integrations, and **Backup** — export a `.zip` once so you know the path works), **Audit**, and **Integrity** (run the system check once; it re-hashes every file and verifies the audit chain).
