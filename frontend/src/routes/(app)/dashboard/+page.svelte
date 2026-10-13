@@ -14,7 +14,6 @@
 		timeZoneCookieAssignment,
 		type GreetingPeriod
 	} from '#lib/greeting.js';
-	import SopTrainingCoverage from '#lib/components/SopTrainingCoverage.svelte';
 	import { CircleCheckIcon, FileTextIcon, MegaphoneIcon, NotebookIcon, StarIcon } from '@lucide/svelte';
 	import * as m from '#lib/paraglide/messages.js';
 	import { getLocale } from '#lib/paraglide/runtime.js';
@@ -26,14 +25,11 @@
 	const signatureFailed = $derived(data.signatureStatus === null);
 	const favoritesFailed = $derived(data.favorites === null);
 	const publishesFailed = $derived(data.recentPublishes === null);
-	const trainingFailed = $derived(data.trainingCoverage === null);
 
 	const signatureStatus = $derived(data.signatureStatus ?? []);
 	const favoriteSops = $derived(data.favorites?.sops ?? []);
 	const favoritesTotal = $derived(data.favorites?.total ?? 0);
 	const recentPublishes = $derived(data.recentPublishes ?? []);
-	const trainingCoverage = $derived(data.trainingCoverage ?? []);
-	const showTraining = $derived(user?.role === 'admin' || user?.role === 'approver');
 
 	const { actionRequired, notStarted } = $derived(partitionSignatureStatus(signatureStatus));
 	const pending = $derived(pendingSignatureCount(signatureStatus));
@@ -189,22 +185,6 @@
 				</ul>
 			{/if}
 		</Card>
-
-		{#if showTraining}
-			<Card
-				as="section"
-				aria-labelledby="training-heading"
-				headingId="training-heading"
-				title={m.dashboard_training_title()}
-				description={m.dashboard_training_help()}
-			>
-				{#if trainingFailed}
-					{@render loadFailed()}
-				{:else}
-					<SopTrainingCoverage items={trainingCoverage} />
-				{/if}
-			</Card>
-		{/if}
 
 		<Card
 			as="section"

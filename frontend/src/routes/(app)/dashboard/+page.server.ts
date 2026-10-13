@@ -1,7 +1,6 @@
 import { isRedirect } from '@sveltejs/kit';
 import { greetingPeriodForDate, timeZoneCookieName } from '#lib/greeting.js';
 import { favorite, unfavorite } from '#lib/server/favoriteActions.js';
-import type { SOPTrainingCoverage } from '#lib/sdk/types.js';
 import type { Actions, PageServerLoad } from './$types';
 
 /** Each card loads on its own: a failed request leaves its card null, not the page broken. */
@@ -24,20 +23,14 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 			greetingPeriod,
 			signatureStatus: [],
 			favorites: { sops: [], total: 0 },
-			recentPublishes: [],
-			trainingCoverage: []
+			recentPublishes: []
 		};
 	}
 
-	const canSeeTraining = user.role === 'admin' || user.role === 'approver';
-
-	const [signatureStatus, favorites, recentPublishes, trainingCoverage] = await Promise.all([
+	const [signatureStatus, favorites, recentPublishes] = await Promise.all([
 		settle('signature status', locals.api.auth.getSignatureStatus()),
 		settle('favorites', locals.api.sops.list({ favorites_only: true, limit: 24, offset: 0 })),
-		settle('recent publishes', locals.api.sops.listRecentPublishes(8)),
-		canSeeTraining
-			? settle('training coverage', locals.api.sops.trainingCoverage())
-			: Promise.resolve([] as SOPTrainingCoverage[])
+		settle('recent publishes', locals.api.sops.listRecentPublishes(8))
 	]);
 
 	return {
@@ -45,8 +38,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 		greetingPeriod,
 		signatureStatus,
 		favorites,
-		recentPublishes,
-		trainingCoverage
+		recentPublishes
 	};
 };
 
