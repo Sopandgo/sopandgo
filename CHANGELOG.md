@@ -2,6 +2,16 @@
 
 All notable releases of SOPandGO are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
 
+## 1.2.1
+
+Signing in on a local Docker install works when SOPandGO is published on a port other than 80.
+
+- Caddy keeps the browser host and port when no outer proxy sets `X-Forwarded-Host`. A login at `http://localhost:8087` is no longer rejected as a cross-site form. Coolify and other proxies that send `X-Forwarded-Host` are unchanged.
+
+### Upgrading from 1.2.0
+
+- No migrations. Export a backup, then `docker compose pull` and `docker compose up -d`.
+
 ## 1.2.0
 
 Labs can require a second sign-in factor, archive SOPs that are no longer used, and brand SOPandGO with their name, logo, and colour.
