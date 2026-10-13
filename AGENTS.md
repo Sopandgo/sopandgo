@@ -31,3 +31,7 @@ Merging to `main` is not a release. Do not create a tag, edit `CHANGELOG.md` for
 - A release requires a `## X.Y.Z` section in `CHANGELOG.md` first.
 - The lab image tag is `ghcr.io/sopandgo/sopandgo:1` inside `docker-compose.yml`. Do not move that tag to `.env`, to `latest`, or to a patch number.
 - Operator steps stay in `docs/ops/releasing.md`. Workflow changes update that file, `CONTRIBUTING.md`, `README.md`, `docs/ops/deployment.md`, and `docs/ops/evaluating.md` in the same change.
+
+## Database migrations
+
+Migrations in `backend/internal/storage/migrations.go` are append-only. Never edit, reorder, or delete a shipped migration. Fix a mistake by adding a new migration with a higher version number.
