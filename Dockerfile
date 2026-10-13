@@ -11,7 +11,10 @@
 # ==========================================
 
 # --- Stage 1: Build Frontend (SvelteKit) ---
-FROM node:22-slim AS frontend-builder
+# Compile on the builder's own CPU ($BUILDPLATFORM). The release also builds
+# linux/arm64 under QEMU, and Paraglide's compile then exceeds Lix's 60s
+# commit limit. The output is JavaScript and is copied into the target image.
+FROM --platform=$BUILDPLATFORM node:22-slim AS frontend-builder
 ARG APP_VERSION=dev
 ENV APP_VERSION=${APP_VERSION}
 WORKDIR /app/frontend
