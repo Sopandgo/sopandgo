@@ -250,6 +250,7 @@
             <form
                 method="POST"
                 action="?/reset"
+                class="flex flex-col sm:flex-row sm:justify-end"
                 use:enhance={() => {
                     resetting = true;
                     return async ({ result, update }) => {
