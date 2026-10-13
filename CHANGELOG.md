@@ -2,6 +2,23 @@
 
 All notable releases of SOPandGO are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
 
+## 1.2.0
+
+Labs can require a second sign-in factor, archive SOPs that are no longer used, and brand SOPandGO with their name, logo, and colour.
+
+- Users can add an authenticator app. Under Settings → General → Security, an admin chooses the organization's required second factor: none (the default), an email code or an app, or an app only. Authenticator secrets are sealed with `SECRET_ENCRYPTION_KEY`. Admins receive recovery codes. A locked-out admin is recovered on the host with `./sopandgo recover-admin`, which has no web page.
+- An approver or admin can archive an SOP that is no longer used. Archiving deletes nothing. The SOP stays readable and becomes read-only, and the SOP list shows it under Archived. Unarchiving restores it as it was.
+- Admins set the organization name, logo, and colour under Settings → Branding. Empty settings keep the SOPandGO defaults. The logo is stored in the database, so backups carry it. The sign-in page shows the name and logo.
+- The home dashboard lists each person's own pending signatures, recent publishes, and favorites. It no longer lists who else in the lab still needs to sign.
+- Alerts use a status tint and border so they stay distinct from the page behind them.
+- The Markdown sanitizer is updated (`isomorphic-dompurify` 4.5.0).
+
+### Upgrading from 1.1.x
+
+- Migrations run on startup. Take a backup before pulling, as with any upgrade.
+- Sign-in stays password-only until an admin sets a two-factor policy. Raising the policy needs `SECRET_ENCRYPTION_KEY` and an admin who already uses an authenticator app. The email level also needs a switched-on email transport.
+- Reset a locked-out admin from a shell in the container with `./sopandgo recover-admin`. See [Deployment](docs/ops/deployment.md#locked-out-admin-break-glass).
+
 ## 1.1.1
 
 Publishes the 1.1.0 changes. The v1.1.0 image was not published: the Caddy apt repository returned HTTP 402 during the build.
