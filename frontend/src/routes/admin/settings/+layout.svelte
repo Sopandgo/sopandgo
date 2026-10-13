@@ -7,6 +7,9 @@
 
     const pathname = $derived(page.url.pathname);
     const general = $derived(pathname === '/admin/settings');
+    const branding = $derived(
+        pathname === '/admin/settings/branding' || pathname.startsWith('/admin/settings/branding/')
+    );
     const email = $derived(
         pathname === '/admin/settings/email' || pathname.startsWith('/admin/settings/email/')
     );
@@ -28,6 +31,15 @@
         aria-current={general ? 'page' : undefined}
     >
         {m.settings_general()}
+    </a>
+    <a
+        href={resolve('admin/settings/branding')}
+        class="tab"
+        class:tab-active={branding}
+        role="tab"
+        aria-current={branding ? 'page' : undefined}
+    >
+        {m.settings_branding()}
     </a>
     <a
         href={resolve('admin/settings/email')}
@@ -64,7 +76,7 @@
 <style>
     /*
       First card merges into the lift panel. Later cards stay inset and bordered
-      so Email / Integrations / Backup keep clear section grouping.
+      so Branding / Email / Integrations / Backup keep clear section grouping.
     */
     .settings-tab-panel :global(> .flex) {
         gap: 1.5rem;

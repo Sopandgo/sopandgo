@@ -59,6 +59,8 @@ export function breadcrumbsFor(routeId: string | null, data: CrumbData): Crumb[]
 			return [{ label: m.nav_integrity() }];
 		case '/admin/settings':
 			return [{ label: m.page_settings() }];
+		case '/admin/settings/branding':
+			return [settings, { label: m.settings_branding() }];
 		case '/admin/settings/email':
 			return [settings, { label: m.settings_email() }];
 		case '/admin/settings/integrations':

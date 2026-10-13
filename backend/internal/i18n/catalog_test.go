@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -46,5 +47,44 @@ func TestFallbackAndMissingKey(t *testing.T) {
 	deTitle := T("de", "notify.sop_published.title", map[string]string{"title": "Water Protocol"})
 	if deTitle != "SOP veröffentlicht: Water Protocol" {
 		t.Fatalf("german chrome should keep the SOP title, got %q", deTitle)
+	}
+}
+
+func TestAppNameFillsMessages(t *testing.T) {
+	t.Cleanup(func() { SetAppName("") })
+
+	if got := T("en", "mail.test.subject", nil); got != "SOPandGO email test" {
+		t.Fatalf("default name: %q", got)
+	}
+	SetAppName("  Lab Handbook ")
+	if got := T("de", "mail.reset.subject", nil); !strings.Contains(got, "Lab Handbook") {
+		t.Fatalf("custom name missing: %q", got)
+	}
+	if got := T("en", "mail.test.subject", map[string]string{"app_name": "Override"}); got != "Override email test" {
+		t.Fatalf("explicit arg should win: %q", got)
+	}
+	SetAppName("")
+	if got := AppName(); got != DefaultAppName {
+		t.Fatalf("blank should restore default, got %q", got)
+	}
+}
+
+func TestPlaceholdersAreReplacedOnce(t *testing.T) {
+	t.Cleanup(func() { SetAppName("") })
+	SetAppName("{url}")
+	got := T("en", "mail.invite.body", map[string]string{"name": "{app_name}", "url": "https://x"})
+	if !strings.Contains(got, "Hi {app_name},") || !strings.Contains(got, "Your {url} user account") {
+		t.Fatalf("values must not be expanded again: %q", got)
+	}
+}
+
+func TestNoShippedMessageHardCodesProductName(t *testing.T) {
+	load()
+	for tag, msgs := range bundles {
+		for key, msg := range msgs {
+			if strings.Contains(msg, "SOPandGO") {
+				t.Errorf("%s %s: use {app_name} instead of the product name", tag, key)
+			}
+		}
 	}
 }

@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import './layout.css';
 	import favicon from '#lib/assets/favicon.svg';
+	import { brandingStyle, brandLogoUrl } from '#lib/branding.js';
 	import AppSidebar from '#lib/components/AppSidebar.svelte';
 	import Navbar from '#lib/components/Navbar.svelte';
 	import Footer from '#lib/components/Footer.svelte';
@@ -13,10 +14,17 @@
 		page.url.pathname === '/login' || page.url.pathname.startsWith('/reset-password')
 	);
 	let showRail = $derived(!!data.user && !data.user.must_change_password);
+
+	const iconHref = $derived(brandLogoUrl(data.branding, 'icon') ?? favicon);
+	// Only validated hex colours reach this string (see brandingStyle).
+	const brandCss = $derived(brandingStyle(data.branding));
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" href={iconHref} />
+	{#if brandCss}
+		{@html `<style id="branding-colours">${brandCss}</style>`}
+	{/if}
 </svelte:head>
 
 {#if data.user && !data.user.must_change_password}

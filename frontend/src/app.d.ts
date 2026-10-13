@@ -1,5 +1,5 @@
 import type { createSDK } from '#lib/sdk/index.js';
-import type { User } from '#lib/sdk/types.js';
+import type { Branding, User } from '#lib/sdk/types.js';
 
 declare global {
     namespace App {
@@ -14,6 +14,8 @@ declare global {
         interface PageData {
             // This ensures every page knows 'user' exists in its 'data' prop
             user: User | null;          
+            /** Organization name, logo and colour, from the root layout. */
+            branding: Branding;
         }
         
         // interface PageState {}

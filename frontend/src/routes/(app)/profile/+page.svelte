@@ -5,6 +5,7 @@
     import ListRow from '#lib/components/ListRow.svelte';
     import ListUserSignatures from '#lib/components/ListUserSignatures.svelte';
     import { resolve } from '$app/paths';
+    import { brandName } from '#lib/branding.js';
     import * as m from '#lib/paraglide/messages.js';
     import { getLocale } from '#lib/paraglide/runtime.js';
     import type { UserRole } from '#lib/sdk/types.js';
@@ -55,7 +56,7 @@
                 {m.nav_account_settings()}
             </a>
         </div>
-        <p class="text-sm text-base-content/70">{m.profile_intro()}</p>
+        <p class="text-sm text-base-content/70">{m.profile_intro({ name: brandName(data.branding) })}</p>
     </div>
 </Card>
 

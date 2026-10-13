@@ -1,6 +1,6 @@
 # Releasing
 
-sopandgo uses [semantic versioning](https://semver.org/) from **1.0.0** onward. The product version is an annotated git tag such as `v1.0.1`. Root and frontend `package.json` versions are not the product version.
+SOPandGO uses [semantic versioning](https://semver.org/) from **1.0.0** onward. The product version is an annotated git tag such as `v1.0.1`. Root and frontend `package.json` versions are not the product version.
 
 ## A merge is not a release
 
@@ -25,7 +25,7 @@ git tag -a v1.0.1 -m "v1.0.1"
 git push origin v1.0.1
 ```
 
-4. The [Release workflow](../../.github/workflows/version-and-release.yml) reads that changelog section and uses it as the GitHub Release text. It does not write a second set of notes from commit titles. It then builds `linux/amd64` and `linux/arm64` images and pushes them to `ghcr.io/sopandgo/sopandgo`. The image is stamped with `APP_VERSION` from the tag (`1.0.1`), which the public footer, the signed-in sidebar, and backup manifests show.
+4. The [Release workflow](../../.github/workflows/version-and-release.yml) reads that changelog section and uses it as the GitHub Release text. It does not write a second set of notes from commit titles. It then builds `linux/amd64` and `linux/arm64` images and pushes them to `ghcr.io/sopandgo/sopandgo`. The image is stamped with `APP_VERSION` from the tag (`1.0.1`), which the public footer, the signed-in sidebar, and backup manifests show. The footer and sidebar link that version to its GitHub Release.
 5. A lab gets it the next time they export a backup and run `docker compose pull` and `docker compose up -d`. They do not edit a version.
 
 For a normal 1.x release, do not edit `.env`, `package.json`, or the image line in `docker-compose.yml`.

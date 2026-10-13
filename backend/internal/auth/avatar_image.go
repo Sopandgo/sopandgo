@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	_ "image/png"
 
+	"github.com/sopandgo/sopandgo/backend/internal/imageutil"
 	"golang.org/x/image/draw"
-	_ "golang.org/x/image/webp"
 )
 
 const (
@@ -29,49 +28,6 @@ var AvatarSizeName = map[string]int{
 
 func avatarFileName(px int) string {
 	return fmt.Sprintf("avatar-%d.jpg", px)
-}
-
-func decodeAvatarImage(raw []byte) (image.Image, error) {
-	if len(raw) == 0 {
-		return nil, fmt.Errorf("empty image")
-	}
-	if !sniffAllowedAvatar(raw) {
-		return nil, fmt.Errorf("unsupported image type")
-	}
-	img, _, err := image.Decode(bytes.NewReader(raw))
-	if err != nil {
-		return nil, fmt.Errorf("invalid image: %w", err)
-	}
-	b := img.Bounds()
-	w, h := b.Dx(), b.Dy()
-	if w < 1 || h < 1 {
-		return nil, fmt.Errorf("invalid image dimensions")
-	}
-	if w > maxAvatarPixelEdge || h > maxAvatarPixelEdge {
-		return nil, fmt.Errorf("image too large")
-	}
-	return img, nil
-}
-
-func sniffAllowedAvatar(raw []byte) bool {
-	n := 12
-	if len(raw) < n {
-		n = len(raw)
-	}
-	head := raw[:n]
-	// JPEG
-	if len(head) >= 3 && head[0] == 0xff && head[1] == 0xd8 && head[2] == 0xff {
-		return true
-	}
-	// PNG
-	if len(head) >= 8 && bytes.Equal(head[:8], []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}) {
-		return true
-	}
-	// WebP: RIFF....WEBP
-	if len(head) >= 12 && bytes.Equal(head[:4], []byte("RIFF")) && bytes.Equal(head[8:12], []byte("WEBP")) {
-		return true
-	}
-	return false
 }
 
 func centerCropSquare(img image.Image) image.Image {
@@ -104,7 +60,7 @@ func encodeJPEG(img image.Image) ([]byte, error) {
 }
 
 func processAvatarSizes(raw []byte) (map[int][]byte, error) {
-	img, err := decodeAvatarImage(raw)
+	img, err := imageutil.Decode(raw, maxAvatarPixelEdge)
 	if err != nil {
 		return nil, err
 	}

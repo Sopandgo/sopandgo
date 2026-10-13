@@ -15,5 +15,6 @@ Follow `docs/design/style-guide.md`. Read it before any change to markup, classe
 - Integrity checks show four distinct states: verified, hash mismatch, file missing, couldn't check. Never "Corrupt" for a failed request.
 - Text never smaller than `text-xs` and never dimmed below `text-base-content/70`. IDs and hashes in `font-mono text-xs`, normal case.
 - Sentence case everywhere, no uppercase tracking, no emoji. All copy through Paraglide messages.
+- The product name is always "SOPandGO" (never "SOP and GO", "Sopandgo", or lowercase in prose). On branded installs use `brandName()`. Rules: style guide → Product name.
 - Lucide icons at default stroke, 16px inline, 20px in list rows; icon-only buttons need `aria-label` and `title`.
 - Every interactive element keeps the global focus ring.

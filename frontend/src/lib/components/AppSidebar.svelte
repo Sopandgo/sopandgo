@@ -11,15 +11,25 @@
         ShieldUserIcon,
         UsersIcon
     } from '@lucide/svelte';
+    import BrandLogo from '#lib/components/BrandLogo.svelte';
+    import { brandName, DEFAULT_BRAND_NAME, isCustomBranding } from '#lib/branding.js';
     import * as m from '#lib/paraglide/messages.js';
+    import { PRODUCT_URL, versionLabel, versionUrl } from '#lib/product.js';
     import type { User } from '#lib/sdk/types.js';
 
     let { user }: { user: User } = $props();
 
     type RailIcon = typeof HouseIcon;
 
-    const rawVersion = String(__APP_VERSION__ || 'dev').replace(/^v/, '');
-    const versionLabel = rawVersion === 'dev' ? 'dev' : `v${rawVersion}`;
+    const version = versionLabel(__APP_VERSION__);
+    const versionHref = versionUrl(__APP_VERSION__);
+
+    const name = $derived(brandName(page.data.branding));
+    const branded = $derived(isCustomBranding(page.data.branding));
+    // Branded installs credit the product; unbranded ones name it. Both link to the website.
+    const productLabel = $derived(
+        branded ? m.footer_powered_by({ product: DEFAULT_BRAND_NAME }) : DEFAULT_BRAND_NAME
+    );
 
     const pathname = $derived(page.url.pathname);
     const dashboardCurrent = $derived(pathname === '/dashboard');
@@ -36,13 +46,13 @@
     <a
         href={resolve('dashboard')}
         class="flex h-16 w-full shrink-0 items-center overflow-hidden is-drawer-close:tooltip is-drawer-close:tooltip-right"
-        data-tip="SOP and GO"
-        aria-label="SOP and GO"
+        data-tip={name}
+        aria-label={name}
     >
         <span class="flex size-14 shrink-0 items-center justify-center">
-            <img src="/favicon.svg" alt="" title={m.footer_gopher()} class="size-8" />
+            <BrandLogo branding={page.data.branding} class="size-8" />
         </span>
-        <span class="is-drawer-close:hidden min-w-0 truncate pe-3 font-semibold">SOP and GO</span>
+        <span class="is-drawer-close:hidden min-w-0 truncate pe-3 font-semibold">{name}</span>
     </a>
     <ul class="menu w-full">
         {@render item('dashboard', m.page_dashboard(), dashboardCurrent, HouseIcon)}
@@ -81,17 +91,31 @@
         {/if}
         <ul class="menu w-full">
             {@render rule(m.nav_about())}
+            <!-- The product row stays when a lab brands the app (attribution). -->
             <li>
                 <a
-                    href="https://github.com/Sopandgo/sopandgo"
+                    href={PRODUCT_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     class="is-drawer-close:tooltip is-drawer-close:tooltip-right"
-                    data-tip="{m.footer_github()} · {versionLabel}"
-                    aria-label="{m.footer_github()} · {versionLabel}"
+                    data-tip={productLabel}
+                    aria-label={productLabel}
+                >
+                    <img src="/favicon.svg" alt="" title={m.footer_gopher()} class="size-4 shrink-0" />
+                    <span class="is-drawer-close:hidden truncate">{productLabel}</span>
+                </a>
+            </li>
+            <li>
+                <a
+                    href={versionHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                    data-tip="{m.footer_github()} · {version}"
+                    aria-label="{m.footer_github()} · {version}"
                 >
                     <CodeIcon size={16} aria-hidden="true" />
-                    <span class="is-drawer-close:hidden">{versionLabel}</span>
+                    <span class="is-drawer-close:hidden">{version}</span>
                 </a>
             </li>
         </ul>

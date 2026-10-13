@@ -12,6 +12,7 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
+	"github.com/sopandgo/sopandgo/backend/internal/branding"
 	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
@@ -29,7 +30,7 @@ func main() {
 		os.Exit(runCommand(os.Args[1], os.Args[2:]))
 	}
 
-	log.Println("starting sopandgo backend")
+	log.Println("starting SOPandGO backend")
 
 	// 1. Setup Graceful Shutdown
 	// We create a context that listens for OS interrupt signals (Ctrl+C, SIGINT).
@@ -184,6 +185,12 @@ func main() {
 			s3Cfg.Bucket, s3Scheduler.Status().KeyPrefix, s3Cfg.Interval)
 	}
 
+	// Branding: the organization's name also fills {app_name} in emails and notifications.
+	brandingService := branding.NewService(store.DB, auditLogger)
+	if err := brandingService.Load(); err != nil {
+		log.Printf("WARNING: could not load branding, using defaults: %v", err)
+	}
+
 	mailService, err := mail.NewService(mailSender, auditLogger)
 	if err != nil {
 		log.Fatalf("Could not initialize mail service: %v", err)
@@ -203,7 +210,7 @@ func main() {
 		Origin: origin,
 	}
 
-	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler)
+	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler, brandingService)
 	log.Println("backend initialized successfully")
 
 	s3Scheduler.Start(ctx)

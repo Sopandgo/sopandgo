@@ -65,7 +65,9 @@ const handleAuth: Handle = async ({ event, resolve }) => {
     // requires 2FA, setting up an authenticator. Both happen in account settings.
     const mustVisitSettings = !!user && (user.must_change_password || user.must_enroll_two_factor);
     if (mustVisitSettings) {
-        const allowedWhileForced = pathname === '/profile/settings' || pathname === '/logout';
+        // The logo shows on that page too (footer, favicon), so it stays reachable.
+        const allowedWhileForced =
+            pathname === '/profile/settings' || pathname === '/logout' || pathname === '/branding/logo';
         if (!allowedWhileForced) {
             throw redirect(303, '/profile/settings');
         }

@@ -16,7 +16,9 @@ import type {
     BackupS3Settings,
     BackupS3SettingsInput,
     SecuritySettings,
-    TwoFactorPolicy
+    TwoFactorPolicy,
+    Branding,
+    BrandingInput
 } from './types';
 
 export const admin = (client: Client) => ({
@@ -221,6 +223,36 @@ export const admin = (client: Client) => ({
             }
             throw new Error(code);
         }
+        return await res.json();
+    },
+
+    // --- Branding (name, logo, primary colour) ---
+
+    /** Errors carry the API code in upper case, e.g. COLOUR_CONTRAST or INVALID_IMAGE. */
+    updateBranding: async (input: BrandingInput): Promise<Branding> => {
+        const res = await client.fetch('/admin/settings/branding', { method: 'PUT', body: input });
+        if (!res.ok) throw new Error(await apiErrorCode(res, 'BRANDING_UPDATE_FAILED'));
+        return await res.json();
+    },
+
+    uploadBrandingLogo: async (file: File): Promise<Branding> => {
+        const body = new FormData();
+        body.append('file', file, file.name);
+        const res = await client.fetch('/admin/settings/branding/logo', { method: 'POST', body });
+        if (!res.ok) throw new Error(await apiErrorCode(res, 'BRANDING_LOGO_UPLOAD_FAILED'));
+        return await res.json();
+    },
+
+    /** Back to the SOPandGO name, colours, and logo in one step. */
+    resetBranding: async (): Promise<Branding> => {
+        const res = await client.fetch('/admin/settings/branding', { method: 'DELETE' });
+        if (!res.ok) throw new Error(await apiErrorCode(res, 'BRANDING_RESET_FAILED'));
+        return await res.json();
+    },
+
+    removeBrandingLogo: async (): Promise<Branding> => {
+        const res = await client.fetch('/admin/settings/branding/logo', { method: 'DELETE' });
+        if (!res.ok) throw new Error(await apiErrorCode(res, 'BRANDING_LOGO_REMOVE_FAILED'));
         return await res.json();
     },
 
@@ -474,3 +506,14 @@ export const admin = (client: Client) => ({
         return await res.json();
     }
 });
+
+/** The API's JSON `error` code in upper case, or the fallback. */
+async function apiErrorCode(res: Response, fallback: string): Promise<string> {
+    try {
+        const body = (await res.json()) as { error?: string };
+        if (body?.error) return body.error.toUpperCase();
+    } catch {
+        /* plain-text error */
+    }
+    return fallback;
+}

@@ -13,7 +13,7 @@ Delivery mode and transport are chosen in the admin UI (stored in SQLite), not v
 | `effective_mail_mode` (read-only) | `smtp`, `manual_links` | What invites, resets and publish notices actually use: `smtp` only when `mail_mode` is `smtp` **and** the chosen transport is saved (`SMTPSettingsStore.EffectiveMailMode`). Otherwise manual links, so a fresh install never sends through an empty config. The admin UI shows this as one on/off toggle per transport. |
 | `default_locale` | supported BCP 47 tag | Organization language for the test email. Invite, reset, and publish notices use the recipient's `users.locale` instead. |
 
-Subjects and boilerplate come from `backend/internal/i18n`. SOP titles and change summaries are inserted unchanged. An unknown locale or a missing key falls back to English.
+Subjects and boilerplate come from `backend/internal/i18n`; `{app_name}` in them is the organization's name from Settings → Branding (default "SOPandGO"). SOP titles and change summaries are inserted unchanged. An unknown locale or a missing key falls back to English.
 
 Publish notices (`SendSOPPublishedEmail`) run only when the effective mail mode is not `manual_links`. A failed send does not unpublish the version.
 

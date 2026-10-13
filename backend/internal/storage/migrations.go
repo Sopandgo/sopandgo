@@ -591,6 +591,28 @@ var migrations = []migration{
 			return err
 		},
 	},
+	// v29: organization branding (one row). NULL columns mean the SOPandGO
+	// default. Logo images are processed PNGs kept in the database so backups
+	// carry them: logo_png keeps the aspect ratio (longest edge 512 px),
+	// icon_png is a 64 px square for the favicon. Colours are '#rrggbb'.
+	{
+		version: 29,
+		up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`
+				CREATE TABLE branding (
+					id INTEGER PRIMARY KEY CHECK (id = 1),
+					name TEXT,
+					logo_png BLOB,
+					icon_png BLOB,
+					logo_hash TEXT,
+					primary_light TEXT,
+					primary_dark TEXT,
+					updated_at TEXT NOT NULL
+				);
+			`)
+			return err
+		},
+	},
 }
 
 func LatestSchemaVersion() int {

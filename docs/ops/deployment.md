@@ -1,12 +1,12 @@
 # Deployment
 
-This document describes how to deploy sopandgo in a typical self-hosted environment. It is intended for administrators and technical staff responsible for running the system in a lab, university, or small organization.
+This document describes how to deploy SOPandGO in a typical self-hosted environment. It is intended for administrators and technical staff responsible for running the system in a lab, university, or small organization.
 
 Trying the product locally with sample data first? See [Evaluating sopandgo](./evaluating.md). Version tags and GitHub Releases: [Releasing](./releasing.md).
 
 ## Deployment model
 
-sopandgo is designed to run as a **single self-hosted service**.
+SOPandGO is designed to run as a **single self-hosted service**.
 
 Key properties:
 - **App container**: One image (**`sopandgo`**) runs Caddy, the Go API, and the SvelteKit Node server together.
@@ -115,7 +115,7 @@ Audit taxonomy is now normalized to lowercase (`event_type`, `entity_type`) at w
 
 ### Network Access & Security
 
-**sopandgo** includes an internal Caddy proxy to handle request routing.
+**SOPandGO** includes an internal Caddy proxy to handle request routing.
 
 * **Direct API Access:** You can directly access the Go backend via `/sopandgo/api/*` (Caddy forwards to Go on **:8080** inside the container).
 * **Frontend:** All other traffic is handled by the SvelteKit Node.js adapter on **:3000** inside the container (behind Caddy on **:80**).

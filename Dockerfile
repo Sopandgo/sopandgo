@@ -1,5 +1,5 @@
 # ==========================================
-# SopAndGo
+# SOPandGO
 # Architecture: Single Container (Caddy + Node + Go)
 #
 # RECOMMENDED: Run with docker-compose.yml + .env (see README and docs/ops/deployment.md):

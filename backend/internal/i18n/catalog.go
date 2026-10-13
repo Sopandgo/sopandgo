@@ -7,9 +7,16 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 const Base = "en"
+
+// DefaultAppName is the product name used in messages until an organization
+// sets its own under Settings → Branding.
+const DefaultAppName = "SOPandGO"
+
+var appName atomic.Value // string
 
 // ErrUnsupportedLocale is returned when a tag is not in the shipped list.
 var ErrUnsupportedLocale = errors.New("unsupported locale")
@@ -78,8 +85,28 @@ func Fallback(tag string) string {
 	return Base
 }
 
+// SetAppName sets the name that fills {app_name}. Blank restores the default.
+// The branding service calls it at startup and after every change.
+func SetAppName(name string) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		name = DefaultAppName
+	}
+	appName.Store(name)
+}
+
+// AppName returns the name that fills {app_name}.
+func AppName() string {
+	if v, ok := appName.Load().(string); ok && v != "" {
+		return v
+	}
+	return DefaultAppName
+}
+
 // T renders a message. Missing keys and unknown locales fall back to English.
-// Placeholders use {name} so word order can change per language.
+// Placeholders use {name} so word order can change per language. {app_name}
+// is filled from AppName unless args sets it. Substitution is a single pass,
+// so a value that itself contains {placeholder} text is left as it is.
 func T(locale, key string, args map[string]string) string {
 	load()
 	locale = Fallback(locale)
@@ -90,10 +117,14 @@ func T(locale, key string, args map[string]string) string {
 	if msg == "" && !ok {
 		return key
 	}
+	pairs := make([]string, 0, 2*len(args)+2)
 	for name, value := range args {
-		msg = strings.ReplaceAll(msg, "{"+name+"}", value)
+		pairs = append(pairs, "{"+name+"}", value)
 	}
-	return msg
+	if _, set := args["app_name"]; !set {
+		pairs = append(pairs, "{app_name}", AppName())
+	}
+	return strings.NewReplacer(pairs...).Replace(msg)
 }
 
 // ReadDefaultLocale reads app_settings.default_locale, falling back to English.

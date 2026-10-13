@@ -5,6 +5,7 @@ import { sops } from './sops';
 import { assets } from './assets';
 import { admin } from './admin';
 import { tags } from './tags';
+import { branding } from './branding';
 
 export const createSDK = (event: RequestEvent) => {
     const client = createClient(event);
@@ -19,5 +20,6 @@ export const createSDK = (event: RequestEvent) => {
         assets: assets(client),
         admin: admin(client),
         tags: tags(client),
+        branding: branding(client),
     };
 };

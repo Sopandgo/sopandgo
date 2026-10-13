@@ -11,6 +11,7 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
+	"github.com/sopandgo/sopandgo/backend/internal/branding"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
@@ -25,6 +26,7 @@ type Env struct {
 	SOPService     *sop.Service
 	MailService    *mail.Service
 	SMTPSettings   *mail.SMTPSettingsStore
+	Branding       *branding.Service
 	API            *api.Server
 	MockMailSender *MockMailSender
 	DataDir        string
@@ -88,7 +90,9 @@ func New(t *testing.T) *Env {
 	// Never started: API tests read status and settings but do not upload.
 	s3Scheduler := backup.NewS3Scheduler(backupService, auditLogger)
 
-	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler)
+	brandingService := branding.NewService(store.DB, auditLogger)
+
+	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler, brandingService)
 
 	return &Env{
 		Store:          store,
@@ -97,6 +101,7 @@ func New(t *testing.T) *Env {
 		SOPService:     sopService,
 		MailService:    mailService,
 		SMTPSettings:   smtpSettingsStore,
+		Branding:       brandingService,
 		API:            apiServer,
 		MockMailSender: mockSender,
 		DataDir:        dataDir,
