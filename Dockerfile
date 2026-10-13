@@ -3,7 +3,10 @@
 # Architecture: Single Container (Caddy + Node + Go)
 #
 # RECOMMENDED: Run with docker-compose.yml + .env (see README and docs/ops/deployment.md):
-#   docker compose up -d --build
+#   docker compose pull && docker compose up -d
+# `up --build` does not rebuild this image: docker-compose.yml has no build section.
+# It also does not refresh a tag that is already present locally. Use `docker compose pull`.
+# Contributors building from source: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 # Set ORIGIN and other variables in .env (from .env.example).
 # ==========================================
 

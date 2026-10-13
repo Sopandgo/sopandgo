@@ -13,8 +13,14 @@
 		http http
 		default {scheme}
 	}
+	# No outer proxy (local Docker on a published port): {host} is the hostname
+	# only, so SvelteKit's origin becomes http://localhost while the browser
+	# sends Origin: http://localhost:8087 and rejects the login POST.
+	# {http.request.hostport} keeps the port the browser used.
+	# An outer proxy (Coolify, Traefik) sets X-Forwarded-Host; that value is
+	# forwarded as sent, including when it has no port on 443.
 	map {header.X-Forwarded-Host} {trusted_host} {
-		"" {host}
+		"" {http.request.hostport}
 		default {header.X-Forwarded-Host}
 	}
 
