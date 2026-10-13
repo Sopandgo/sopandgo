@@ -2,9 +2,21 @@
 
 All notable releases of SOPandGO are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
 
+## 1.2.2
+
+Publishes the 1.2.1 sign-in fix. The v1.2.1 image was not published: compiling translations for the arm64 image timed out under emulation.
+
+- The frontend is compiled on the machine that runs the image build. That output is copied into the arm64 image.
+
+### Upgrading from 1.2.0
+
+- No migrations. Export a backup, then `docker compose pull` and `docker compose up -d`. There is no 1.2.1 image.
+
 ## 1.2.1
 
 Signing in on a local Docker install works when SOPandGO is published on a port other than 80.
+
+No container image was published for this tag. Use 1.2.2.
 
 - Caddy keeps the browser host and port when no outer proxy sets `X-Forwarded-Host`. A login at `http://localhost:8087` is no longer rejected as a cross-site form. Coolify and other proxies that send `X-Forwarded-Host` are unchanged.
 
