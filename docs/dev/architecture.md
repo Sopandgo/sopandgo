@@ -28,7 +28,7 @@ The system is built around these core entities:
 * **Session:** A server-tracked record of an active login (Refresh Token).
 * **Password Reset Token:** A hashed, time-boxed, single-use token used for user invites and password recovery.
 * **Two-factor authentication:** `user_two_factor` holds each user's TOTP secret sealed with `SECRET_ENCRYPTION_KEY`; `two_factor_recovery_codes` (admins only) and `two_factor_email_codes` hold SHA-256 hashes. `app_settings.two_factor_policy` (`none`, `email`, `totp`) is the organization's required second factor. Details in `docs/dev/auth-architecture.md`.
-* **SOP & Version:** An SOP is a logical container; a Version holds append-only Markdown content plus a lifecycle status (`draft` / `rc` / `published` / `rejected` / `superseded`).
+* **SOP & Version:** An SOP is a logical container; a Version holds append-only Markdown content plus a lifecycle status (`draft` / `rc` / `published` / `rejected` / `superseded`). An approver or admin can archive the container. Archiving deletes nothing: the SOP stays readable, becomes read-only, and leaves the default list and signature tracking.
 * **Tag:** Global label attachable to SOP containers; admins can deactivate tags.
 * **SOP favorite:** A private link between a **User** and an **SOP** (`sop_favorites` in SQLite). Used for bookmarks and list ordering; not shared between users.
 * **Asset:** Immutable files (images/PDFs) linked to specific SOPs.

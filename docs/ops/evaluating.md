@@ -69,18 +69,18 @@ Six short sample SOPs, each tagged *Demo* plus topic tags (*Molecular Biology*, 
 4. Open a published version: read the Markdown, and check acknowledgments if your role allows it.
 5. Sign in as **`manager@demo.local`** and continue the *Bacterial Glycerol Stock Preparation* **draft** (Word import is available in the editor when you want to try it).
 6. Sign in as **`qa@demo.local`** (or admin) and approve the waiting *Autoclave Operation* release candidate. The researcher then has a new SOP version to sign.
-7. As **admin**, skim **Settings** (language, email, optional Slack / Gotify / webhook integrations, and **Backup** — export a `.zip` once so you know the path works), **Audit**, and **Integrity** (run the system check once; it re-hashes every file and verifies the audit chain).
+7. As **admin**, skim **Settings** (language, the required second factor, email, branding, optional Slack / Gotify / webhook integrations, and **Backup** — export a `.zip` once so you know the path works), **Audit**, and **Integrity** (run the system check once; it re-hashes every file and verifies the audit chain).
 
 You do not need real SMTP for a first look: with no email transport switched on, inviting another user gives you a **manual link** to share.
 
-To try two-factor authentication, set `SECRET_ENCRYPTION_KEY` in `.env` and restart, then set it up under **Account settings** with any authenticator app. As admin, keep the recovery codes; if you lock yourself out of a trial anyway, run `docker compose exec SOPandGO ./sopandgo recover-admin --email admin`.
+To try two-factor authentication, set `SECRET_ENCRYPTION_KEY` in `.env` and restart, then set it up under **Account settings** with any authenticator app. As admin, keep the recovery codes; if you lock yourself out of a trial anyway, run `docker compose exec sopandgo ./sopandgo recover-admin --email admin`.
 
 Before sign-in, the top bar has a language menu and a light/dark toggle. Supported locales include English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, Swedish, Czech, and Slovak. The appearance choice stays in the browser until sign-in. After sign-in, the avatar menu at the top right switches appearance (light, dark, or system) and links to **Account settings** (`/profile/settings`), where you can also change your language and set a profile picture (crop, then upload). Admins set the organization language on **Settings**; that language is used for shared notifications and PDF chrome. The seeded sample SOPs stay in the English Markdown they were written in.
 
 ## After the trial
 
 - Tear down with `docker compose down` (add `-v` only if you also want to remove named volumes; the default bind mount `./backend/data` remains on disk until you delete it).
-- For a real deployment, start from a clean data directory with `SEED_DEMO_DATA=false`, set a strong admin password, and follow [deployment.md](./deployment.md) and the README first-week checklist.
+- For a real deployment, start from a clean data directory with `SEED_DEMO_DATA=false`, set a strong admin password, and follow the [first-week checklist](./deployment.md#first-week-checklist) in [Deployment](./deployment.md).
 
 ## Related docs
 

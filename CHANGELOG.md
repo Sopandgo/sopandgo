@@ -89,4 +89,4 @@ First stable release for self-hosted labs and small research teams.
 
 ### Upgrading
 
-From 1.0.0 onward, upgrades are intended to be forward-compatible: take a backup, pull the new image, restart, and let append-only database migrations run. Prefer tagged releases. See the README upgrading section and [docs/ops/deployment.md](docs/ops/deployment.md).
+From 1.0.0 onward, upgrades are intended to be forward-compatible: take a backup, pull the new image, restart, and let append-only database migrations run. Prefer tagged releases. See [Upgrading](docs/ops/deployment.md#upgrading).

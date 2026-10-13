@@ -2,30 +2,31 @@
 
 Website: [sopandgo.com](https://sopandgo.com)
 
-> [!NOTE]
-> **Stability:** From **1.0.0** onward, upgrades are intended to be forward-compatible: take a backup, pull the image, restart, and let append-only database migrations run. The compose file stays on version **1**. See [Upgrading](#upgrading) below.
-
-A small, self-hosted SOP management system for labs and small research organizations.
+A self-hosted home for a lab's procedures: write them, publish a version, and have people sign the one they read.
 
 ---
 
 ## What this is
 
-SOPandGO is a lightweight tool for managing **standard operating procedures (SOPs)** as
-structured, versioned documents with explicit acknowledgment and auditability.
+SOPandGO keeps each **standard operating procedure (SOP)** as a structured document with a clear history. It is for academic labs, core facilities, and early-stage research teams.
 
-It is designed for environments where SOPs matter, but full QMS software is unnecessary
-or impractical — such as academic labs, core facilities, and early-stage research teams.
+- Version content is immutable. Publishing follows **draft → release candidate → published**.
+- Acknowledgments are tied to an exact version.
+- Approvers can archive an SOP that is no longer used. It leaves the list and becomes read-only, and nothing is deleted.
+- All data stays on the host.
 
-Core ideas:
-- SOPs are **structured documents**, not loose files.
-- Version **content** is **immutable**; publishing uses an explicit **draft → RC → published** lifecycle.
-- Acknowledgments are tied to **exact versions**.
-- Users can **bookmark SOPs as favorites** (per-user, private to each account; favorites apply to the SOP container, not a specific version).
-- Approvers can **archive** SOPs that are no longer used, with a reason: they leave the list and signature tracking and become read-only, but nothing is deleted.
-- All data stays **self-hosted and portable**.
+## What a lab does with it
 
----
+- Invite the people who need access. Each person sets their own password. Roles decide who drafts, who approves, and who reads and signs.
+- Write in the editor, or start from a Word document. Attach images, tag procedures, and compare two versions.
+- Send a draft through review, then publish. People can read it in the app or download a PDF.
+- The home page shows each person what they still need to sign, what was just published, and the procedures they use often.
+- Look back at who signed which version, and at the audit trail of publishes and admin actions.
+- Export a backup from **Settings**, and restore it when you want to rehearse on another copy.
+
+You can require a second sign-in factor, mail a notice when a version is published, and show your organization's name and logo on the sign-in page.
+
+From **1.0.0** onward, upgrades are intended to be forward-compatible. See [Upgrading](docs/ops/deployment.md#upgrading).
 
 ## What this is not
 
@@ -34,202 +35,47 @@ Core ideas:
 - Not a document editor replacement
 - Not cloud-hosted
 
-SOPandGO does **not** claim to make an organization compliant with GMP, GLP, ISO, or any
-other regulatory framework. It is a tooling aid, not a regulatory solution.
+SOPandGO does not claim to make an organization compliant with GMP, GLP, ISO, or any other regulatory framework. It is a tooling aid for the people who run the lab.
 
----
-
-## High-level architecture
-
-The system follows a **layered architecture** pattern to keep transport, services, and storage separable for security and portability.
-
-- **Containerization:** Root **`docker-compose.yml`** (use with a **`.env`** file; start from **`.env.example`**):
-  - **`sopandgo` service (one image):** Caddy (reverse proxy), **Backend:** Go 1.26 (service layer, SQLite, PASETO auth, mail hooks), **Frontend:** Svelte 5 / SvelteKit (Node adapter).
-  - **`gotenberg` service:** PDF rendering sidecar when PDF export is enabled (see compose file and env vars below).
-- **Storage:**
-  - **SQLite:** Stores users, sessions, metadata, audit logs, and encrypted secrets for mail and outbound integrations (ciphertext only; the AES key stays in the environment).
-  - **Filesystem:** Stores raw Markdown content and binary assets.
-
-If the application is removed, SOP content remains readable on disk as standard files.
-
----
-
-## SOP model (brief)
-
-- Each SOP consists of **versions** with append-only content
-- Each version:
-  - has structured content (Markdown) that is never rewritten after create
-  - may reference local assets (images, diagrams)
-  - has a content hash recorded in the database; any user can re-check a version or asset file against it, and admins can scan everything at **Admin → Integrity** (`/admin/integrity`)
-  - moves through a lifecycle: **draft → RC → published** (or rejected); a later publish marks the prior published version **superseded**
-- A whole SOP can be **archived** (approvers and admins, reason required): it becomes read-only and leaves the default list, but all versions and signatures stay readable
-- Users acknowledge specific SOP versions (`author` / `approver` / `reader`)
-- Content files are never modified or deleted; lifecycle state history is recorded separately
-
----
-
-## Security & access
-
-The system implements a **Stateless/Stateful Hybrid** security model:
-
-- **Unknowable Passwords:** Admins cannot set passwords. Users set their own credentials via email invites.
-- **Authentication:** PASETO (Stateless) for fast API access + Refresh Tokens (Stateful) for session management.
-- **Two-factor authentication:** Each user can add an authenticator app. Admins set the organization's required second factor: none, an emailed code or an app, or an app only. Admins always need an app above none, get single-use recovery codes, and can reset 2FA for normal users.
-- **Locked-out admin:** The host operator resets an admin's sign-in with `./sopandgo recover-admin` in the container terminal. There is no web route for it, and every run is audited.
-- **Revocation:** Deactivating a user or changing their role applies on the next request. Revoking a refresh session stops new tokens immediately; an access token already issued lasts at most 5 minutes.
-- **Profile pictures:** Users upload their own picture; the server stores small re-encoded JPEGs. Any signed-in user can view them the same way they see display names.
-- **Branding:** Admins can set the organization's name, logo, and primary colour under **Settings → Branding**. Name and logo are public (the sign-in page shows them); logos are re-encoded PNGs, never SVG. A "Powered by SOPandGO" link stays in the footer and sidebar.
-- **RBAC:** Role-Based Access Control limits actions (e.g., only "Editors" can create drafts).
-- **Self-Contained:** No external identity providers required.
-
-The security model is documented in detail under `docs/concepts/security-model.md`.
-
----
-
-## Features (1.0)
-
-Self-hosted SOP management with invite-only auth, RBAC, immutable versioned content (draft → RC → published), acknowledgments, home dashboard, tags and favorites, SOP archiving, audit trail, mail (SMTP/Resend or manual links), optional publish notices, Slack/Gotify/HTTP webhooks, backup/restore, PDF export, and Word import. The interface, emails, notifications, and PDF chrome ship in English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, Swedish, Czech, and Slovak. SOP titles and Markdown stay in the language the author wrote. Adding another interface language is a catalog change; see [Architecture](docs/dev/architecture.md#languages).
-
-Pending-acknowledgment reminder digests and lifecycle emails for RC/reject/archive are **out of scope for 1.0** — the home dashboard lists each person’s own pending signatures; publish notices are the email surface.
-
-Release notes: [CHANGELOG.md](CHANGELOG.md). Local evaluation: [docs/ops/evaluating.md](docs/ops/evaluating.md).
-
----
-
-## Deployment
-
-**Recommended:** run with **`docker compose`** using the bundled **`docker-compose.yml`** plus a **`.env`** in the repo root (copy **`.env.example`** → **`.env`** and edit; do not commit `.env`). Compose loads `.env` automatically for `${VAR}` substitution in the compose file.
-
-- **`sopandgo`:** one container image (Caddy + Go API + SvelteKit Node server).
-- **`gotenberg`:** second container for PDF generation when enabled (default in compose). Disable PDF or adjust `PDF_EXPORT_ENABLED` / `PDF_RENDERER` if you do not want it.
-- **Networking:** one **host** port mapped to the app (default **8087** → container port 80; override with **`HOST_WEB_PORT`** in `.env`).
-- **Data:** one bind-mounted directory for SQLite and SOP files (default **`./backend/data`** → `/app/data` in the container).
-
-### Quick Start
-
-Trying the product for the first time? See **[Evaluating sopandgo](docs/ops/evaluating.md)** for demo accounts and a short tour. For a real lab, follow the steps below with **`SEED_DEMO_DATA=false`** before first boot.
-
-1. **Clone the repo**
-```bash
-  git clone https://github.com/Sopandgo/sopandgo.git
-  cd sopandgo
-```
-2. **Configure environment (critical)** Copy **`.env.example`** to **`.env`** and set at least the values you need for your deployment. The repo already includes **`docker-compose.yml`**; you normally do **not** need to author compose from scratch.
-
-- **ORIGIN:** Must match the URL you use in the browser (default: `http://localhost:8087`). The Go API uses it for invite/reset links and related absolute URLs. SvelteKit 3 derives request origin from `HOST_HEADER` / `PROTOCOL_HEADER` (set in the image), not from `ORIGIN`.
-- **SECRET_ENCRYPTION_KEY:** A **32-byte** AES key as **base64** or **hex** (generate: `openssl rand -base64 32`). This encrypts secrets stored in SQLite (SMTP password, Resend API key, Slack webhook URL, Gotify token, optional webhook bearer, S3 backup secret access key, two-factor authenticator secrets); it is **not** your mail provider password. Without a valid key, the server starts, but you cannot save those secrets, send mail/integrations that need them, or turn on two-factor authentication.
-- **SEED_DEMO_DATA:** `true` (default) inserts demo users and sample SOPs on the first Docker start, when `app.db` does not exist yet. Set `false` for a real deployment. Changing it later does not remove data that was already seeded.
-- **Mail:** In **Settings → Email** (`/admin/settings/email`), save **SMTP** (host, port, user, password, from-address) or **Resend** and switch it on in its card header to send invites and resets by email; verify with **Send test email**. Until a transport is on, admins get one-time links to share manually (manual links).
-- **Integrations:** On **Settings → Integrations** (`/admin/settings/integrations`), optionally enable Slack Incoming Webhooks, Gotify, and/or a generic HTTP webhook for lifecycle and ops alerts. There are no `SLACK_ENABLED`-style env flags — configure destinations in the UI.
-- **PDF export (Gotenberg):**
-  - `PDF_EXPORT_ENABLED=true|false` toggles PDF artifact generation and download.
-  - `PDF_RENDERER=gotenberg|none` selects renderer mode.
-  - `GOTENBERG_URL` points to the Gotenberg service URL (default in Docker: `http://gotenberg:3000`).
-  - `PDF_GENERATOR_VERSION` controls append-only artifact generation/backfill versioning.
-- **Branding:** On **Settings → Branding** (`/admin/settings/branding`), optionally replace the SOPandGO name, logo (also the browser tab icon), and primary colour. The name is also used in emails and notifications.
-- **Backups:** Admins can use **Settings → Backup** (`/admin/settings/backup`) to export a `.zip`, validate archives, and stage a restore (restart required). Optional automatic uploads to S3 (or S3-compatible storage) are set up on the same page, with a connection test and a run-now button; see `docs/ops/backup-and-restore.md`.
-
-See `docs/ops/deployment.md` for the full environment variable reference. How versions ship: `docs/ops/releasing.md`.
-
-3. **Launch**
-```bash
-  docker compose pull
-  docker compose up -d
-```
-The compose file uses the published image `ghcr.io/sopandgo/sopandgo:1`. You do not set a version. (`docker-compose` with a hyphen also works if that is what your system provides.)
-
-4. **Access the app**
-
-Open the URL matching **`ORIGIN`** (default: http://localhost:8087; use your **`HOST_WEB_PORT`** if you changed it). It opens on the sign-in form.
-
-**Default Admin:** `admin` / `admin`
-
-> [!IMPORTANT]
-> The bootstrap admin **must change this password on first login** before the rest of the app unlocks. The UI redirects you to the profile password form until you do.
-
-**Demo users** (seeded on first Docker start when `SEED_DEMO_DATA` is not `false`): emails like `manager@demo.local` with password `12345`. Demo accounts are for exploration only — set `SEED_DEMO_DATA=false` before first boot for a real lab deployment.
-
-### First-week checklist
-
-1. Set **`ORIGIN`** and **`SECRET_ENCRYPTION_KEY`** in `.env`. For a real deployment, set **`SEED_DEMO_DATA=false`** before the first boot so demo users and the sample SOPs are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
-2. Sign in as `admin` / `admin` and **set a strong password** (required; enter `admin` as the current password).
-3. Optionally save SMTP or Resend under **Settings → Email**, switch it on and send a **test email**; without it, invites use manual links.
-4. Turn on two-factor authentication for the admin account in **Account settings**, store the recovery codes, and choose the organization's required second factor under **Settings** (General → Security). If an admin is ever locked out, see [Locked-out admin](docs/ops/deployment.md#locked-out-admin-break-glass).
-5. Create a real user invite (or keep demo data only for a trial).
-6. **Backup:** **Settings → Backup** → export a `.zip`, then optionally **validate** it.
-7. Practice restore once on a non-production copy: stage apply → restart container → confirm SOPs and acknowledgments. See `docs/ops/backup-and-restore.md`.
-
-### Upgrading
-
-1. Export a backup from **Backup** (or copy `backend/data` while the container is stopped).
-2. Pull and start again:
+## Run it
 
 ```bash
-docker compose pull
-docker compose up -d
+cp .env.example .env
 ```
 
-3. The backend applies **append-only** schema migrations automatically.
-4. Confirm the app boots and spot-check a published SOP and a recent backup export. The footer shows the exact release, such as `v1.0.1`.
+Set `ORIGIN` to the URL you open in the browser, and set `SECRET_ENCRYPTION_KEY` (`openssl rand -base64 32`). Then:
 
-You do not edit a version number for a normal update. The image name `1` moves forward for compatible releases and does not jump to 2.0.0. To roll back, or to move to a future major version, see [docs/ops/deployment.md](docs/ops/deployment.md).
+```bash
+docker compose pull && docker compose up -d
+```
 
-Do not run a newer database against an older application binary; restore from backup if you need to roll back the app version.
+Open that URL (default [http://localhost:8087](http://localhost:8087)). Sign in as `admin` / `admin` and set a new password. The rest of the app stays locked until you do.
 
----
+Trying it with sample SOPs: [Evaluating SOPandGO](docs/ops/evaluating.md). A real lab: [Deployment](docs/ops/deployment.md), including the [first-week checklist](docs/ops/deployment.md#first-week-checklist).
 
-## Data Persistence & Backups
+## Read next
 
-All system data is stored in the `backend/data` folder (inside the container: `DATA_DIR`, default `/app/data`), which is mounted as a persistent volume in Docker.
-
-- **SQLite Database:** `app.db` holds metadata, audit logs, users, per-user SOP favorites (`sop_favorites`), and encrypted SMTP / integration settings.
-- **SOP content:** `sops/` holds versioned Markdown and per-SOP assets.
-
-**Recommended (admin UI):** Sign in as **admin** → **Settings → Backup** (`/admin/settings/backup`). You can **export** a `.zip` (consistent DB snapshot plus `sops/` and `manifest.json`), **validate** an archive, and **stage apply** of a restore. Staged restores run on the **next backend/container restart**; see `docs/ops/backup-and-restore.md`.
-
-**Alternative (manual):** Stop the container and copy the whole data directory, or archive `backend/data` on the host. SOP Markdown on disk stays readable without the app.
-
----
-
-## Development
-
-If you wish to run the services outside of Docker:
-- **Backend:** `cd backend && go run ./cmd/sopandgo`  
-  The Go binary does **not** read a `.env` file; export `SECRET_ENCRYPTION_KEY` (and other vars) in your shell or IDE if you need mail or to match production. Under `air`, put them in `backend/.env` instead (copy `backend/.env.example`).
-- **Frontend:** `cd frontend && npm run dev`
-- **Seeder:** `cd backend && go run cmd/seed-demo-data/main.go` (Only run on an empty `data` folder). Honors `SEED_DEMO_DATA=false`. Run it **before** the backend's first start: the backend creates `app.db` with the bootstrap admin, and the seeder skips once `app.db` exists.
-- **Live reload:** `cd backend && air` uses `backend/.air.toml`, which runs `go run ./cmd/seed-demo-data` before each build. Seeding only inserts when `backend/data/app.db` is missing (same as Docker). To reset demo data, stop air and delete `backend/data`, then start air again.
-
-### Tests
-- **Backend:** `cd backend && go test ./...`
-- **Frontend:** `cd frontend && npm test`
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for pull-request expectations.
-
----
+- [Evaluating](docs/ops/evaluating.md) — a local trial with demo data
+- [Deployment](docs/ops/deployment.md) — environment, mail, backups, and upgrades
+- [Backup and restore](docs/ops/backup-and-restore.md)
+- [Security model](docs/concepts/security-model.md)
+- [Versioning and signatures](docs/concepts/versioning-and-signatures.md)
+- [Contributing](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md) — what each release added
 
 ## Disclaimer
 
 This software is provided as-is, without warranty of any kind.
 
-It is not validated for regulated environments and does not replace institutional,
-legal, or regulatory responsibilities. Users are responsible for determining whether
-its use is appropriate for their context.
-
----
+It is not validated for regulated environments and does not replace institutional, legal, or regulatory responsibilities. You are responsible for deciding whether it fits your lab.
 
 ## License
 
 MIT License  
 © 2025-2026 Leopold Dürrauer
 
-This is an independent open-source project and is not affiliated with any employer or
-institution.
+This is an independent open-source project and is not affiliated with any employer or institution.
 
 ### Third-Party Assets
-The demo data bundled with this application includes media files used under 
-different licenses:
-* Sample images are sourced from Wikimedia Commons and are licensed under 
-  Creative Commons (CC BY 4.0 / CC BY-SA 3.0). 
-* See `backend/demo/sops/87de1162-589b-4c91-8c37-8fae346a1ccc/assets/ATTRIBUTIONS.md` for full credits and license links used in the SOPandGO backend.
-* The Gopher image is based on the Go Gopher created by Renee French. Licensed under Creative Commons Attribution 4.0 International License. https://creativecommons.org/licenses/by/4.0/
+
+Demo data includes media used under other licenses. Credits and links are in `backend/demo/sops/87de1162-589b-4c91-8c37-8fae346a1ccc/assets/ATTRIBUTIONS.md`. The Gopher image is based on the Go Gopher created by Renee French, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

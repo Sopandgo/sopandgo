@@ -48,6 +48,16 @@ Initial Credentials:
 
 Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left on (default `true`). They use weak passwords such as `12345` for exploration only. Set `SEED_DEMO_DATA=false` before the first start to skip them. Changing the flag later does not remove data that was already seeded.
 
+### First-week checklist
+
+1. Set `ORIGIN` and `SECRET_ENCRYPTION_KEY` in `.env`. For a real deployment, set `SEED_DEMO_DATA=false` before the first boot so demo users and the sample SOPs are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
+2. Sign in as `admin` / `admin` and set a strong password. The form asks for the current password, which is `admin`.
+3. Optionally save SMTP or Resend under **Settings → Email**, switch it on, and send a test email. Without a transport switched on, invites use manual links.
+4. Turn on two-factor authentication for the admin account in **Account settings**, store the recovery codes, and choose the organization's required second factor under **Settings** (General → Security). If an admin is locked out later, see [Locked-out admin](#locked-out-admin-break-glass).
+5. Create a real user invite. Keep demo data only for a trial.
+6. Open **Settings → Backup**, export a `.zip`, and validate it.
+7. Practice restore once on a non-production copy: stage apply, restart the container, and confirm SOPs and acknowledgments. See [Backup and restore](./backup-and-restore.md).
+
 ## Advanced Configuration
 
 ### Environment Variables
@@ -90,7 +100,7 @@ Outgoing mail (user invites, password resets) is **not** configured via `SMTP_HO
 
 To go back to manual links, switch the transport off; its saved settings stay. The API still exposes `mail_mode` and `mail_transport`; `effective_mail_mode` in `GET /api/admin/settings/email` is what invites and resets actually use.
 
-**What mail does in 1.0:** invites, password resets, test email, and **optional notices when a version is published** (to other active users who can reader-sign). Publish notices are skipped in `manual_links` mode; a failed send does **not** unpublish the version. Pending-acknowledgment reminder digests and emails for RC/reject/archive are **not** included — use the home dashboard, which lists each person’s own pending signatures.
+Mail sends invites, password resets, a test email, and optional notices when a version is published, to other active users who can reader-sign. Publish notices are skipped in `manual_links` mode. A failed send leaves the version published. Reminder digests for pending acknowledgments are not sent. Emails for a release candidate, a rejection, or an archive are not sent. The home dashboard lists each person's own pending signatures.
 
 ### Outbound integrations (Slack, Gotify, webhook)
 

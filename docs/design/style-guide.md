@@ -61,7 +61,7 @@ Never write it as SOP and GO, SOP & GO, SOP+GO, SopAndGo, Sopandgo, SOPANDGO, or
 | Rejected | `error` on `error-soft` |
 | Superseded | text only in `base-content-muted`, no badge fill |
 | Archived SOP | neutral outline badge, like a draft; the word says which |
-| Role: admin, approver, auditor | neutral outline badge; no red for admin |
+| Role: admin, approver, editor, viewer, auditor | neutral outline badge; no red for admin |
 | Integrity verified | `success` soft badge, shield-check icon, "Verified" |
 | Hash mismatch | `error` soft badge, shield-x icon, "Hash mismatch" |
 | File missing | `warning` soft badge, file-x icon, "File missing" |
@@ -206,7 +206,7 @@ The SOP version status (`SopVersionStatusBadge`), as a soft daisyUI badge whose 
 
 **Consumer provides**: `status` (one of the above). Nothing else; the component owns the mapping, so no other file picks a badge colour for a status.
 
-**Roles** (admin, approver, auditor, reader) use the same neutral `badge badge-outline`. The role is information, not a warning: no red for admin.
+**Roles** (admin, approver, editor, viewer, auditor) use the same neutral `badge badge-outline`. The role is information, not a warning: no red for admin.
 
 **Don't**
 - Don't fill badges solid (`badge-primary`, `badge-secondary`).

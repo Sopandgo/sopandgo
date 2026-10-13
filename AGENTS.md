@@ -6,7 +6,7 @@ When behavior, APIs, security guarantees, or operator steps change, update the m
 
 Check these when they apply:
 
-- `README.md` — what the product does, and the short security summary
+- `README.md` — the product description and "what this is not." Operator steps, environment variables, and feature inventories stay in `docs/ops/` and `CHANGELOG.md`. Update the README only when the four-line install itself changes.
 - `docs/dev/api-reference.md` — how to find the HTTP surface (code + SDK); not an endpoint encyclopedia
 - `docs/dev/architecture.md` and `docs/dev/auth-architecture.md` — how requests, tokens, and roles work
 - `docs/concepts/security-model.md` — what the system protects, and what it does not
@@ -30,7 +30,7 @@ Merging to `main` is not a release. Do not create a tag, edit `CHANGELOG.md` for
 - Do not bump `package.json` versions as the product version, and do not add commit-message auto-tagging or npm publish.
 - A release requires a `## X.Y.Z` section in `CHANGELOG.md` first.
 - The lab image tag is `ghcr.io/sopandgo/sopandgo:1` inside `docker-compose.yml`. Do not move that tag to `.env`, to `latest`, or to a patch number.
-- Operator steps stay in `docs/ops/releasing.md`. Workflow changes update that file, `CONTRIBUTING.md`, `README.md`, `docs/ops/deployment.md`, and `docs/ops/evaluating.md` in the same change.
+- Operator steps stay in `docs/ops/`. Workflow changes update `docs/ops/releasing.md`, `CONTRIBUTING.md`, `docs/ops/deployment.md`, and `docs/ops/evaluating.md` in the same change. Update `README.md` only when the four-line install itself changes.
 
 ## Database migrations
 
