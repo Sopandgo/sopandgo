@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "Version {version} was rejected.",
   "notify.reason": "Reason: {reason}",
   "notify.integrity.title": "Integrity check failed",
-  "notify.integrity.message": "System integrity check reported failures (versions invalid={versions}, assets invalid={assets}, audit invalid={audit}).",
+  "notify.integrity.message": "System integrity check reported failures (versions invalid={versions}, assets invalid={assets}, audit invalid={audit}, anchors with problems={anchors}).",
   "notify.backup_failed.title": "S3 backup failed",
   "notify.test.title": "{app_name} test notification",
   "notify.test.message": "If you received this, the {channel} integration is configured correctly.",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "Your {app_name} sign-in code",
   "mail.two_factor_code.body": "Hi {name},\n\nYour sign-in code is:\n\n{code}\n\nIt works once and expires in 10 minutes.\n\nIf you did not try to sign in, change your password and tell your admin.\n\nBest,\nThe {app_name} Team",
   "notify.break_glass.title": "Admin sign-in reset on the server",
-  "notify.break_glass.message": "The recover-admin command reset the sign-in of {email} on host {hostname}. If nobody on your team did this, check the audit log."
+  "notify.break_glass.message": "The recover-admin command reset the sign-in of {email} on host {hostname}. If nobody on your team did this, check the audit log.",
+  "notify.anchor_failed.title": "Audit anchoring failed",
+  "notify.anchoring_changed.title": "Audit anchoring settings changed",
+  "notify.backup_restored.title": "Backup restored: audit log replaced",
+  "notify.backup_restored.message": "A backup restore replaced the audit log. Rows after {archive_tip} (up to {old_tip}) were replaced. The integrity scan lists anchors taken before the restore for review."
 }

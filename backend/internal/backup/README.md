@@ -10,12 +10,13 @@ Operator-facing docs: `docs/ops/backup-and-restore.md`. HTTP surface: `/api/admi
 | --- | --- |
 | **`service.go`** | `ExportZip`, `ValidateImportArchive`, `StageImportApply`, maintenance lock, pending restore under `data/_restore_pending/` |
 | **`s3_scheduler.go`** | Optional timed uploads of the same `.zip` format. Always running; `Configure` switches it on, off or to new settings without a restart. `RunNow` for a manual upload, `CheckS3Connection` writes and deletes a probe object |
+| **`restore_audit.go`** | `AddStageHook` (other packages carry their own settings across a restore as `carry_*.json`), the chain tip read just before the restore overwrites `app.db`, and `RecordRestoreInAudit`, which writes `backup_restored` after migrations |
 | **`s3_settings.go`** | `S3SettingsStore`: the admin-UI settings in `backup_s3_settings` (secret sealed with `SECRET_ENCRYPTION_KEY`), and the carry-over that keeps them across a staged restore |
 
 ## Flow (short)
 
 1. **Export** — consistent SQLite snapshot + `sops/` + `manifest.json` into a `.zip`.
 2. **Validate** — check archive and schema compatibility without touching live data (`422` on failure via API).
-3. **Restore** (`StageImportApply`) — requires confirmation string `RESTORE BACKUP`; stages under `_restore_pending/` and writes a pre-apply snapshot; swap happens on **next process start**. The live S3 settings are written next to the staged database and put back by `ApplyCarriedS3Settings` after migrations, so the archive's S3 settings are never used.
+3. **Restore** (`StageImportApply`) — requires confirmation string `RESTORE BACKUP`; stages under `_restore_pending/` and writes a pre-apply snapshot; swap happens on **next process start**. The live S3 settings are written next to the staged database and put back by `ApplyCarriedS3Settings` after migrations, so the archive's S3 settings are never used. Stage hooks (the audit anchoring settings) work the same way. On the first start the live chain tip is read before the swap, and `RecordRestoreInAudit` logs it next to the restored tip, so anchors taken after the archive are explained instead of looking like tampering.
 
 Mutating APIs may return `503` while the maintenance lock is held during export/apply.

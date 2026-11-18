@@ -56,8 +56,9 @@ type Service struct {
 	appVersion         string
 	maxSupportedSchema int
 
-	mu      sync.Mutex
-	locked  bool
+	mu         sync.Mutex
+	locked     bool
+	stageHooks []StageHook
 	message string
 }
 
@@ -211,6 +212,14 @@ func (s *Service) StageImportApply(file multipart.File, confirmation string) (Ap
 	if err := writeS3SettingsCarryOver(s.db, filepath.Join(pendingDir, stagedS3SettingsFile)); err != nil {
 		return ApplyResult{}, err
 	}
+	s.mu.Lock()
+	hooks := append([]StageHook(nil), s.stageHooks...)
+	s.mu.Unlock()
+	for _, hook := range hooks {
+		if err := hook(s.db, pendingDir); err != nil {
+			return ApplyResult{}, err
+		}
+	}
 	stagedSops := filepath.Join(extractDir, "sops")
 	if st, err := os.Stat(stagedSops); err == nil && st.IsDir() {
 		if err := copyDir(stagedSops, filepath.Join(pendingDir, "sops")); err != nil {
@@ -244,6 +253,11 @@ func ApplyPendingRestoreAtStartup(dataDir string) error {
 		return fmt.Errorf("restore pending but app.db missing: %w", err)
 	}
 
+	// Record the live chain tip before it is overwritten (see restore_audit.go).
+	if err := writeRestoreAuditTip(dataDir, pendingDir); err != nil {
+		return fmt.Errorf("failed to record the audit chain tip before restoring: %w", err)
+	}
+
 	dstDB := filepath.Join(dataDir, "app.db")
 	if err := copyFile(srcDB, dstDB); err != nil {
 		return fmt.Errorf("failed to apply pending app.db: %w", err)
@@ -269,6 +283,10 @@ func ApplyPendingRestoreAtStartup(dataDir string) error {
 		if err := copyFile(srcSettings, filepath.Join(dataDir, carriedS3SettingsFile)); err != nil {
 			return fmt.Errorf("failed to keep s3 backup settings: %w", err)
 		}
+	}
+
+	if err := moveCarryFiles(pendingDir, dataDir); err != nil {
+		return err
 	}
 
 	if err := os.RemoveAll(pendingDir); err != nil {

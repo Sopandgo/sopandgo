@@ -113,9 +113,45 @@ Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTI
 | Gotify | Server base URL + application token, enable, events | POST `{url}/message?token=...` |
 | Generic webhook | Destination URL, optional bearer token (enter `-` to clear), enable, events | POST JSON envelope (`event`, `occurred_at`, `title`, `message`, `url`, `sop_id`, …) |
 
-**Events:** `sop_published`, `sop_rc`, `sop_rejected`, `backup_s3_failed`, `integrity_check_failed`, `break_glass_used` (an admin was reset with `recover-admin`). Use **Send test** per channel to verify. Delivery failures are audited and never roll back SOP publish/promote/reject.
+**Events:** `sop_published`, `sop_rc`, `sop_rejected`, `backup_s3_failed`, `integrity_check_failed`, `break_glass_used` (an admin was reset with `recover-admin`), `audit_anchor_failed`, `audit_anchoring_changed` (anchoring switched on, off, or reconfigured), and `backup_restored` (a restore replaced the audit log). New channels subscribe to all of them. Channels saved before these events existed keep their saved choice, so tick the new events on each channel. Use **Send test** per channel to verify. Delivery failures are audited and never roll back SOP publish/promote/reject.
 
 If you **rotate** `SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save. Authenticator apps stop working too: admins sign in with a recovery code, users with an emailed code if the policy allows email, and then set up their app again; reset normal users from **Admin → Users** and admins with [`recover-admin`](#locked-out-admin-break-glass).
+
+### Audit anchoring
+
+The audit log is a hash chain, but someone with direct access to the database can rewrite it and recompute every hash. Audit anchoring closes that gap. A Time Stamping Authority (TSA) regularly signs the newest audit hash, and each receipt is copied to your S3 bucket. An auditor can check the receipts without SOPandGO; see [Verifying audit anchors](verifying-anchors.md).
+
+Anchoring is off by default. To switch it on:
+
+1. Configure an S3 bucket under **Settings → Backup**. Anchoring uses that bucket and its credentials, even when scheduled backups are off. Receipts go under `<prefix>/anchors/<instance_id>/`.
+2. Protect the receipts from this server. Anyone with a shell on the host can read `SECRET_ENCRYPTION_KEY` and so the S3 credentials. Do one of the following:
+   - Turn on **S3 Object Lock** for the bucket, in compliance mode with a default retention period. The bucket must be created with Object Lock enabled.
+   - Give SOPandGO a key that can add objects under `anchors/` but not delete or overwrite them:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       { "Effect": "Allow", "Action": ["s3:PutObject", "s3:GetObject"], "Resource": "arn:aws:s3:::lab-backups/anchors/*" },
+       { "Effect": "Allow", "Action": ["s3:ListBucket", "s3:GetBucketObjectLockConfiguration"], "Resource": "arn:aws:s3:::lab-backups" }
+     ]
+   }
+   ```
+
+   With versioning on, an overwrite keeps the old version, but a key that can delete can remove it too. Scheduled backups need their own write and delete rights for their own prefix, so a put-only key means separate credentials for backups. In that case Object Lock is simpler. SOPandGO shows a warning until the bucket reports Object Lock.
+3. Open **Settings → Audit anchoring**. Enter a TSA URL and choose how often to anchor (default every hour). Any RFC 3161 service works:
+   - free public TSAs such as `http://timestamp.digicert.com`, `http://timestamp.sectigo.com`, or `https://freetsa.org/tsr`;
+   - a qualified TSA from the EU Trusted List if your timestamps need eIDAS legal standing (these usually need an account; enter its username and password or token).
+4. Choose **Test the TSA and switch on**. SOPandGO sends one test request and shows the TSA's CA certificate and its SHA-256 fingerprint. Compare it with what the TSA publishes, then confirm. If audit rows already fail verification (for example rows rewritten by an old migration), they are listed. You must confirm that you reviewed them before anchoring starts. They are then recorded as known in an `integrity_baseline` event.
+
+What it needs and does:
+
+- **Outbound access** from the container to the TSA URL (HTTP or HTTPS) and to S3. `HTTPS_PROXY`, `HTTP_PROXY`, and `NO_PROXY` are honoured. Only the 32-byte hash, the server's IP address, and the request time reach the TSA.
+- **Runs** on the chosen interval, and only when something new was logged. **Admin → Integrity** also has **Anchor now**. A failed run never blocks the app: it retries with backoff, writes `audit_anchor_failed`, and notifies integrations. A receipt that could not be copied to S3 stays on the server and is uploaded on the next run.
+- **Certificate pinning:** receipts must chain to the CA pinned at setup. When the TSA changes CA, anchoring fails with an alert until an admin ticks **Pin the TSA's current CA again** and confirms the new fingerprint.
+- **Changes are loud:** switching anchoring off first takes a final anchor. Every switch-on, switch-off, and settings change is audited and sent to integrations as `audit_anchoring_changed`.
+- **Restores:** a restore keeps the running instance's anchoring settings, like its S3 settings. On the first start after a restore, SOPandGO writes `backup_restored` with the old and the restored chain tips, sends `backup_restored` to integrations, and anchors right away. Receipts taken after the restored archive was made show up in **Admin → Integrity** as *replaced by a restore*, for someone to review. They are not reported as a silent pass.
+- **The integrity scan** (**Admin → Integrity**) checks every receipt on the server against the chain and the pinned CA. It lists the bucket and flags receipts that are missing from the server or differ from it. Any problem fails the scan and sends `integrity_check_failed`.
 
 ### Audit Taxonomy Hardening
 

@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "A versão {version} foi rejeitada.",
   "notify.reason": "Motivo: {reason}",
   "notify.integrity.title": "Falha na verificação de integridade",
-  "notify.integrity.message": "A verificação de integridade do sistema reportou falhas (versões inválidas={versions}, anexos inválidos={assets}, auditoria inválida={audit}).",
+  "notify.integrity.message": "A verificação de integridade do sistema reportou falhas (versões inválidas={versions}, anexos inválidos={assets}, auditoria inválida={audit}, âncoras com problemas={anchors}).",
   "notify.backup_failed.title": "Falha no backup S3",
   "notify.test.title": "Notificação de teste do {app_name}",
   "notify.test.message": "Se você recebeu isto, a integração {channel} está configurada corretamente.",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "Seu código de login do {app_name}",
   "mail.two_factor_code.body": "Olá {name},\n\nSeu código de login é:\n\n{code}\n\nEle funciona uma vez e expira em 10 minutos.\n\nSe você não tentou entrar, altere sua senha e avise seu administrador.\n\nAtenciosamente,\nEquipe {app_name}",
   "notify.break_glass.title": "Login de administrador redefinido no servidor",
-  "notify.break_glass.message": "O comando recover-admin redefiniu o login de {email} no host {hostname}. Se ninguém da sua equipe fez isso, verifique o log de auditoria."
+  "notify.break_glass.message": "O comando recover-admin redefiniu o login de {email} no host {hostname}. Se ninguém da sua equipe fez isso, verifique o log de auditoria.",
+  "notify.anchor_failed.title": "Falha na ancoragem da auditoria",
+  "notify.anchoring_changed.title": "Configurações de ancoragem da auditoria alteradas",
+  "notify.backup_restored.title": "Backup restaurado: registro de auditoria substituído",
+  "notify.backup_restored.message": "Uma restauração substituiu o registro de auditoria. As entradas após {archive_tip} (até {old_tip}) foram substituídas. A verificação de integridade lista as âncoras anteriores à restauração para revisão."
 }

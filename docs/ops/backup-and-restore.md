@@ -124,6 +124,7 @@ which an archive contains, but a staged restore keeps the running instance's
 settings (including the encrypted secret) instead of the archive's: a restore
 brings back data, not where backups go. It also means a restore onto a server
 with a different `SECRET_ENCRYPTION_KEY` never leaves an S3 secret it cannot decrypt.
+The [audit anchoring](deployment.md#audit-anchoring) settings are kept the same way.
 
 The admin **Backup** page and `GET /api/admin/backups/status` include a
 `s3_scheduled` object (bucket, prefix, interval, retention settings, last
@@ -204,6 +205,18 @@ The appropriate frequency depends on how often SOPs are updated.
 1. Use **Restore backup** on `/admin/settings/backup` and confirm with `RESTORE BACKUP`.
 2. **Restart** the backend/container so pending files in `_restore_pending` are applied.
 3. Verify in the web UI (SOPs, acknowledgments, audit as expected).
+
+The restore replaces the audit log with the archive's. Just before the old
+database is overwritten, SOPandGO reads its newest audit row. On the first start
+afterwards it writes a `backup_restored` event with that row and the newest row
+of the restored log, and sends `backup_restored` to integrations. With audit
+anchoring on, it also anchors right away. The integrity scan then lists any
+receipts from after the archive as *replaced by a restore*, so the gap in the
+history stays visible and explained.
+
+A restore from a manual directory copy (below) skips this. With anchoring on,
+receipts from after the copy are reported as tampering, because nothing
+explains the replaced history. Prefer the staged restore.
 
 ### From a manual directory copy
 

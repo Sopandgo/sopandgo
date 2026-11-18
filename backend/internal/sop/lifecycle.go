@@ -101,6 +101,8 @@ type newVersion struct {
 	// reused is true when the latest version already has this content. Nothing
 	// was written and the transition writes nothing else.
 	reused bool
+	// contentHash is the new version's content hash.
+	contentHash string
 	// auditPayload is the sop_version_created payload.
 	auditPayload map[string]any
 }
@@ -191,8 +193,12 @@ func (s *Service) runTransition(req transitionRequest) (transitionResult, error)
 	actor := req.actorUserID
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	result := transitionResult{versionID: req.versionID}
+	// contentHash goes into every event that creates or signs the version, so
+	// external anchoring of the audit chain also covers the SOP content.
+	var contentHash string
 	if current != nil {
 		result.versionNumber = current.Version
+		contentHash = current.ContentHash
 	}
 
 	if rule.createsVersion {
@@ -205,6 +211,7 @@ func (s *Service) runTransition(req transitionRequest) (transitionResult, error)
 		}
 		result.versionID = created.id
 		result.versionNumber = created.number
+		contentHash = created.contentHash
 		if err := s.auditLogger.Log(tx, audit.EventSOPVersionCreated, audit.EntitySOPVersion, created.id, &actor, created.auditPayload); err != nil {
 			return transitionResult{}, fmt.Errorf("audit log failed: %w", err)
 		}
@@ -223,7 +230,7 @@ func (s *Service) runTransition(req transitionRequest) (transitionResult, error)
 	}
 
 	if rule.ackType != "" {
-		ackID, err := s.writeAcknowledgment(tx, result.versionID, actor, rule.ackType, now)
+		ackID, err := s.writeAcknowledgment(tx, result.versionID, contentHash, actor, rule.ackType, now)
 		if err != nil {
 			return transitionResult{}, err
 		}
@@ -276,7 +283,7 @@ func (s *Service) supersedePublished(tx *sql.Tx, sopID, publishingVersionID stri
 // writeAcknowledgment writes an acknowledgment and its audit event. A reader
 // acknowledgment keeps its own event on the acknowledgment entity; author and
 // approver acknowledgments are logged on the version.
-func (s *Service) writeAcknowledgment(tx *sql.Tx, versionID, actor, ackType, now string) (string, error) {
+func (s *Service) writeAcknowledgment(tx *sql.Tx, versionID, contentHash, actor, ackType, now string) (string, error) {
 	ackID := uuid.NewString()
 	if err := createSOPAcknowledgmentRecord(tx, ackID, versionID, actor, ackType, now); err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "unique") {
@@ -291,11 +298,13 @@ func (s *Service) writeAcknowledgment(tx *sql.Tx, versionID, actor, ackType, now
 			"sop_version_id": versionID,
 			"user_id":        actor,
 			"ack_type":       ackType,
+			"content_hash":   contentHash,
 		})
 	} else {
 		err = s.auditLogger.Log(tx, audit.EventSOPAcknowledgmentCreated, audit.EntitySOPVersion, versionID, &actor, map[string]any{
-			"ack_type": ackType,
-			"ack_id":   ackID,
+			"ack_type":     ackType,
+			"ack_id":       ackID,
+			"content_hash": contentHash,
 		})
 	}
 	if err != nil {

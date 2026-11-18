@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sopandgo/sopandgo/backend/internal/anchor"
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/i18n"
@@ -21,6 +22,9 @@ type ExtendedIntegrityReport struct {
 	Audit     AuditIntegritySection `json:"audit"` // New detailed audit section
 	Versions  sop.IntegritySection  `json:"versions"`
 	Assets    sop.IntegritySection  `json:"assets"`
+	// Anchoring compares the chain with its external receipts. It is absent
+	// when anchoring has never been used.
+	Anchoring *anchor.CheckReport `json:"anchoring,omitempty"`
 }
 
 // Matches the shape of sop.IntegritySection, but uses audit-specific failure details
@@ -45,8 +49,24 @@ func (s *Server) handleAdminIntegrity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var anchorReport *anchor.CheckReport
+	if s.anchoring != nil {
+		rep, err := s.anchoring.Check(r.Context(), auditReport)
+		if err != nil {
+			http.Error(w, "Failed to check audit anchors", http.StatusInternalServerError)
+			return
+		}
+		if rep.Enabled || rep.Anchors > 0 || rep.S3Receipts > 0 {
+			anchorReport = &rep
+		}
+	}
+	anchorProblems := 0
+	if anchorReport != nil {
+		anchorProblems = anchorReport.Problems
+	}
+
 	// 2. Determine overall health (OK only if all sub-systems have 0 invalid entries)
-	systemOK := sopReport.OK && (auditReport.Invalid == 0)
+	systemOK := sopReport.OK && (auditReport.Invalid == 0) && anchorProblems == 0
 
 	// 3. Assemble the expanded DTO
 	extendedReport := ExtendedIntegrityReport{
@@ -58,8 +78,9 @@ func (s *Server) handleAdminIntegrity(w http.ResponseWriter, r *http.Request) {
 			Invalid: auditReport.Invalid,
 			Failed:  auditReport.Failed,
 		},
-		Versions: sopReport.Versions,
-		Assets:   sopReport.Assets,
+		Versions:  sopReport.Versions,
+		Assets:    sopReport.Assets,
+		Anchoring: anchorReport,
 	}
 
 	// 4. Audit Log the check
@@ -75,12 +96,14 @@ func (s *Server) handleAdminIntegrity(w http.ResponseWriter, r *http.Request) {
 				"versions": fmt.Sprintf("%d", sopReport.Versions.Invalid),
 				"assets":   fmt.Sprintf("%d", sopReport.Assets.Invalid),
 				"audit":    fmt.Sprintf("%d", auditReport.Invalid),
+				"anchors":  fmt.Sprintf("%d", anchorProblems),
 			}),
 			ActorID: actorID,
 			Extra: map[string]any{
 				"versions_invalid": sopReport.Versions.Invalid,
 				"assets_invalid":   sopReport.Assets.Invalid,
 				"audit_invalid":    auditReport.Invalid,
+				"anchor_problems":  anchorProblems,
 			},
 		})
 	}

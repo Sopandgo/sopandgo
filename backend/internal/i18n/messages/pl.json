@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "Wersja {version} została odrzucona.",
   "notify.reason": "Powód: {reason}",
   "notify.integrity.title": "Sprawdzenie integralności nie powiodło się",
-  "notify.integrity.message": "Sprawdzenie integralności systemu zgłosiło błędy (wersje nieprawidłowe={versions}, załączniki nieprawidłowe={assets}, audyt nieprawidłowy={audit}).",
+  "notify.integrity.message": "Sprawdzenie integralności systemu zgłosiło błędy (wersje nieprawidłowe={versions}, załączniki nieprawidłowe={assets}, audyt nieprawidłowy={audit}, kotwice z problemami={anchors}).",
   "notify.backup_failed.title": "Kopia zapasowa S3 nie powiodła się",
   "notify.test.title": "Powiadomienie testowe {app_name}",
   "notify.test.message": "Jeśli to otrzymałeś, integracja {channel} jest poprawnie skonfigurowana.",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "Twój kod logowania {app_name}",
   "mail.two_factor_code.body": "Cześć {name},\n\nTwój kod logowania to:\n\n{code}\n\nDziała jeden raz i wygasa za 10 minut.\n\nJeśli to nie Ty próbowałeś się zalogować, zmień hasło i poinformuj administratora.\n\nPozdrawiamy,\nZespół {app_name}",
   "notify.break_glass.title": "Logowanie administratora zresetowane na serwerze",
-  "notify.break_glass.message": "Polecenie recover-admin zresetowało logowanie konta {email} na hoście {hostname}. Jeśli nikt z Twojego zespołu tego nie zrobił, sprawdź dziennik audytu."
+  "notify.break_glass.message": "Polecenie recover-admin zresetowało logowanie konta {email} na hoście {hostname}. Jeśli nikt z Twojego zespołu tego nie zrobił, sprawdź dziennik audytu.",
+  "notify.anchor_failed.title": "Kotwiczenie audytu nie powiodło się",
+  "notify.anchoring_changed.title": "Zmieniono ustawienia kotwiczenia audytu",
+  "notify.backup_restored.title": "Przywrócono kopię: dziennik audytu zastąpiony",
+  "notify.backup_restored.message": "Przywrócenie kopii zastąpiło dziennik audytu. Wpisy po {archive_tip} (do {old_tip}) zostały zastąpione. Sprawdzenie integralności pokazuje kotwice sprzed przywrócenia do weryfikacji."
 }

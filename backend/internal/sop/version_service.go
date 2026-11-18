@@ -92,12 +92,14 @@ func (s *Service) RegisterSOPVersion(
 			return newVersion{}, fmt.Errorf("failed to create version record: %w", err)
 		}
 		return newVersion{
-			id:     id,
-			number: number,
+			id:          id,
+			number:      number,
+			contentHash: contentHash,
 			auditPayload: map[string]any{
 				"version":        number,
 				"path":           relPath,
 				"change_summary": summary,
+				"content_hash":   contentHash,
 			},
 		}, nil
 	}

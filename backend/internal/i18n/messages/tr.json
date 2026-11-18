@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "Sürüm {version} reddedildi.",
   "notify.reason": "Gerekçe: {reason}",
   "notify.integrity.title": "Bütünlük denetimi başarısız",
-  "notify.integrity.message": "Sistem bütünlük denetimi hatalar bildirdi (geçersiz sürümler={versions}, geçersiz ekler={assets}, geçersiz denetim={audit}).",
+  "notify.integrity.message": "Sistem bütünlük denetimi hatalar bildirdi (geçersiz sürümler={versions}, geçersiz ekler={assets}, geçersiz denetim={audit}, sorunlu sabitlemeler={anchors}).",
   "notify.backup_failed.title": "S3 yedeklemesi başarısız",
   "notify.test.title": "{app_name} test bildirimi",
   "notify.test.message": "Bunu aldıysanız {channel} entegrasyonu doğru yapılandırılmıştır.",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "{app_name} oturum açma kodunuz",
   "mail.two_factor_code.body": "Merhaba {name},\n\nOturum açma kodunuz:\n\n{code}\n\nKod yalnızca bir kez çalışır ve 10 dakika içinde geçerliliğini yitirir.\n\nOturum açmayı siz denemediyseniz parolanızı değiştirin ve yöneticinize bildirin.\n\nSaygılarımızla,\n{app_name} Ekibi",
   "notify.break_glass.title": "Sunucuda yönetici oturum açma bilgileri sıfırlandı",
-  "notify.break_glass.message": "recover-admin komutu {hostname} ana makinesinde {email} hesabının oturum açma bilgilerini sıfırladı. Ekibinizden kimse bunu yapmadıysa denetim günlüğünü kontrol edin."
+  "notify.break_glass.message": "recover-admin komutu {hostname} ana makinesinde {email} hesabının oturum açma bilgilerini sıfırladı. Ekibinizden kimse bunu yapmadıysa denetim günlüğünü kontrol edin.",
+  "notify.anchor_failed.title": "Denetim sabitleme başarısız oldu",
+  "notify.anchoring_changed.title": "Denetim sabitleme ayarları değiştirildi",
+  "notify.backup_restored.title": "Yedek geri yüklendi: denetim günlüğü değiştirildi",
+  "notify.backup_restored.message": "Bir geri yükleme denetim günlüğünü değiştirdi. {archive_tip} sonrasındaki kayıtlar ({old_tip} dahil) değiştirildi. Bütünlük kontrolü, geri yüklemeden önce alınan sabitlemeleri inceleme için listeler."
 }

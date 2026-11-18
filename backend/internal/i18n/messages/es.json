@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "La versión {version} fue rechazada.",
   "notify.reason": "Motivo: {reason}",
   "notify.integrity.title": "Falló la comprobación de integridad",
-  "notify.integrity.message": "La comprobación de integridad del sistema informó fallos (versiones inválidas={versions}, adjuntos inválidos={assets}, auditoría inválida={audit}).",
+  "notify.integrity.message": "La comprobación de integridad del sistema informó fallos (versiones inválidas={versions}, adjuntos inválidos={assets}, auditoría inválida={audit}, anclajes con problemas={anchors}).",
   "notify.backup_failed.title": "Falló la copia de seguridad en S3",
   "notify.test.title": "Notificación de prueba de {app_name}",
   "notify.test.message": "Si recibiste esto, la integración {channel} está configurada correctamente.",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "Tu código de inicio de sesión de {app_name}",
   "mail.two_factor_code.body": "Hola {name}:\n\nTu código de inicio de sesión es:\n\n{code}\n\nSolo se puede usar una vez y caduca en 10 minutos.\n\nSi no intentaste iniciar sesión, cambia tu contraseña y avisa a tu administrador.\n\nSaludos,\nEl equipo de {app_name}",
   "notify.break_glass.title": "Inicio de sesión de administrador restablecido en el servidor",
-  "notify.break_glass.message": "El comando recover-admin restableció el inicio de sesión de {email} en el host {hostname}. Si nadie de tu equipo lo hizo, revisa el registro de auditoría."
+  "notify.break_glass.message": "El comando recover-admin restableció el inicio de sesión de {email} en el host {hostname}. Si nadie de tu equipo lo hizo, revisa el registro de auditoría.",
+  "notify.anchor_failed.title": "Falló el anclaje de la auditoría",
+  "notify.anchoring_changed.title": "Se cambió la configuración del anclaje de la auditoría",
+  "notify.backup_restored.title": "Copia restaurada: registro de auditoría reemplazado",
+  "notify.backup_restored.message": "Una restauración reemplazó el registro de auditoría. Las entradas posteriores a {archive_tip} (hasta {old_tip}) se reemplazaron. La comprobación de integridad muestra los anclajes anteriores a la restauración para su revisión."
 }

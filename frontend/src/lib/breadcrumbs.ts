@@ -67,6 +67,8 @@ export function breadcrumbsFor(routeId: string | null, data: CrumbData): Crumb[]
 			return [settings, { label: m.settings_integrations() }];
 		case '/admin/settings/backup':
 			return [settings, { label: m.nav_backup() }];
+		case '/admin/settings/anchoring':
+			return [settings, { label: m.settings_anchoring() }];
 		default:
 			return [];
 	}

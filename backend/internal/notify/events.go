@@ -15,7 +15,12 @@ const (
 	EventIntegrityCheckFailed = "integrity_check_failed"
 	// EventBreakGlassUsed is sent when the host-only recover-admin command resets an admin.
 	EventBreakGlassUsed = "break_glass_used"
-	EventTest           = "test"
+	// Audit anchoring: a run failed; anchoring was switched on, off or
+	// reconfigured; a backup restore replaced the audit chain.
+	EventAuditAnchorFailed     = "audit_anchor_failed"
+	EventAuditAnchoringChanged = "audit_anchoring_changed"
+	EventBackupRestored        = "backup_restored"
+	EventTest                  = "test"
 )
 
 // KnownEvents lists all subscribable event types (excluding test).
@@ -26,23 +31,29 @@ var KnownEvents = []string{
 	EventBackupS3Failed,
 	EventIntegrityCheckFailed,
 	EventBreakGlassUsed,
+	EventAuditAnchorFailed,
+	EventAuditAnchoringChanged,
+	EventBackupRestored,
 }
 
 var knownEventSet = map[string]struct{}{
-	EventSOPPublished:         {},
-	EventSOPRC:                {},
-	EventSOPRejected:          {},
-	EventBackupS3Failed:       {},
-	EventIntegrityCheckFailed: {},
-	EventBreakGlassUsed:       {},
-	EventTest:                 {},
+	EventSOPPublished:          {},
+	EventSOPRC:                 {},
+	EventSOPRejected:           {},
+	EventBackupS3Failed:        {},
+	EventIntegrityCheckFailed:  {},
+	EventBreakGlassUsed:        {},
+	EventAuditAnchorFailed:     {},
+	EventAuditAnchoringChanged: {},
+	EventBackupRestored:        {},
+	EventTest:                  {},
 }
 
 // DefaultSOPEvents is the default subscription for Slack (lifecycle only).
 const DefaultSOPEvents = "sop_published,sop_rc,sop_rejected"
 
 // DefaultAllEvents includes lifecycle and ops alerts.
-const DefaultAllEvents = "sop_published,sop_rc,sop_rejected,backup_s3_failed,integrity_check_failed,break_glass_used"
+const DefaultAllEvents = "sop_published,sop_rc,sop_rejected,backup_s3_failed,integrity_check_failed,break_glass_used,audit_anchor_failed,audit_anchoring_changed,backup_restored"
 
 // Event is a channel-agnostic notification payload.
 type Event struct {

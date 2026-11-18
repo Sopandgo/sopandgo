@@ -18,8 +18,17 @@ import type {
     SecuritySettings,
     TwoFactorPolicy,
     Branding,
-    BrandingInput
+    BrandingInput,
+    AuditAnchoringStatus,
+    AuditAnchoringInput,
+    AuditAnchoringProbe,
+    AuditAnchor
 } from './types';
+
+/** The result of saving audit anchoring settings. */
+export type AuditAnchoringSaveResult =
+    | { ok: true; status: AuditAnchoringStatus }
+    | { ok: false; confirm: AuditAnchoringProbe };
 
 export const admin = (client: Client) => ({
     
@@ -504,8 +513,50 @@ export const admin = (client: Client) => ({
         if (res.status === 409) throw new Error('BACKUP_BUSY');
         if (!res.ok) throw new Error((await res.text()).trim() || 'BACKUP_S3_RUN_FAILED');
         return await res.json();
+    },
+
+    // --- Audit anchoring (RFC 3161 receipts of the audit chain, copied to S3) ---
+
+    getAuditAnchoring: async (): Promise<AuditAnchoringStatus> => {
+        const res = await client.fetch('/admin/audit-anchoring', { method: 'GET' });
+        if (!res.ok) throw new Error('AUDIT_ANCHORING_FETCH_FAILED');
+        return await res.json();
+    },
+
+    /**
+     * Saves the settings. Switching on, changing the TSA, or re-pinning first
+     * returns `{ ok: false, confirm }` with what the admin must confirm; repeat
+     * the call with `confirm_fingerprint` and `accept_broken`. Other failures
+     * throw the server's message.
+     */
+    saveAuditAnchoring: async (payload: AuditAnchoringInput): Promise<AuditAnchoringSaveResult> => {
+        const res = await client.fetch('/admin/audit-anchoring', { method: 'PUT', body: payload });
+        if (res.status === 409) {
+            const body = (await res.json()) as { probe: AuditAnchoringProbe };
+            return { ok: false, confirm: body.probe };
+        }
+        if (!res.ok) throw new Error(await apiErrorDetail(res, 'AUDIT_ANCHORING_SAVE_FAILED'));
+        return { ok: true, status: await res.json() };
+    },
+
+    /** Takes an anchor now. `skipped` means nothing new was logged since the last one. */
+    runAuditAnchoring: async (): Promise<{ anchor: AuditAnchor | null; skipped: boolean; warning?: string }> => {
+        const res = await client.fetch('/admin/audit-anchoring/run', { method: 'POST' });
+        if (!res.ok) throw new Error(await apiErrorDetail(res, 'AUDIT_ANCHORING_RUN_FAILED'));
+        return await res.json();
     }
 });
+
+/** The API's JSON `detail`, falling back to its `error` code or plain text. */
+async function apiErrorDetail(res: Response, fallback: string): Promise<string> {
+    const text = (await res.text()).trim();
+    try {
+        const body = JSON.parse(text) as { error?: string; detail?: string };
+        return body.detail || body.error || fallback;
+    } catch {
+        return text || fallback;
+    }
+}
 
 /** The API's JSON `error` code in upper case, or the fallback. */
 async function apiErrorCode(res: Response, fallback: string): Promise<string> {

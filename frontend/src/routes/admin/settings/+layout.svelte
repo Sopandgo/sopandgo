@@ -20,6 +20,9 @@
     const backup = $derived(
         pathname === '/admin/settings/backup' || pathname.startsWith('/admin/settings/backup/')
     );
+    const anchoring = $derived(
+        pathname === '/admin/settings/anchoring' || pathname.startsWith('/admin/settings/anchoring/')
+    );
 </script>
 
 <div class="tabs tabs-lift w-full">
@@ -67,6 +70,15 @@
         aria-current={backup ? 'page' : undefined}
     >
         {m.nav_backup()}
+    </a>
+    <a
+        href={resolve('admin/settings/anchoring')}
+        class="tab"
+        class:tab-active={anchoring}
+        role="tab"
+        aria-current={anchoring ? 'page' : undefined}
+    >
+        {m.settings_anchoring()}
     </a>
     <div class="tab-content border-base-300 bg-base-100 !block settings-tab-panel">
         {@render children()}

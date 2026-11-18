@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "版本 {version} 已被拒绝。",
   "notify.reason": "原因：{reason}",
   "notify.integrity.title": "完整性检查失败",
-  "notify.integrity.message": "系统完整性检查报告失败（无效版本={versions}，无效附件={assets}，无效审计={audit}）。",
+  "notify.integrity.message": "系统完整性检查报告失败（无效版本={versions}，无效附件={assets}，无效审计={audit}，有问题的锚定={anchors}）。",
   "notify.backup_failed.title": "S3 备份失败",
   "notify.test.title": "{app_name} 测试通知",
   "notify.test.message": "如果您收到此消息，说明 {channel} 集成已正确配置。",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "您的 {app_name} 登录验证码",
   "mail.two_factor_code.body": "{name}，您好：\n\n您的登录验证码是：\n\n{code}\n\n该验证码只能使用一次，10 分钟后失效。\n\n如果您没有尝试登录，请修改密码并告知管理员。\n\n{app_name} 团队",
   "notify.break_glass.title": "服务器上的管理员登录已被重置",
-  "notify.break_glass.message": "recover-admin 命令在主机 {hostname} 上重置了 {email} 的登录凭据。如果您的团队中没有人执行此操作，请检查审计日志。"
+  "notify.break_glass.message": "recover-admin 命令在主机 {hostname} 上重置了 {email} 的登录凭据。如果您的团队中没有人执行此操作，请检查审计日志。",
+  "notify.anchor_failed.title": "审计锚定失败",
+  "notify.anchoring_changed.title": "审计锚定设置已更改",
+  "notify.backup_restored.title": "已恢复备份：审计日志已被替换",
+  "notify.backup_restored.message": "一次备份恢复替换了审计日志。{archive_tip} 之后（至 {old_tip}）的记录已被替换。完整性检查会列出恢复前的锚定以供审查。"
 }

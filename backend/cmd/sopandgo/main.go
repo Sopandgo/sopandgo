@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
 
+	"github.com/sopandgo/sopandgo/backend/internal/anchor"
 	"github.com/sopandgo/sopandgo/backend/internal/api"
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
@@ -63,6 +65,10 @@ func main() {
 	if err := backup.ApplyCarriedS3Settings(store.DB, dataDir); err != nil {
 		log.Fatalf("failed to keep S3 backup settings across restore: %v", err)
 	}
+	// Likewise this instance's audit anchoring settings.
+	if err := anchor.ApplyCarriedSettings(store.DB, dataDir); err != nil {
+		log.Fatalf("failed to keep audit anchoring settings across restore: %v", err)
+	}
 
 	// 3. Initialize Core Services (Dependency Injection)
 
@@ -82,6 +88,13 @@ func main() {
 		`{"status": "ready"}`,
 	); err != nil {
 		log.Printf("audit write failed for system startup: %v", err)
+	}
+
+	// A restore applied at this start replaced the audit chain: record both
+	// chain tips so the integrity scan can explain anchors taken before it.
+	restoreRecord, err := backup.RecordRestoreInAudit(dataDir, auditLogger)
+	if err != nil {
+		log.Fatalf("failed to record the backup restore in the audit log: %v", err)
 	}
 
 	// Mail, integration, S3, and 2FA secrets live in SQLite, encrypted with SECRET_ENCRYPTION_KEY.
@@ -185,6 +198,45 @@ func main() {
 			s3Cfg.Bucket, s3Scheduler.Status().KeyPrefix, s3Cfg.Interval)
 	}
 
+	backupService.AddStageHook(anchor.WriteCarryOver)
+
+	// External anchoring of the audit chain: configured under Settings → Backup.
+	anchorService := anchor.NewService(anchor.NewStore(store.DB, encKey), auditLogger, anchor.S3Opener(s3Settings), nil)
+	anchorService.SetOnFailure(func(c context.Context, failErr error) {
+		notifyService.Dispatch(c, notify.Event{
+			Type:    notify.EventAuditAnchorFailed,
+			Title:   i18n.T(i18n.ReadDefaultLocale(store.DB), "notify.anchor_failed.title", nil),
+			Message: failErr.Error(),
+		})
+	})
+	anchorService.SetOnChange(func(c context.Context, n anchor.Notice) {
+		notifyService.Dispatch(c, notify.Event{
+			Type:    notify.EventAuditAnchoringChanged,
+			Title:   i18n.T(i18n.ReadDefaultLocale(store.DB), "notify.anchoring_changed.title", nil),
+			Message: n.Message,
+			Extra:   map[string]any{"audit_event": n.Event},
+		})
+	})
+	if err := anchorService.Load(); err != nil {
+		log.Printf("WARNING: audit anchoring stays off until its settings are saved again: %v", err)
+	} else if st, _ := anchorService.Status(); st.Enabled {
+		log.Printf("audit anchoring enabled: tsa=%s interval=%s", st.TSAURL, st.Interval)
+	}
+	if restoreRecord != nil {
+		locale := i18n.ReadDefaultLocale(store.DB)
+		notifyService.Dispatch(ctx, notify.Event{
+			Type:  notify.EventBackupRestored,
+			Title: i18n.T(locale, "notify.backup_restored.title", nil),
+			Message: i18n.T(locale, "notify.backup_restored.message", map[string]string{
+				"archive_tip": fmt.Sprintf("%d", restoreRecord.ArchiveTipID),
+				"old_tip":     fmt.Sprintf("%d", restoreRecord.OldTipID),
+			}),
+			Extra: map[string]any{"restore": restoreRecord},
+		})
+		// Anchor the restored chain right away.
+		anchorService.TriggerSoon()
+	}
+
 	// Branding: the organization's name also fills {app_name} in emails and notifications.
 	brandingService := branding.NewService(store.DB, auditLogger)
 	if err := brandingService.Load(); err != nil {
@@ -211,9 +263,11 @@ func main() {
 	}
 
 	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler, brandingService)
+	apiServer.SetAuditAnchoring(anchorService)
 	log.Println("backend initialized successfully")
 
 	s3Scheduler.Start(ctx)
+	anchorService.Start(ctx)
 
 	// Run the HTTP server in a separate goroutine so it doesn't block the main thread.
 	// This allows the main thread to listen for the shutdown signal below.

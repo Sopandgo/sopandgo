@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "La versione {version} è stata rifiutata.",
   "notify.reason": "Motivo: {reason}",
   "notify.integrity.title": "Controllo di integrità non riuscito",
-  "notify.integrity.message": "Il controllo di integrità del sistema ha segnalato errori (versioni non valide={versions}, allegati non validi={assets}, audit non valido={audit}).",
+  "notify.integrity.message": "Il controllo di integrità del sistema ha segnalato errori (versioni non valide={versions}, allegati non validi={assets}, audit non valido={audit}, ancoraggi con problemi={anchors}).",
   "notify.backup_failed.title": "Backup S3 non riuscito",
   "notify.test.title": "Notifica di test {app_name}",
   "notify.test.message": "Se hai ricevuto questo messaggio, l’integrazione {channel} è configurata correttamente.",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "Il tuo codice di accesso {app_name}",
   "mail.two_factor_code.body": "Ciao {name},\n\nil tuo codice di accesso è:\n\n{code}\n\nFunziona una sola volta e scade tra 10 minuti.\n\nSe non hai provato ad accedere, cambia la password e avvisa il tuo amministratore.\n\nCordiali saluti,\nIl team {app_name}",
   "notify.break_glass.title": "Accesso amministratore reimpostato sul server",
-  "notify.break_glass.message": "Il comando recover-admin ha reimpostato l'accesso di {email} sull'host {hostname}. Se nessuno del tuo team l'ha fatto, controlla il registro di audit."
+  "notify.break_glass.message": "Il comando recover-admin ha reimpostato l'accesso di {email} sull'host {hostname}. Se nessuno del tuo team l'ha fatto, controlla il registro di audit.",
+  "notify.anchor_failed.title": "Ancoraggio dell’audit non riuscito",
+  "notify.anchoring_changed.title": "Impostazioni di ancoraggio dell’audit modificate",
+  "notify.backup_restored.title": "Backup ripristinato: registro di audit sostituito",
+  "notify.backup_restored.message": "Un ripristino ha sostituito il registro di audit. Le voci dopo {archive_tip} (fino a {old_tip}) sono state sostituite. Il controllo di integrità elenca gli ancoraggi precedenti al ripristino da verificare."
 }

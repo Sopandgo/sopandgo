@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "Verzia {version} bola zamietnutá.",
   "notify.reason": "Dôvod: {reason}",
   "notify.integrity.title": "Kontrola integrity zlyhala",
-  "notify.integrity.message": "Kontrola integrity systému nahlásila chyby (neplatné verzie={versions}, neplatné prílohy={assets}, neplatný audit={audit}).",
+  "notify.integrity.message": "Kontrola integrity systému nahlásila chyby (neplatné verzie={versions}, neplatné prílohy={assets}, neplatný audit={audit}, ukotvenia s problémami={anchors}).",
   "notify.backup_failed.title": "Záloha do S3 zlyhala",
   "notify.test.title": "Testovacie oznámenie {app_name}",
   "notify.test.message": "Ak ste ho dostali, integrácia {channel} je nastavená správne.",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "Váš prihlasovací kód {app_name}",
   "mail.two_factor_code.body": "Dobrý deň, {name},\n\nváš prihlasovací kód je:\n\n{code}\n\nPlatí raz a vyprší o 10 minút.\n\nAk ste sa nepokúšali prihlásiť, zmeňte si heslo a informujte svojho administrátora.\n\nS pozdravom\nTím {app_name}",
   "notify.break_glass.title": "Prihlásenie administrátora resetované na serveri",
-  "notify.break_glass.message": "Príkaz recover-admin resetoval prihlásenie účtu {email} na hostiteľovi {hostname}. Ak to nikto z vášho tímu neurobil, skontrolujte auditný záznam."
+  "notify.break_glass.message": "Príkaz recover-admin resetoval prihlásenie účtu {email} na hostiteľovi {hostname}. Ak to nikto z vášho tímu neurobil, skontrolujte auditný záznam.",
+  "notify.anchor_failed.title": "Ukotvenie auditu zlyhalo",
+  "notify.anchoring_changed.title": "Nastavenia ukotvenia auditu sa zmenili",
+  "notify.backup_restored.title": "Záloha obnovená: auditný protokol nahradený",
+  "notify.backup_restored.message": "Obnovenie zálohy nahradilo auditný protokol. Záznamy po {archive_tip} (až po {old_tip}) boli nahradené. Kontrola integrity uvádza ukotvenia spred obnovenia na kontrolu."
 }

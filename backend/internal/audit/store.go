@@ -1,15 +1,14 @@
 package audit
 
 import (
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
+	"errors"
 	"strings"
 	"time"
 )
 
-// GenesisHash is the "parent" of the very first log entry.
-// It is an arbitrary constant (SHA256 of 64 zeros) used to anchor the chain.
+// GenesisHash is the "parent" of the very first log entry: 64 zero
+// characters. It is a fixed constant, not the hash of anything.
 const GenesisHash = "0000000000000000000000000000000000000000000000000000000000000000"
 
 type DBTX interface {
@@ -19,35 +18,40 @@ type DBTX interface {
 }
 
 func insertEventRecord(db DBTX, eventType, entityType, entityID string, actorUserID *string, payloadJSON string) error {
+	// 1. Get the tip of the chain. Only "no rows" means an empty chain; any
+	// other error must not silently restart the chain at genesis.
 	var prevHash string
-
-	// 1. Get the Tip of the Chain using the Integer ID
 	err := db.QueryRow(`
-        SELECT hash FROM audit_events 
-        ORDER BY id DESC 
+        SELECT hash FROM audit_events
+        ORDER BY id DESC
         LIMIT 1
     `).Scan(&prevHash)
-
-	if err != nil {
+	if errors.Is(err, sql.ErrNoRows) {
 		prevHash = GenesisHash
+	} else if err != nil {
+		return err
 	}
 
-	// 2. Prepare Data
+	// 2. Prepare data
 	createdAt := time.Now().UTC().Format(time.RFC3339Nano)
 
-	// 3. Calculate New Hash
-	recordToHash := prevHash + eventType + entityID + payloadJSON + createdAt
-
-	hasher := sha256.New()
-	hasher.Write([]byte(recordToHash))
-	currentHash := hex.EncodeToString(hasher.Sum(nil))
+	// 3. Calculate the new hash
+	currentHash := hashV2(HashInput{
+		PrevHash:    prevHash,
+		EventType:   eventType,
+		EntityType:  entityType,
+		EntityID:    entityID,
+		ActorUserID: actorUserID,
+		Payload:     payloadJSON,
+		CreatedAt:   createdAt,
+	})
 
 	// 4. Insert (SQLite provides the ID automatically)
 	_, err = db.Exec(`
         INSERT INTO audit_events (
-            event_type, entity_type, entity_id, actor_user_id, 
-            payload, created_at, hash, prev_hash
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            event_type, entity_type, entity_id, actor_user_id,
+            payload, created_at, hash, prev_hash, hash_version
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
 		eventType,
 		entityType,
@@ -57,6 +61,7 @@ func insertEventRecord(db DBTX, eventType, entityType, entityID string, actorUse
 		createdAt,
 		currentHash,
 		prevHash,
+		CurrentHashVersion,
 	)
 
 	return err
@@ -104,7 +109,7 @@ func listEventsRecord(db DBTX, limit, offset int, filters ListFilters) ([]AuditE
         SELECT 
             a.id, a.event_type, a.entity_type, a.entity_id, 
             a.actor_user_id, u.display_name, a.payload, a.created_at,
-            a.hash, a.prev_hash
+            a.hash, a.prev_hash, a.hash_version
         FROM audit_events a
         LEFT JOIN users u ON a.actor_user_id = u.id` + whereSQL
 
@@ -126,10 +131,11 @@ func listEventsRecord(db DBTX, limit, offset int, filters ListFilters) ([]AuditE
 		if err := rows.Scan(
 			&e.ID, &e.EventType, &e.EntityType, &e.EntityID,
 			&e.ActorID, &actorName, &e.Payload, &createdAt,
-			&e.Hash, &e.PrevHash,
+			&e.Hash, &e.PrevHash, &e.HashVersion,
 		); err != nil {
 			return nil, 0, err
 		}
+		e.createdAtRaw = createdAt
 
 		if actorName.Valid {
 			e.ActorName = &actorName.String
@@ -149,15 +155,17 @@ func escapeLike(v string) string {
 	return v
 }
 
-// listAllEventsAscRecord fetches all events in chronological order for chain verification.
-func listAllEventsAscRecord(db DBTX) ([]AuditEvent, error) {
-	query := `
-		SELECT 
-			id, event_type, entity_id, payload, created_at, hash, prev_hash 
-		FROM audit_events 
+// listEventsAscRecord fetches events with id > afterID in chain order, for
+// chain verification. afterID 0 returns the whole chain.
+func listEventsAscRecord(db DBTX, afterID int64) ([]AuditEvent, error) {
+	rows, err := db.Query(`
+		SELECT
+			id, event_type, entity_type, entity_id, actor_user_id,
+			payload, created_at, hash, prev_hash, hash_version
+		FROM audit_events
+		WHERE id > ?
 		ORDER BY id ASC
-	`
-	rows, err := db.Query(query)
+	`, afterID)
 	if err != nil {
 		return nil, err
 	}
@@ -169,16 +177,37 @@ func listAllEventsAscRecord(db DBTX) ([]AuditEvent, error) {
 		var createdAt string
 
 		if err := rows.Scan(
-			&e.ID, &e.EventType, &e.EntityID, &e.Payload, &createdAt, &e.Hash, &e.PrevHash,
+			&e.ID, &e.EventType, &e.EntityType, &e.EntityID, &e.ActorID,
+			&e.Payload, &createdAt, &e.Hash, &e.PrevHash, &e.HashVersion,
 		); err != nil {
 			return nil, err
 		}
 
+		e.createdAtRaw = createdAt
 		e.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
 		events = append(events, e)
 	}
 
-	return events, nil
+	return events, rows.Err()
+}
+
+// eventHashRecord returns the stored hash of one event.
+func eventHashRecord(db DBTX, id int64) (string, error) {
+	var hash string
+	err := db.QueryRow(`SELECT hash FROM audit_events WHERE id = ?`, id).Scan(&hash)
+	return hash, err
+}
+
+// tipRecord returns the newest event's id and hash, or (0, GenesisHash) for an
+// empty chain.
+func tipRecord(db DBTX) (int64, string, error) {
+	var id int64
+	var hash string
+	err := db.QueryRow(`SELECT id, hash FROM audit_events ORDER BY id DESC LIMIT 1`).Scan(&id, &hash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, GenesisHash, nil
+	}
+	return id, hash, err
 }
 
 func listDistinctAuditTypesRecord(db DBTX) (FilterOptions, error) {
