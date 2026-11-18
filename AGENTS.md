@@ -35,3 +35,17 @@ Merging to `main` is not a release. Do not create a tag, edit `CHANGELOG.md` for
 ## Database migrations
 
 Migrations in `backend/internal/storage/migrations.go` are append-only. Never edit, reorder, or delete a shipped migration. Fix a mistake by adding a new migration with a higher version number.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as local markdown files under `.scratch/<feature>/`, which is gitignored. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default triage roles, used as-is: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.

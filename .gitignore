@@ -41,3 +41,6 @@ id_rsa*
 # OS
 .DS_Store
 Thumbs.db
+
+# Local issue tracker for agent skills (see docs/agents/issue-tracker.md)
+.scratch/
