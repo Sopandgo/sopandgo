@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "이 서버",
   "notify_event_anchor_failed": "감사 앵커링 실패",
   "notify_event_anchoring_changed": "감사 앵커링 켜기, 끄기 또는 변경",
-  "notify_event_backup_restored": "백업 복원됨"
+  "notify_event_backup_restored": "백업 복원됨",
+  "demo_region": "데모 안내",
+  "demo_banner": "읽기 전용 데모 · 데이터는 매일 밤 초기화됩니다",
+  "demo_install": "SOPandGO 설치",
+  "demo_view_as": "보기 역할",
+  "demo_role_researcher": "연구원",
+  "demo_role_auditor": "감사자",
+  "demo_disabled": "데모에서는 사용할 수 없습니다 – 편집해 보려면 SOPandGO를 설치하세요",
+  "demo_switch_failed": "데모에서 역할을 전환하지 못했습니다. 1분 후에 다시 시도하세요."
 }

@@ -1,7 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
 import * as m from '#lib/paraglide/messages.js';
 import { isLocale } from '#lib/paraglide/runtime.js';
-import { isThemePreference } from '#lib/theme.js';
+import { isDemoReadOnlyError } from '#lib/demo.js';
+import { cookieName as localeCookieName } from '#lib/paraglide/runtime.js';
+import { isThemePreference, themeCookieMaxAge, themeCookieName } from '#lib/theme.js';
 import type { Actions, PageServerLoad } from './$types';
 
 /** Matches the backend limit; the cropper exports far less. */
@@ -11,6 +13,8 @@ const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 function twoFactorMessage(err: unknown): string {
     const code = err instanceof Error ? err.message : '';
     switch (code) {
+        case 'DEMO_READ_ONLY':
+            return m.demo_disabled();
         case 'WRONG_PASSWORD':
             return m.error_current_password_wrong();
         case 'TOO_MANY_ATTEMPTS':
@@ -45,11 +49,22 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-    setLocale: async ({ locals, request }) => {
+    setLocale: async ({ locals, request, cookies, url }) => {
         const fd = await request.formData();
         const locale = String(fd.get('locale') ?? '').trim();
         if (!isLocale(locale)) {
             return fail(400, { setLocale: { error: 'unsupported' } });
+        }
+        // The demo keeps the language in a cookie, as for guests.
+        if (locals.demo) {
+            cookies.set(localeCookieName, locale, {
+                path: '/',
+                httpOnly: false,
+                sameSite: 'lax',
+                secure: url.protocol === 'https:',
+                maxAge: 60 * 60 * 24 * 400
+            });
+            throw redirect(303, '/profile/settings');
         }
         try {
             await locals.api.auth.updateLocale(locale);
@@ -60,11 +75,18 @@ export const actions: Actions = {
         throw redirect(303, '/profile/settings');
     },
 
-    setTheme: async ({ locals, request }) => {
+    setTheme: async ({ locals, request, cookies, url }) => {
         const fd = await request.formData();
         const theme = String(fd.get('theme') ?? '').trim();
         if (!isThemePreference(theme)) {
             return fail(400, { setTheme: { error: 'unsupported' } });
+        }
+        // The demo keeps the appearance in the guest cookie; "system" clears it.
+        if (locals.demo) {
+            const options = { path: '/', httpOnly: false, sameSite: 'lax' as const, secure: url.protocol === 'https:' };
+            if (theme === 'system') cookies.delete(themeCookieName, options);
+            else cookies.set(themeCookieName, theme, { ...options, maxAge: themeCookieMaxAge });
+            return { setTheme: { ok: true, error: null } };
         }
         try {
             await locals.api.auth.updateTheme(theme);
@@ -102,7 +124,9 @@ export const actions: Actions = {
             console.error('Change Password Error:', err);
             const message = err instanceof Error ? err.message : '';
             const msg =
-                message === 'WEAK_PASSWORD'
+                message === 'DEMO_READ_ONLY'
+                    ? m.demo_disabled()
+                    : message === 'WEAK_PASSWORD'
                     ? m.error_weak_password()
                     : message === 'WRONG_CURRENT_PASSWORD'
                       ? m.error_current_password_wrong()
@@ -127,6 +151,7 @@ export const actions: Actions = {
         try {
             await locals.api.auth.uploadAvatar(file);
         } catch (err) {
+            if (isDemoReadOnlyError(err)) return fail(403, { uploadAvatar: { ok: false, error: 'demo' } });
             console.error('Avatar upload failed:', err);
             return fail(400, { uploadAvatar: { ok: false, error: 'failed' } });
         }
@@ -137,6 +162,7 @@ export const actions: Actions = {
         try {
             await locals.api.auth.removeAvatar();
         } catch (err) {
+            if (isDemoReadOnlyError(err)) return fail(403, { removeAvatar: { ok: false, error: 'demo' } });
             console.error('Avatar removal failed:', err);
             return fail(400, { removeAvatar: { ok: false, error: 'failed' } });
         }
@@ -187,6 +213,7 @@ export const actions: Actions = {
         try {
             await locals.api.auth.signOutOtherSessions();
         } catch (err) {
+            if (isDemoReadOnlyError(err)) return fail(403, { signOutOthers: { ok: false, error: 'demo' } });
             console.error('Sign out other sessions failed:', err);
             return fail(400, { signOutOthers: { ok: false, error: 'failed' } });
         }

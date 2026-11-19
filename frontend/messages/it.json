@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "Questo server",
   "notify_event_anchor_failed": "Ancoraggio dell’audit non riuscito",
   "notify_event_anchoring_changed": "Ancoraggio dell’audit attivato, disattivato o modificato",
-  "notify_event_backup_restored": "Backup ripristinato"
+  "notify_event_backup_restored": "Backup ripristinato",
+  "demo_region": "Avviso demo",
+  "demo_banner": "Demo in sola lettura · i dati vengono reimpostati ogni notte",
+  "demo_install": "Installa SOPandGO",
+  "demo_view_as": "Visualizza come",
+  "demo_role_researcher": "Ricercatore",
+  "demo_role_auditor": "Auditor",
+  "demo_disabled": "Disattivato nella demo – installa SOPandGO per provare a modificare",
+  "demo_switch_failed": "La demo non è riuscita a cambiare ruolo. Riprova tra un minuto."
 }

@@ -44,13 +44,23 @@ func (s *Service) cleanup() error {
 	return cleanupExpiredTokensRecord(s.db)
 }
 
+// SessionLifetime is how long a normal sign-in's refresh token stays valid.
+const SessionLifetime = 7 * 24 * time.Hour
+
+// CreateSession opens a session of the normal lifetime and returns its refresh token.
 func (s *Service) CreateSession(userID string) (string, error) {
+	return s.CreateSessionWithLifetime(userID, SessionLifetime)
+}
+
+// CreateSessionWithLifetime opens a session whose refresh token expires after
+// lifetime. Refresh tokens do not rotate, so this is the session's whole life.
+func (s *Service) CreateSessionWithLifetime(userID string, lifetime time.Duration) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	tokenID := uuid.NewString()
 	createdAt := time.Now().UTC()
-	expiresAt := createdAt.Add(7 * 24 * time.Hour) // 7-day session
+	expiresAt := createdAt.Add(lifetime)
 
 	if err := insertRefreshTokenRecord(s.db, tokenID, userID, expiresAt, createdAt); err != nil {
 		return "", err

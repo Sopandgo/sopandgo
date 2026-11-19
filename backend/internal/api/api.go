@@ -18,6 +18,10 @@ import (
 
 type Config struct {
 	Origin string // e.g. "http://localhost:8087" or "https://myapp.com"
+	// DemoMode makes the instance a read-only public demo (DEMO_MODE). The demo
+	// guard wraps every route, the demo session endpoint is registered, audit
+	// responses are redacted, and mail and notifications are silent.
+	DemoMode bool
 }
 
 type Server struct {
@@ -38,12 +42,15 @@ type Server struct {
 	// spread over many addresses still hit a ceiling.
 	twoFactorLimiter *IPRateLimiter
 	mux              *http.ServeMux
+	// handler is what ServeHTTP and Serve run: the mux, wrapped in the demo
+	// guard when demo mode is on.
+	handler http.Handler
 	// routes lists every registered pattern ("METHOD /path"), in order.
 	routes []string
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	s.handler.ServeHTTP(w, r)
 }
 
 // handle registers h on the mux and records the pattern in the route table.
@@ -100,6 +107,18 @@ func New(
 	}
 
 	s.registerRoutes()
+	s.handler = s.mux
+	if config.DemoMode {
+		// Nothing leaves a demo: no mail, no Slack, Gotify or webhook calls.
+		if mailService != nil {
+			mailService.Silence()
+		}
+		if notifyService != nil {
+			notifyService.Silence()
+		}
+		s.registerDemoRoutes()
+		s.handler = withDemoGuard(s.mux)
+	}
 	return s
 }
 
@@ -377,5 +396,5 @@ func (s *Server) registerRoutes() {
 }
 
 func (s *Server) Serve(addr string) error {
-	return http.ListenAndServe(addr, s.mux)
+	return http.ListenAndServe(addr, s.handler)
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // kindStatus maps an error's kind to its HTTP status: conflict 409, not found
-// 404, invalid 400. ok is false when err has no kind. Handlers still choose the
+// 404, invalid 400, demo read-only 403. ok is false when err has no kind. Handlers still choose the
 // body. Named errors without a kind (backup, mail, two-factor, …) keep their
 // own explicit statuses in their handlers.
 func kindStatus(err error) (status int, ok bool) {
@@ -23,6 +23,8 @@ func kindStatus(err error) (status int, ok bool) {
 		return http.StatusNotFound, true
 	case errkind.Invalid:
 		return http.StatusBadRequest, true
+	case errkind.DemoReadOnly:
+		return http.StatusForbidden, true
 	default:
 		return 0, false
 	}

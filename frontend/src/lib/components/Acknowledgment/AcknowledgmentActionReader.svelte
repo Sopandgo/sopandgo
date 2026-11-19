@@ -1,5 +1,7 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
+    import { page } from '$app/state';
+    import DemoLocked from '#lib/components/DemoLocked.svelte';
     import type { User } from '#lib/sdk/types.js';
     import Alert from '#lib/components/Alert.svelte';
     import Card from '#lib/components/Card.svelte';
@@ -65,16 +67,24 @@
             </div>
 
             <div class="card-actions justify-end">
-                <button class="btn btn-primary" disabled={loading}>
-                    {#if loading}
-                        <span class="loading loading-spinner loading-xs"></span>
-                        {m.ack_signing()}
-                    {:else}
-                        <SignatureIcon class="size-4" />
-                        {m.ack_sign_reader()}
-                    {/if}
-                </button>
+                {#if page.data.demo}
+                    <DemoLocked>{@render signButton()}</DemoLocked>
+                {:else}
+                    {@render signButton()}
+                {/if}
             </div>
         </form>
     </div>
 </Card>
+
+{#snippet signButton()}
+    <button class="btn btn-primary" disabled={loading}>
+        {#if loading}
+            <span class="loading loading-spinner loading-xs"></span>
+            {m.ack_signing()}
+        {:else}
+            <SignatureIcon class="size-4" />
+            {m.ack_sign_reader()}
+        {/if}
+    </button>
+{/snippet}

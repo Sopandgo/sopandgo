@@ -98,6 +98,7 @@
                             <AccountThemeSwitch theme={user.theme} />
                         </li>
 
+                        {#if !page.data.demo}
                         <div class="divider my-0"></div>
 
                         <li>
@@ -111,6 +112,7 @@
                                 </button>
                             </form>
                         </li>
+                        {/if}
                     </ul>
                 </div>
             {:else}

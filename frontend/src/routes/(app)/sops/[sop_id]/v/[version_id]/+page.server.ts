@@ -1,4 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import { isDemoReadOnlyError } from '#lib/demo.js';
 import * as m from '#lib/paraglide/messages.js';
 import { favorite, unfavorite } from '#lib/server/favoriteActions.js';
 import { verifyAsset, verifyVersion } from '#lib/server/integrityActions.js';
@@ -90,6 +91,9 @@ export const actions: Actions = {
             await locals.api.sops.acknowledgeAsReader(versionId);
             return { success: true };
         } catch (err) {
+            if (isDemoReadOnlyError(err)) {
+                return fail(403, { action: 'sign', error: m.demo_disabled(), inputName });
+            }
             console.error('Sign Action Error:', err);
             const message = err instanceof Error ? err.message : '';
             const already = message === 'ALREADY_ACKNOWLEDGED';

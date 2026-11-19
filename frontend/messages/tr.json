@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "Bu sunucu",
   "notify_event_anchor_failed": "Denetim sabitleme başarısız oldu",
   "notify_event_anchoring_changed": "Denetim sabitleme açıldı, kapatıldı veya değiştirildi",
-  "notify_event_backup_restored": "Yedek geri yüklendi"
+  "notify_event_backup_restored": "Yedek geri yüklendi",
+  "demo_region": "Demo bildirimi",
+  "demo_banner": "Salt okunur demo · veriler her gece sıfırlanır",
+  "demo_install": "SOPandGO'yu yükle",
+  "demo_view_as": "Şu rolle görüntüle",
+  "demo_role_researcher": "Araştırmacı",
+  "demo_role_auditor": "Denetçi",
+  "demo_disabled": "Demoda devre dışı – düzenlemeyi denemek için SOPandGO'yu yükleyin",
+  "demo_switch_failed": "Demo rol değiştiremedi. Bir dakika sonra tekrar deneyin."
 }

@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "Deze server",
   "notify_event_anchor_failed": "Auditverankering mislukt",
   "notify_event_anchoring_changed": "Auditverankering in- of uitgeschakeld of gewijzigd",
-  "notify_event_backup_restored": "Back-up hersteld"
+  "notify_event_backup_restored": "Back-up hersteld",
+  "demo_region": "Demomelding",
+  "demo_banner": "Alleen-lezen demo · gegevens worden elke nacht teruggezet",
+  "demo_install": "SOPandGO installeren",
+  "demo_view_as": "Bekijken als",
+  "demo_role_researcher": "Onderzoeker",
+  "demo_role_auditor": "Auditor",
+  "demo_disabled": "Uitgeschakeld in de demo – installeer SOPandGO om bewerken te proberen",
+  "demo_switch_failed": "De demo kon niet van rol wisselen. Probeer het over een minuut opnieuw."
 }

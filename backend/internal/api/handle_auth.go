@@ -232,7 +232,7 @@ func (s *Server) completeLogin(w http.ResponseWriter, r *http.Request, user *aut
 // emailTransportOn reports whether sign-in codes can be mailed: only when a
 // mail transport is saved and switched on.
 func (s *Server) emailTransportOn() bool {
-	if s.smtpSettings == nil || s.mailService == nil {
+	if s.Config.DemoMode || s.smtpSettings == nil || s.mailService == nil {
 		return false
 	}
 	mode, err := s.smtpSettings.EffectiveMailMode()

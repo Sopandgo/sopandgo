@@ -66,6 +66,7 @@ A fresh install has no demo accounts. Demo users and sample SOPs are inserted on
 | --- | --- | --- |
 | `DATA_DIR` | `/app/data` | The internal path for SQLite and assets. |
 | `SEED_DEMO_DATA` | `false` | When `true` (any case), the first start with no `app.db` inserts demo users and sample SOPs for a local trial. Any other value inserts nothing. Has no effect once `app.db` exists. |
+| `DEMO_MODE` | `false` | When `true` (any case), the instance becomes a read-only public demo that is wiped and reseeded at every start. Only for a public demo; see [Demo mode](#demo-mode). |
 | `ORIGIN` | `http://localhost:8087` | **CRITICAL for the Go API.** The full public URL of your instance (invite/reset links, CORS-facing URLs). If it does not match the browser URL, login/invites will fail. SvelteKit 3 / adapter-node no longer reads `ORIGIN`; CSRF and request origin use `HOST_HEADER` / `PROTOCOL_HEADER` instead (see below). On a non-default port with no outer proxy, Caddy forwards the browser `Host` value, port included. An outer proxy's `X-Forwarded-Host` is forwarded as sent. |
 | `HOST_WEB_PORT` | `8087` | Host port mapped to Caddy `:80` inside the `sopandgo` container (compose). |
 | `BACKEND_URL` | `http://127.0.0.1:8080` | Internal URL the SvelteKit Node server uses to reach the Go API (loopback inside the container). |
@@ -176,6 +177,28 @@ The application does not enforce network-level restrictions. Operators should:
 - **VPN Deployment**: Deploy behind a VPN (like Tailscale or WireGuard) rather than opening ports to the public internet.
 
 - **HTTPS/TLS:** If exposing to a network, terminate TLS at an external reverse proxy and forward **HTTP** to the **published app port** (compose default **`HOST_WEB_PORT` 8087** → Caddy **:80** inside the **`sopandgo`** container). Do **not** point the outer proxy at the Go process port **8080** unless you intentionally bypass Caddy (unsupported for normal deployments).
+
+### Demo mode
+
+`DEMO_MODE=true` turns an instance into a read-only public demo, like the one at demo.sopandgo.com. It is meant only for that. Never set it on an instance that holds a lab's data.
+
+With demo mode on:
+
+- **Visitors are signed in without a password,** as the seeded researcher. A banner on every page switches between the researcher and the auditor, and links to the install instructions. Demo sessions last 4 hours, and opening one is rate-limited per visitor address.
+- **The API refuses every write itself,** including requests sent straight to `/sopandgo/api/*`, with `403` and the error code `demo_read_only`. Password sign-in, the 2FA steps and password reset are refused too, so the seeded passwords and `admin`/`admin` cannot be used. The only writes allowed are opening a demo session, refreshing it and signing out.
+- **The admin area is closed** for every role, except the audit log, which the auditor reads. Audit log responses show IP addresses, browsers and email addresses as `redacted`.
+- **Nothing is sent:** mail (SMTP and Resend) and notifications (Slack, Gotify, webhooks) are switched off, whatever the stored settings say.
+- **Restart = reset.** At every start, the seeder wipes the data directory (database, uploads and generated files) and seeds the demo again, including a Demo Auditor account. Visitors' sessions and audit events last at most until the next restart. Schedule a nightly container restart on the demo host to reset it nightly.
+
+The wipe is guarded by a `.demo-instance` marker the seeder writes into the data directory:
+
+- An empty data directory is seeded and gets the marker.
+- A data directory with the marker is wiped and reseeded.
+- A data directory that holds data but no marker is refused: the seeder exits with an error and the container does not start. A mistaken `DEMO_MODE=true` cannot wipe a lab's SOPs.
+
+Demo mode always seeds. `DEMO_MODE=true` together with an explicit `SEED_DEMO_DATA=false` is contradictory, so the container refuses to start.
+
+The rate limit uses the address Caddy sees. Behind an outer proxy (Coolify, Traefik), that is the proxy's address, so all visitors share one limit of about ten new sessions a minute. Returning visitors keep their session and do not count against it.
 
 ### Two-factor authentication
 

@@ -1,6 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import type { SerializeOptions } from 'cookie';
 import type { Client } from './client';
+import { demoCookieOptions, type DemoRole } from '#lib/demo.js';
 import type {
     TwoFactorChallenge,
     TwoFactorMethod,
@@ -162,6 +163,27 @@ export const auth = (client: Client, event: RequestEvent) => {
             if (!res.ok) throw await twoFactorError(res, 'RECOVERY_CODES_FAILED');
             const result: { recovery_codes: string[] } = await res.json();
             return result.recovery_codes;
+        },
+
+        /**
+         * Demo mode only: signs the visitor in as the fixed demo account for
+         * role, for four hours. The API rate-limits per visitor address, so
+         * the visitor's address is forwarded, not the server's own.
+         */
+        openDemoSession: async (role: DemoRole, clientAddress: string): Promise<void> => {
+            const res = await client.fetch('/demo/session', {
+                method: 'POST',
+                body: { role },
+                headers: clientAddress ? { 'X-Forwarded-For': clientAddress } : {}
+            }, false);
+            if (res.status === 429) throw new Error('TOO_MANY_ATTEMPTS');
+            if (!res.ok) throw new Error('DEMO_SESSION_FAILED');
+            const result: AuthResult = await res.json();
+            const options = demoCookieOptions(event.url.protocol === 'https:');
+            event.cookies.set('access_token', result.access_token, options.access);
+            if (result.refresh_token) {
+                event.cookies.set('refresh_token', result.refresh_token, options.refresh);
+            }
         },
 
         refresh: async (refreshToken: string): Promise<AuthResult> => {

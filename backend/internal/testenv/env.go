@@ -20,22 +20,42 @@ import (
 
 // Env holds all your initialized services for testing.
 type Env struct {
-	Store          *storage.Storage
-	AuditLogger    *audit.Logger
-	AuthService    *auth.Service
-	SOPService     *sop.Service
-	MailService    *mail.Service
-	SMTPSettings   *mail.SMTPSettingsStore
-	Branding       *branding.Service
-	API            *api.Server
-	MockMailSender *MockMailSender
+	Store        *storage.Storage
+	AuditLogger  *audit.Logger
+	AuthService  *auth.Service
+	SOPService   *sop.Service
+	MailService  *mail.Service
+	SMTPSettings *mail.SMTPSettingsStore
+	Branding     *branding.Service
+	// Notify fans out to the integrations saved in IntegrationSettings.
+	Notify              *notify.Service
+	IntegrationSettings *notify.SettingsStore
+	API                 *api.Server
+	MockMailSender      *MockMailSender
 	// ObjectStore is the bucket "Back up now" and the connection test reach.
 	ObjectStore *objectstore.Memory
 	DataDir     string
 	Ctx         context.Context
 }
 
-func New(t *testing.T) *Env {
+// Option changes how New builds the environment.
+type Option func(*options)
+
+type options struct {
+	demoMode bool
+}
+
+// WithDemoMode builds the API with DEMO_MODE on.
+func WithDemoMode() Option {
+	return func(o *options) { o.demoMode = true }
+}
+
+func New(t *testing.T, opts ...Option) *Env {
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
@@ -84,7 +104,8 @@ func New(t *testing.T) *Env {
 	notifyService := notify.NewService(integrationSettings, auditLogger)
 
 	config := api.Config{
-		Origin: "http://testenv.local",
+		Origin:   "http://testenv.local",
+		DemoMode: o.demoMode,
 	}
 	backupService := backup.NewService(store.DB, dataDir, "test", storage.LatestSchemaVersion())
 
@@ -98,18 +119,20 @@ func New(t *testing.T) *Env {
 	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler, brandingService)
 
 	return &Env{
-		Store:          store,
-		AuditLogger:    auditLogger,
-		AuthService:    authService,
-		SOPService:     sopService,
-		MailService:    mailService,
-		SMTPSettings:   smtpSettingsStore,
-		Branding:       brandingService,
-		API:            apiServer,
-		MockMailSender: mockSender,
-		ObjectStore:    objectStore,
-		DataDir:        dataDir,
-		Ctx:            ctx,
+		Store:               store,
+		AuditLogger:         auditLogger,
+		AuthService:         authService,
+		SOPService:          sopService,
+		MailService:         mailService,
+		SMTPSettings:        smtpSettingsStore,
+		Branding:            brandingService,
+		Notify:              notifyService,
+		IntegrationSettings: integrationSettings,
+		API:                 apiServer,
+		MockMailSender:      mockSender,
+		ObjectStore:         objectStore,
+		DataDir:             dataDir,
+		Ctx:                 ctx,
 	}
 }
 

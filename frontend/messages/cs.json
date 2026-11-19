@@ -952,5 +952,13 @@
   "integrity_anchor_source_server": "Tento server",
   "notify_event_anchor_failed": "Ukotvení auditu selhalo",
   "notify_event_anchoring_changed": "Ukotvení auditu zapnuto, vypnuto nebo změněno",
-  "notify_event_backup_restored": "Záloha obnovena"
+  "notify_event_backup_restored": "Záloha obnovena",
+  "demo_region": "Upozornění k ukázce",
+  "demo_banner": "Ukázka jen pro čtení · data se každou noc obnovují",
+  "demo_install": "Nainstalovat SOPandGO",
+  "demo_view_as": "Zobrazit jako",
+  "demo_role_researcher": "Výzkumník",
+  "demo_role_auditor": "Auditor",
+  "demo_disabled": "V ukázce vypnuto – nainstalujte SOPandGO a vyzkoušejte úpravy",
+  "demo_switch_failed": "Ukázka nemohla přepnout roli. Zkuste to znovu za minutu."
 }

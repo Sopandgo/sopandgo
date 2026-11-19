@@ -1,4 +1,5 @@
 import { BACKEND_URL } from '$app/env/private';
+import { DEMO_READ_ONLY } from '#lib/demo.js';
 import type { RequestEvent } from '@sveltejs/kit';
 
 export interface FetchOptions {
@@ -41,8 +42,9 @@ export function createClient(event: RequestEvent) {
         }
 
         // 3. Execution with Error Guard
+        let res: Response;
         try {
-            const res = await event.fetch(url, {
+            res = await event.fetch(url, {
                 ...options,
                 method: options.method || 'GET',
                 headers,
@@ -51,12 +53,19 @@ export function createClient(event: RequestEvent) {
                     ? options.body
                     : options.body && typeof options.body === 'object' ? JSON.stringify(options.body) : options.body
             });
-            return res;
         } catch (err) {
             console.error(`[SDK] Connection failed to ${url}`, err);
             // We re-throw so the specific module (auth/assets) can decide how to handle it
             throw new Error('SERVICE_UNAVAILABLE');
         }
+
+        // 4. A read-only demo refuses every write with one error code. Throw it
+        // as one error, so form actions can say "disabled in the demo".
+        if (res.status === 403) {
+            const body = await res.clone().json().catch(() => null);
+            if (body?.error === 'demo_read_only') throw new Error(DEMO_READ_ONLY);
+        }
+        return res;
     };
 
     return {

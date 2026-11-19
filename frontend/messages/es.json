@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "Este servidor",
   "notify_event_anchor_failed": "Falló el anclaje de la auditoría",
   "notify_event_anchoring_changed": "Anclaje de la auditoría activado, desactivado o modificado",
-  "notify_event_backup_restored": "Copia de seguridad restaurada"
+  "notify_event_backup_restored": "Copia de seguridad restaurada",
+  "demo_region": "Aviso de demo",
+  "demo_banner": "Demo de solo lectura · los datos se restablecen cada noche",
+  "demo_install": "Instalar SOPandGO",
+  "demo_view_as": "Ver como",
+  "demo_role_researcher": "Investigador",
+  "demo_role_auditor": "Auditor",
+  "demo_disabled": "Desactivado en la demo – instala SOPandGO para probar la edición",
+  "demo_switch_failed": "La demo no pudo cambiar de rol. Inténtalo de nuevo en un minuto."
 }

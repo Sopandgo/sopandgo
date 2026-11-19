@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "Dieser Server",
   "notify_event_anchor_failed": "Audit-Verankerung fehlgeschlagen",
   "notify_event_anchoring_changed": "Audit-Verankerung ein- oder ausgeschaltet oder geändert",
-  "notify_event_backup_restored": "Sicherung wiederhergestellt"
+  "notify_event_backup_restored": "Sicherung wiederhergestellt",
+  "demo_region": "Demo-Hinweis",
+  "demo_banner": "Schreibgeschützte Demo · Daten werden jede Nacht zurückgesetzt",
+  "demo_install": "SOPandGO installieren",
+  "demo_view_as": "Ansicht als",
+  "demo_role_researcher": "Forschende Person",
+  "demo_role_auditor": "Auditor",
+  "demo_disabled": "In der Demo deaktiviert – installiere SOPandGO, um selbst zu bearbeiten",
+  "demo_switch_failed": "Die Demo konnte die Rolle nicht wechseln. Versuche es in einer Minute erneut."
 }

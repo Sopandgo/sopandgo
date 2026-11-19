@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "Ten serwer",
   "notify_event_anchor_failed": "Kotwiczenie audytu nie powiodło się",
   "notify_event_anchoring_changed": "Kotwiczenie audytu włączone, wyłączone lub zmienione",
-  "notify_event_backup_restored": "Przywrócono kopię zapasową"
+  "notify_event_backup_restored": "Przywrócono kopię zapasową",
+  "demo_region": "Informacja o demo",
+  "demo_banner": "Demo tylko do odczytu · dane są resetowane co noc",
+  "demo_install": "Zainstaluj SOPandGO",
+  "demo_view_as": "Wyświetl jako",
+  "demo_role_researcher": "Badacz",
+  "demo_role_auditor": "Audytor",
+  "demo_disabled": "Wyłączone w demo – zainstaluj SOPandGO, aby wypróbować edycję",
+  "demo_switch_failed": "Demo nie mogło zmienić roli. Spróbuj ponownie za minutę."
 }

@@ -160,6 +160,26 @@ A hash chain catches an edited row, but not someone who rewrites the database an
 - **Restores are explained, not hidden.** A restore replaces the chain. SOPandGO records the overwritten and the restored tip (`backup_restored`), alerts integrations, and anchors again. The scan then lists receipts that no longer match as *replaced by a restore* for a person to review.
 
 
+## Public demo mode
+
+`DEMO_MODE=true` runs an instance as a read-only public demo (see [Deployment → Demo mode](../ops/deployment.md#demo-mode)). It is for a public demonstration only, never for a lab's data.
+
+What demo mode guarantees:
+
+- **Writes are refused in the API, not only in the UI.** A guard in front of every route answers `403 demo_read_only` to anything but a read. The only writes it lets through are opening a demo session, refreshing it and signing out. A request sent straight to `/sopandgo/api/*` is refused the same way. The guard also covers routes added later, because it wraps the whole router.
+- **Password sign-in is disabled.** Password login, both 2FA steps and password reset are refused, so the known demo passwords and `admin`/`admin` give no token. Visitors get a session only through the demo endpoint, which signs in one of two fixed accounts: the researcher (a viewer) or the auditor. It does not exist when demo mode is off.
+- **The admin area is closed** for every role, admin included, except the two audit log reads. Those still need `audit:read`. Admin reads with side effects, such as the integrity scan or the backup export, are refused too.
+- **Visitors do not see each other.** Audit log responses replace IP addresses, browsers (user agents) and email addresses with `redacted`. Stored rows are unchanged, so the hash chain still verifies.
+- **No outbound traffic.** Mail and Slack, Gotify and webhook notifications are no-ops, whatever the stored settings say.
+- **State lasts at most one reset cycle.** Every start wipes and reseeds the data directory. Demo sessions expire after 4 hours, so a leaked refresh token is short-lived even between resets.
+- **A real instance is not wiped by mistake.** The seeder wipes only a data directory carrying the `.demo-instance` marker it wrote itself, and refuses to start on any other directory that holds data.
+
+What it does not guarantee:
+
+- Reads are open to anyone who reaches the demo, including every seeded SOP, PDF and audit event (redacted). Put nothing on a demo that should not be public.
+- The per-address rate limit sees the address Caddy sees. Behind an outer proxy, that is the proxy's address, so the limit is shared.
+- Demo mode does not limit read volume. Abuse protection beyond the session rate limit is the host's job.
+
 ## What SOPandGO protects against
 
 SOPandGO is designed to reduce risk from:

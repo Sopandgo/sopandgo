@@ -7,6 +7,7 @@
     import Card from '#lib/components/Card.svelte';
     import CardPageHeading from '#lib/components/CardPageHeading.svelte';
     import ChangePassword from '#lib/components/ChangePassword.svelte';
+    import DemoLocked from '#lib/components/DemoLocked.svelte';
     import LocaleSelect from '#lib/components/LocaleSelect.svelte';
     import TwoFactorSettings from '#lib/components/TwoFactorSettings.svelte';
     import * as m from '#lib/paraglide/messages.js';
@@ -107,7 +108,11 @@
                     <KeyRoundIcon class="h-4 w-4" />
                     {m.profile_change_password()}
                 </h2>
-                <ChangePassword form={form} showLogoutWarning={true} />
+                {#if data.demo}
+                    <DemoLocked block><ChangePassword form={form} showLogoutWarning={true} /></DemoLocked>
+                {:else}
+                    <ChangePassword form={form} showLogoutWarning={true} />
+                {/if}
             </div>
         </Card>
     {/snippet}
@@ -166,6 +171,7 @@
                                 hasAvatar={user.has_avatar}
                                 avatarContentHash={user.avatar_content_hash}
                             />
+                            {#snippet avatarActions()}
                             <div class="flex flex-wrap items-center gap-2">
                                 <input
                                     bind:this={fileInput}
@@ -202,9 +208,17 @@
                                     </form>
                                 {/if}
                             </div>
+                            {/snippet}
+                            {#if data.demo}
+                                <DemoLocked>{@render avatarActions()}</DemoLocked>
+                            {:else}
+                                {@render avatarActions()}
+                            {/if}
                         </div>
                     {/if}
-                    {#if pickError || avatarError}
+                    {#if avatarError === 'demo'}
+                        <Alert type="error" message={m.demo_disabled()} />
+                    {:else if pickError || avatarError}
                         <Alert type="error" message={m.settings_avatar_error()} />
                     {/if}
                 </div>
@@ -280,7 +294,9 @@
         </div>
 
         <div class="flex flex-col gap-6 {mustChange || mustEnroll ? 'order-1 lg:order-2' : ''}">
-            {#if !mustChange}
+            {#if !mustChange && data.demo}
+                <DemoLocked block><TwoFactorSettings status={data.twoFactor} {form} /></DemoLocked>
+            {:else if !mustChange}
                 <TwoFactorSettings status={data.twoFactor} {form} />
             {/if}
 
@@ -296,6 +312,8 @@
                         <p class="text-sm text-base-content/70">{m.sessions_help()}</p>
                         {#if signOutResult?.ok}
                             <Alert type="success" message={m.sessions_signed_out()} />
+                        {:else if signOutResult?.error === 'demo'}
+                            <Alert type="error" message={m.demo_disabled()} />
                         {:else if signOutResult?.error}
                             <Alert type="error" message={m.sessions_sign_out_failed()} />
                         {/if}
@@ -310,12 +328,19 @@
                                 };
                             }}
                         >
-                            <button type="submit" class="btn w-full" disabled={signingOut}>
-                                {#if signingOut}
-                                    <span class="loading loading-spinner"></span>
-                                {/if}
-                                {m.sessions_sign_out_others()}
-                            </button>
+                            {#snippet signOutButton()}
+                                <button type="submit" class="btn w-full" disabled={signingOut}>
+                                    {#if signingOut}
+                                        <span class="loading loading-spinner"></span>
+                                    {/if}
+                                    {m.sessions_sign_out_others()}
+                                </button>
+                            {/snippet}
+                            {#if data.demo}
+                                <DemoLocked block>{@render signOutButton()}</DemoLocked>
+                            {:else}
+                                {@render signOutButton()}
+                            {/if}
                         </form>
                     </div>
                 </Card>
