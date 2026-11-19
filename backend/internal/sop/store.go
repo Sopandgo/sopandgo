@@ -406,26 +406,6 @@ func hasReleaseCandidateForSOPRecord(db audit.DBTX, sopID string) (bool, error) 
 	return n > 0, nil
 }
 
-// hasAnotherReleaseCandidateForSOPRecord reports whether a different version (not excludeVersionID) is RC.
-func hasAnotherReleaseCandidateForSOPRecord(db audit.DBTX, sopID, excludeVersionID string) (bool, error) {
-	var n int
-	err := db.QueryRow(`
-		SELECT COUNT(*) FROM sop_versions v
-		WHERE v.sop_id = ? AND v.id != ?
-		  AND (
-			SELECT state FROM sop_version_states
-			WHERE sop_version_id = v.id
-			ORDER BY created_at DESC, rowid DESC
-			LIMIT 1
-		  ) = ?
-	`, sopID, excludeVersionID, StateRC).Scan(&n)
-	if err != nil {
-		return false, err
-	}
-	return n > 0, nil
-}
-
-// Replace your existing getSOPVersionByIDRecord with this:
 func getSOPVersionByIDRecord(db audit.DBTX, id string) (*SOPVersion, error) {
 	const query = `
         SELECT v.id, v.sop_id, v.version, v.content_path, v.content_hash, v.change_summary, v.created_at,

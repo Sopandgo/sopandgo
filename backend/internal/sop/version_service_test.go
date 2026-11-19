@@ -12,50 +12,6 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
 
-func TestService_TransitionVersionState_Validation(t *testing.T) {
-	env := testenv.New(t)
-	actorID := "transition-guard-user"
-	env.SeedTestUser(t, actorID, "transition-guard@demo.local", "admin")
-
-	sopID, err := env.SOPService.RegisterSOP("Transition Guard SOP", &actorID)
-	if err != nil {
-		t.Fatalf("RegisterSOP failed: %v", err)
-	}
-	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "Content", "Updated procedure", &actorID)
-	if err != nil {
-		t.Fatalf("RegisterSOPVersion failed: %v", err)
-	}
-
-	err = env.SOPService.TransitionVersionState(v1ID, sop.StatePublished, actorID)
-	if err == nil {
-		t.Fatal("Expected error when transitioning draft directly to published")
-	}
-	if !strings.Contains(err.Error(), "conflict:") {
-		t.Errorf("Expected conflict error, got: %v", err)
-	}
-
-	time.Sleep(15 * time.Millisecond)
-	err = env.SOPService.TransitionVersionState(v1ID, sop.StateRC, actorID)
-	if err != nil {
-		t.Fatalf("draft -> rc failed: %v", err)
-	}
-
-	err = env.SOPService.TransitionVersionState(v1ID, sop.StatePublished, actorID)
-	if err == nil {
-		t.Fatal("Expected error when transitioning rc to published via TransitionVersionState")
-	}
-
-	_, err = env.SOPService.ApproveSOPVersion(v1ID, actorID)
-	if err != nil {
-		t.Fatalf("ApproveSOPVersion failed: %v", err)
-	}
-
-	err = env.SOPService.TransitionVersionState(v1ID, sop.StateRC, actorID)
-	if err == nil {
-		t.Fatal("Expected error when transitioning from published")
-	}
-}
-
 func TestService_RegisterSOPVersion_Lifecycle(t *testing.T) {
 	env := testenv.New(t)
 	actorID := "editor-user-1"
@@ -73,7 +29,7 @@ func TestService_RegisterSOPVersion_Lifecycle(t *testing.T) {
 
 	// 2. Register Version 1 (Happy Path)
 	contentV1 := "# V1 Backup Procedure\nRun the script."
-	v1ID, v1Num, err := env.SOPService.RegisterSOPVersion(sopID, contentV1, "Updated procedure", &actorID)
+	v1ID, v1Num, err := env.SOPService.RegisterSOPVersion(sopID, contentV1, "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Failed to register V1: %v", err)
 	}
@@ -88,7 +44,7 @@ func TestService_RegisterSOPVersion_Lifecycle(t *testing.T) {
 	}
 
 	// 3. Parallel drafts: a new version may be registered while an older one is still draft.
-	v2ParallelID, v2ParallelNum, err := env.SOPService.RegisterSOPVersion(sopID, "Parallel draft body", "Updated procedure", &actorID)
+	v2ParallelID, v2ParallelNum, err := env.SOPService.RegisterSOPVersion(sopID, "Parallel draft body", "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Expected second draft while V1 is draft: %v", err)
 	}
@@ -98,7 +54,7 @@ func TestService_RegisterSOPVersion_Lifecycle(t *testing.T) {
 
 	// 4. Transition State & Approve V1 (older version can move through RC while V2 stays draft)
 	time.Sleep(15 * time.Millisecond) // <-- Added sleep
-	err = env.SOPService.TransitionVersionState(v1ID, sop.StateRC, actorID)
+	err = env.SOPService.PromoteSOPVersion(v1ID, actorID)
 	if err != nil {
 		t.Fatalf("Failed to transition to RC: %v", err)
 	}
@@ -113,7 +69,7 @@ func TestService_RegisterSOPVersion_Lifecycle(t *testing.T) {
 
 	// 5. Register Version 3 (latest was V2 draft; V1 is now published)
 	contentV2 := "# V2 Backup Procedure\nRun the updated script."
-	v3ID, v3Num, err := env.SOPService.RegisterSOPVersion(sopID, contentV2, "Updated procedure", &actorID)
+	v3ID, v3Num, err := env.SOPService.RegisterSOPVersion(sopID, contentV2, "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Failed to register V3 after V1 was published: %v", err)
 	}
@@ -125,13 +81,16 @@ func TestService_RegisterSOPVersion_Lifecycle(t *testing.T) {
 	// 6. Test Idempotency
 	// If we submit the exact same content for a new version, the system should catch the identical hash.
 	time.Sleep(15 * time.Millisecond) // <-- Added sleep
+	if err := env.SOPService.PromoteSOPVersion(v3ID, actorID); err != nil {
+		t.Fatalf("Failed to promote V3: %v", err)
+	}
 	err = env.SOPService.RejectSOPVersion(v3ID, actorID, "Superseded by a later draft")
 	if err != nil {
 		t.Fatalf("Failed to reject V2: %v", err)
 	}
 
 	time.Sleep(15 * time.Millisecond) // <-- Added sleep
-	idempotentID, idempotentNum, err := env.SOPService.RegisterSOPVersion(sopID, contentV2, "Updated procedure", &actorID)
+	idempotentID, idempotentNum, err := env.SOPService.RegisterSOPVersion(sopID, contentV2, "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Idempotency check failed with error: %v", err)
 	}
@@ -149,22 +108,22 @@ func TestService_RegisterSOPVersion_RCBlocksParallelCreate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RegisterSOP failed: %v", err)
 	}
-	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "V1", "Updated procedure", &actorID)
+	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "V1", "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Register V1 failed: %v", err)
 	}
-	err = env.SOPService.TransitionVersionState(v1ID, sop.StateRC, actorID)
+	err = env.SOPService.PromoteSOPVersion(v1ID, actorID)
 	if err != nil {
 		t.Fatalf("promote to RC failed: %v", err)
 	}
 
-	_, _, err = env.SOPService.RegisterSOPVersion(sopID, "V2 while V1 is RC", "Updated procedure", &actorID)
+	_, _, err = env.SOPService.RegisterSOPVersion(sopID, "V2 while V1 is RC", "Updated procedure", actorID)
 	if err == nil || !strings.Contains(err.Error(), "release candidate") {
 		t.Fatalf("Expected conflict while RC exists, got: %v", err)
 	}
 }
 
-func TestService_TransitionVersionState_SecondRCBlocked(t *testing.T) {
+func TestService_PromoteSOPVersion_SecondRCBlocked(t *testing.T) {
 	env := testenv.New(t)
 	actorID := "double-rc-user"
 	env.SeedTestUser(t, actorID, "doublerc@demo.local", "admin")
@@ -173,19 +132,19 @@ func TestService_TransitionVersionState_SecondRCBlocked(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RegisterSOP failed: %v", err)
 	}
-	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "A", "Updated procedure", &actorID)
+	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "A", "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Register V1 failed: %v", err)
 	}
-	v2ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "B", "Updated procedure", &actorID)
+	v2ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "B", "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Register V2 failed: %v", err)
 	}
-	err = env.SOPService.TransitionVersionState(v1ID, sop.StateRC, actorID)
+	err = env.SOPService.PromoteSOPVersion(v1ID, actorID)
 	if err != nil {
 		t.Fatalf("first RC promotion failed: %v", err)
 	}
-	err = env.SOPService.TransitionVersionState(v2ID, sop.StateRC, actorID)
+	err = env.SOPService.PromoteSOPVersion(v2ID, actorID)
 	if err == nil || !strings.Contains(err.Error(), "release candidate already exists") {
 		t.Fatalf("Expected conflict on second RC, got: %v", err)
 	}
@@ -204,13 +163,13 @@ func TestService_ApproveSOPVersion_SupersedesOldVersions(t *testing.T) {
 	}
 
 	// Create and Publish V1
-	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "V1", "Updated procedure", &actorID)
+	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "V1", "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Register V1 failed: %v", err)
 	}
 
 	time.Sleep(15 * time.Millisecond) // Ensure distinct timestamp
-	err = env.SOPService.TransitionVersionState(v1ID, sop.StateRC, actorID)
+	err = env.SOPService.PromoteSOPVersion(v1ID, actorID)
 	if err != nil {
 		t.Fatalf("Transition V1 to RC failed: %v", err)
 	}
@@ -224,13 +183,13 @@ func TestService_ApproveSOPVersion_SupersedesOldVersions(t *testing.T) {
 	time.Sleep(15 * time.Millisecond)
 
 	// Create and Publish V2
-	v2ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "V2", "Updated procedure", &actorID)
+	v2ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "V2", "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Register V2 failed: %v", err) // <-- This is where your code was originally failing silently!
 	}
 
 	time.Sleep(15 * time.Millisecond)
-	err = env.SOPService.TransitionVersionState(v2ID, sop.StateRC, actorID)
+	err = env.SOPService.PromoteSOPVersion(v2ID, actorID)
 	if err != nil {
 		t.Fatalf("Transition V2 to RC failed: %v", err)
 	}
@@ -278,7 +237,7 @@ func TestService_GetSOPVersionSummaryByID(t *testing.T) {
 
 	sopID, _ := env.SOPService.RegisterSOP("Summary Test", &actorID)
 	content := "Test Content"
-	v1ID, _, _ := env.SOPService.RegisterSOPVersion(sopID, content, "Updated procedure", &actorID)
+	v1ID, _, _ := env.SOPService.RegisterSOPVersion(sopID, content, "Updated procedure", actorID)
 
 	summary, err := env.SOPService.GetSOPVersionSummaryByID(v1ID)
 	if err != nil {
@@ -310,7 +269,7 @@ func TestService_RegisterSOPVersion_MissingAssetValidation(t *testing.T) {
 	// Attempt to register a version that links to an asset we haven't uploaded yet
 	content := "Check out this image: ![diagram](assets/missing-diagram.png)"
 
-	_, _, err := env.SOPService.RegisterSOPVersion(sopID, content, "Updated procedure", &actorID)
+	_, _, err := env.SOPService.RegisterSOPVersion(sopID, content, "Updated procedure", actorID)
 
 	if err == nil {
 		t.Fatal("Expected asset validation to fail, but it succeeded")
@@ -333,7 +292,7 @@ func TestService_VerifyVersionIntegrity(t *testing.T) {
 	}
 
 	originalContent := "# Highly Secure Data\nDo not change."
-	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, originalContent, "Updated procedure", &actorID)
+	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, originalContent, "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Failed to register version: %v", err)
 	}
@@ -384,17 +343,14 @@ func TestService_RejectSOPVersion_StoresReason(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RegisterSOP: %v", err)
 	}
-	vID, _, err := env.SOPService.RegisterSOPVersion(sopID, "Content", "First", &actorID)
+	vID, _, err := env.SOPService.RegisterSOPVersion(sopID, "Content", "First", actorID)
 	if err != nil {
 		t.Fatalf("RegisterSOPVersion: %v", err)
 	}
-	if err := env.SOPService.TransitionVersionState(vID, sop.StateRC, actorID); err != nil {
+	if err := env.SOPService.PromoteSOPVersion(vID, actorID); err != nil {
 		t.Fatalf("Promote: %v", err)
 	}
 
-	if err := env.SOPService.TransitionVersionState(vID, sop.StateRejected, actorID); err == nil {
-		t.Fatal("TransitionVersionState must refuse a rejection without a reason")
-	}
 	if err := env.SOPService.RejectSOPVersion(vID, actorID, "   "); !errors.Is(err, sop.ErrRejectReasonRequired) {
 		t.Fatalf("Blank reason: want ErrRejectReasonRequired, got %v", err)
 	}

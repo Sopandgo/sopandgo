@@ -17,7 +17,7 @@ func TestService_RunSystemIntegrityCheck(t *testing.T) {
 	// ---------------------------------------------------------
 	sopID, _ := env.SOPService.RegisterSOP("System Health Check Protocol", &actorID)
 
-	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# Step 1", "Updated procedure", &actorID)
+	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# Step 1", "Updated procedure", actorID)
 	if err != nil {
 		t.Fatalf("Failed to register version: %v", err)
 	}

@@ -151,13 +151,13 @@ func TestService_GetSOPByIDWithTags_VersionPointers(t *testing.T) {
 
 	check("no versions", "", "", "", 0)
 
-	v1, _, err := env.SOPService.RegisterSOPVersion(sopID, "V1 content", "First version", &actorID)
+	v1, _, err := env.SOPService.RegisterSOPVersion(sopID, "V1 content", "First version", actorID)
 	if err != nil {
 		t.Fatalf("RegisterSOPVersion v1: %v", err)
 	}
 	check("v1 draft", v1, sop.StateDraft, "", 0)
 
-	if err := env.SOPService.TransitionVersionState(v1, sop.StateRC, actorID); err != nil {
+	if err := env.SOPService.PromoteSOPVersion(v1, actorID); err != nil {
 		t.Fatalf("Promote v1: %v", err)
 	}
 	check("v1 rc", v1, sop.StateRC, "", 0)
@@ -167,11 +167,11 @@ func TestService_GetSOPByIDWithTags_VersionPointers(t *testing.T) {
 	}
 	check("v1 published", v1, sop.StatePublished, v1, 1)
 
-	v2, _, err := env.SOPService.RegisterSOPVersion(sopID, "V2 content", "Second version", &actorID)
+	v2, _, err := env.SOPService.RegisterSOPVersion(sopID, "V2 content", "Second version", actorID)
 	if err != nil {
 		t.Fatalf("RegisterSOPVersion v2: %v", err)
 	}
-	if err := env.SOPService.TransitionVersionState(v2, sop.StateRC, actorID); err != nil {
+	if err := env.SOPService.PromoteSOPVersion(v2, actorID); err != nil {
 		t.Fatalf("Promote v2: %v", err)
 	}
 	check("v2 rc", v2, sop.StateRC, v1, 1)
@@ -181,9 +181,12 @@ func TestService_GetSOPByIDWithTags_VersionPointers(t *testing.T) {
 	}
 	check("v2 supersedes v1", v2, sop.StatePublished, v2, 2)
 
-	v3, _, err := env.SOPService.RegisterSOPVersion(sopID, "V3 content", "Third version", &actorID)
+	v3, _, err := env.SOPService.RegisterSOPVersion(sopID, "V3 content", "Third version", actorID)
 	if err != nil {
 		t.Fatalf("RegisterSOPVersion v3: %v", err)
+	}
+	if err := env.SOPService.PromoteSOPVersion(v3, actorID); err != nil {
+		t.Fatalf("Promote v3: %v", err)
 	}
 	if err := env.SOPService.RejectSOPVersion(v3, actorID, "Not ready"); err != nil {
 		t.Fatalf("Reject v3: %v", err)
@@ -261,17 +264,17 @@ func TestService_ListSOPs(t *testing.T) {
 	}
 
 	// 6. Version summary: SOP A has v1 published and a newer v2 draft; SOP C has no versions
-	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopA, "V1 content", "First version", &actorID)
+	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopA, "V1 content", "First version", actorID)
 	if err != nil {
 		t.Fatalf("RegisterSOPVersion v1: %v", err)
 	}
-	if err := env.SOPService.TransitionVersionState(v1ID, sop.StateRC, actorID); err != nil {
+	if err := env.SOPService.PromoteSOPVersion(v1ID, actorID); err != nil {
 		t.Fatalf("Promote v1: %v", err)
 	}
 	if _, err := env.SOPService.ApproveSOPVersion(v1ID, actorID); err != nil {
 		t.Fatalf("Publish v1: %v", err)
 	}
-	if _, _, err := env.SOPService.RegisterSOPVersion(sopA, "V2 content", "Second version", &actorID); err != nil {
+	if _, _, err := env.SOPService.RegisterSOPVersion(sopA, "V2 content", "Second version", actorID); err != nil {
 		t.Fatalf("RegisterSOPVersion v2: %v", err)
 	}
 

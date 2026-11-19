@@ -24,23 +24,23 @@ func TestPublishLoop_SummaryDiffActivityAndTraining(t *testing.T) {
 		t.Fatalf("RegisterSOP: %v", err)
 	}
 
-	_, _, err = env.SOPService.RegisterSOPVersion(sopID, "# One", "   ", &editorID)
+	_, _, err = env.SOPService.RegisterSOPVersion(sopID, "# One", "   ", editorID)
 	if !errors.Is(err, sop.ErrChangeSummaryRequired) {
 		t.Fatalf("expected required summary, got %v", err)
 	}
 
-	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# One\nStep A\n", "First published procedure", &editorID)
+	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# One\nStep A\n", "First published procedure", editorID)
 	if err != nil {
 		t.Fatalf("v1: %v", err)
 	}
-	if err := env.SOPService.TransitionVersionState(v1ID, sop.StateRC, editorID); err != nil {
+	if err := env.SOPService.PromoteSOPVersion(v1ID, editorID); err != nil {
 		t.Fatalf("promote v1: %v", err)
 	}
 	if _, err := env.SOPService.ApproveSOPVersion(v1ID, editorID); err != nil {
 		t.Fatalf("publish v1: %v", err)
 	}
 
-	v2ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# One\nStep A\nStep B\n", "Add step B", &editorID)
+	v2ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# One\nStep A\nStep B\n", "Add step B", editorID)
 	if err != nil {
 		t.Fatalf("v2: %v", err)
 	}

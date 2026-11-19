@@ -19,7 +19,7 @@ func TestService_AddAcknowledgment(t *testing.T) {
 
 	// 1. Setup
 	sopID, _ := env.SOPService.RegisterSOP("Ack Test SOP", &authorID)
-	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "Content", "Updated procedure", &authorID)
+	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "Content", "Updated procedure", authorID)
 	if err != nil {
 		t.Fatalf("Failed to register version: %v", err)
 	}
@@ -32,7 +32,7 @@ func TestService_AddAcknowledgment(t *testing.T) {
 		t.Fatalf("Expected unpublished reader ack to be rejected, got: %v", err)
 	}
 
-	if err := env.SOPService.TransitionVersionState(v1ID, sop.StateRC, authorID); err != nil {
+	if err := env.SOPService.PromoteSOPVersion(v1ID, authorID); err != nil {
 		t.Fatalf("Failed to promote version: %v", err)
 	}
 	if _, err := env.SOPService.ApproveSOPVersion(v1ID, authorID); err != nil {
@@ -74,12 +74,12 @@ func TestService_GetAcknowledgments(t *testing.T) {
 
 	// 1. Setup SOP and Version
 	sopID, _ := env.SOPService.RegisterSOP("Multi-Ack SOP", &authorID)
-	v1ID, _, _ := env.SOPService.RegisterSOPVersion(sopID, "Content", "Updated procedure", &authorID)
+	v1ID, _, _ := env.SOPService.RegisterSOPVersion(sopID, "Content", "Updated procedure", authorID)
 
 	time.Sleep(15 * time.Millisecond)
 
 	// Transition to Published so the reader can "read" it
-	env.SOPService.TransitionVersionState(v1ID, sop.StateRC, authorID)
+	env.SOPService.PromoteSOPVersion(v1ID, authorID)
 	time.Sleep(15 * time.Millisecond)
 
 	_, err := env.SOPService.ApproveSOPVersion(v1ID, authorID)
@@ -151,12 +151,12 @@ func TestService_GetSignatureStatusByUser(t *testing.T) {
 
 	// 1. Setup SOP and Version
 	sopID, _ := env.SOPService.RegisterSOP("Status SOP", &authorID)
-	v1ID, _, _ := env.SOPService.RegisterSOPVersion(sopID, "V1 Content", "Updated procedure", &authorID)
+	v1ID, _, _ := env.SOPService.RegisterSOPVersion(sopID, "V1 Content", "Updated procedure", authorID)
 
 	time.Sleep(15 * time.Millisecond)
 
 	// Publish V1
-	env.SOPService.TransitionVersionState(v1ID, sop.StateRC, authorID)
+	env.SOPService.PromoteSOPVersion(v1ID, authorID)
 	_, err := env.SOPService.ApproveSOPVersion(v1ID, authorID)
 	if err != nil {
 		t.Fatalf("Approve V1 failed: %v", err)
@@ -191,8 +191,8 @@ func TestService_GetSignatureStatusByUser(t *testing.T) {
 	}
 
 	// Create and Publish V2
-	v2ID, _, _ := env.SOPService.RegisterSOPVersion(sopID, "V2 Content", "Updated procedure", &authorID)
-	env.SOPService.TransitionVersionState(v2ID, sop.StateRC, authorID)
+	v2ID, _, _ := env.SOPService.RegisterSOPVersion(sopID, "V2 Content", "Updated procedure", authorID)
+	env.SOPService.PromoteSOPVersion(v2ID, authorID)
 	if _, err := env.SOPService.ApproveSOPVersion(v2ID, authorID); err != nil {
 		t.Fatalf("Approve V2 failed: %v", err)
 	}

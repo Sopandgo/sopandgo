@@ -353,7 +353,7 @@ func seedOneSOP(
 		}
 
 		// STEP A: Editor creates the Draft
-		vID, _, err := sopService.RegisterSOPVersion(sopID, string(content), summary, &editorID)
+		vID, _, err := sopService.RegisterSOPVersion(sopID, string(content), summary, editorID)
 		if err != nil {
 			return err
 		}
@@ -363,7 +363,7 @@ func seedOneSOP(
 		}
 
 		// STEP B: Editor promotes Draft -> RC
-		if err := sopService.TransitionVersionState(vID, sop.StateRC, editorID); err != nil {
+		if err := sopService.PromoteSOPVersion(vID, editorID); err != nil {
 			return fmt.Errorf("failed to promote to RC: %w", err)
 		}
 		if isLast && manifest.FinalState == sop.StateRC {

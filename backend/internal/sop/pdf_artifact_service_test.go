@@ -32,7 +32,7 @@ func TestService_VersionLifecycle_SurvivesPDFRendererFailure(t *testing.T) {
 		t.Fatalf("RegisterSOP failed: %v", err)
 	}
 
-	vID, vNum, err := svc.RegisterSOPVersion(sopID, "# Body", "Initial procedure", &actorID)
+	vID, vNum, err := svc.RegisterSOPVersion(sopID, "# Body", "Initial procedure", actorID)
 	if err != nil {
 		t.Fatalf("RegisterSOPVersion should succeed when PDF generation fails: %v", err)
 	}
@@ -41,8 +41,8 @@ func TestService_VersionLifecycle_SurvivesPDFRendererFailure(t *testing.T) {
 	}
 
 	time.Sleep(15 * time.Millisecond)
-	if err := svc.TransitionVersionState(vID, sop.StateRC, actorID); err != nil {
-		t.Fatalf("TransitionVersionState should succeed when PDF generation fails: %v", err)
+	if err := svc.PromoteSOPVersion(vID, actorID); err != nil {
+		t.Fatalf("PromoteSOPVersion should succeed when PDF generation fails: %v", err)
 	}
 
 	time.Sleep(15 * time.Millisecond)

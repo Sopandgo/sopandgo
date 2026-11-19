@@ -11,7 +11,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
-	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/integrity"
 	"github.com/sopandgo/sopandgo/backend/internal/markdown"
 	"github.com/sopandgo/sopandgo/backend/internal/storage"
@@ -29,184 +28,93 @@ func normalizeChangeSummary(raw string) (string, error) {
 	return summary, nil
 }
 
+// RegisterSOPVersion saves new content as a draft authored by actorUserID and
+// writes the author acknowledgment. Saving the same content as the latest version
+// returns that version and writes nothing.
 func (s *Service) RegisterSOPVersion(
 	sopID string,
 	content string,
 	changeSummary string,
-	actorUserID *string,
+	actorUserID string,
 ) (string, int, error) {
 	contentHash := integrity.HashBytes([]byte(content))
 
-	tx, err := s.db.Begin()
-	if err != nil {
-		return "", 0, err
-	}
-	defer tx.Rollback()
-
-	if err := requireSOPActiveRecord(tx, sopID); err != nil {
-		return "", 0, err
-	}
-
-	// 1. Only one release candidate at a time per SOP; drafts may exist in parallel.
-	hasRC, err := hasReleaseCandidateForSOPRecord(tx, sopID)
-	if err != nil {
-		return "", 0, fmt.Errorf("failed to check release candidates: %w", err)
-	}
-	if hasRC {
-		return "", 0, fmt.Errorf("conflict: cannot create a new version while a release candidate is pending approval for this SOP")
-	}
-
-	var (
-		latestVersion int
-		latestHash    string
-		latestID      string
-	)
-
-	// 2. Get next version number & idempotency anchor (latest by version)
-	latestV, err := getLatestSOPVersionRecord(tx, sopID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			latestVersion = 0
-			latestHash = ""
-		} else {
-			return "", 0, fmt.Errorf("failed to fetch latest version: %w", err)
+	// The content file is written inside the transaction; remove it again unless
+	// the transaction commits.
+	var writtenPath string
+	writeVersion := func(tx *sql.Tx) (newVersion, error) {
+		latestVersion := 0
+		latest, err := getLatestSOPVersionRecord(tx, sopID)
+		if err != nil && err != sql.ErrNoRows {
+			return newVersion{}, fmt.Errorf("failed to fetch latest version: %w", err)
 		}
-	} else {
-		latestVersion = latestV.Version
-		latestHash = latestV.ContentHash
-		latestID = latestV.ID
-	}
-
-	// 3. IDEMPOTENCY CHECK
-	if latestHash != "" && latestHash == contentHash {
-		return latestID, latestVersion, nil
-	}
-
-	summary, err := normalizeChangeSummary(changeSummary)
-	if err != nil {
-		return "", 0, err
-	}
-
-	newVersion := latestVersion + 1
-
-	// 4. Validate Assets
-	if err := s.validateSOPContentAssets(sopID, content); err != nil {
-		return "", 0, err
-	}
-
-	// 5. Markdown policy (raw HTML, URL schemes) — authoritative for all API clients.
-	if err := markdown.Validate(content); err != nil {
-		return "", 0, err
-	}
-
-	id := uuid.NewString()
-	createdAt := time.Now().UTC().Format(time.RFC3339Nano)
-
-	// 6. Prepare Paths
-	filename := fmt.Sprintf("version-%d.md", newVersion)
-
-	// DB PATH: Relative (Portable) -> "sops/<id>/version-1.md"
-	relPath := filepath.Join("sops", sopID, filename)
-
-	dbPath := filepath.ToSlash(relPath)
-
-	// DISK PATH: Absolute (Secure) -> "/data/sops/<id>/version-1.md"
-	absPath, err := storage.SafeJoin(s.dataDir, relPath)
-	if err != nil {
-		return "", 0, fmt.Errorf("invalid path construction: %w", err)
-	}
-
-	// Ensure directory exists using the absolute path
-	if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
-		return "", 0, fmt.Errorf("failed to create directory: %w", err)
-	}
-
-	// 7. Write File to Disk using Absolute Path
-	if err := os.WriteFile(absPath, []byte(content), 0644); err != nil {
-		return "", 0, fmt.Errorf("failed to write file: %w", err)
-	}
-
-	// Cleanup: Delete file if DB insert fails
-	commitSuccessful := false
-	defer func() {
-		if !commitSuccessful {
-			os.Remove(absPath)
+		if err == nil {
+			// Idempotency: the same content as the latest version is that version.
+			if latest.ContentHash == contentHash {
+				return newVersion{id: latest.ID, number: latest.Version, reused: true}, nil
+			}
+			latestVersion = latest.Version
 		}
-	}()
 
-	// 8. Create DB Record using db Path
-	err = createSOPVersionRecord(
-		tx,
-		id,
-		sopID,
-		strconv.Itoa(newVersion),
-		dbPath,
-		contentHash,
-		summary,
-		createdAt,
-	)
-	if err != nil {
-		return "", 0, fmt.Errorf("failed to create version record: %w", err)
-	}
-
-	// 10. Audit Log for Version Creation
-	err = s.auditLogger.Log(
-		tx,
-		audit.EventSOPVersionCreated,
-		audit.EntitySOPVersion,
-		id,
-		actorUserID,
-		map[string]any{
-			"version":        newVersion,
-			"path":           relPath,
-			"change_summary": summary,
-		},
-	)
-	if err != nil {
-		return "", 0, fmt.Errorf("audit log failed: %w", err)
-	}
-
-	// 11. INITIALIZE LIFECYCLE STATE AS 'draft'
-	actorID := ""
-	if actorUserID != nil {
-		actorID = *actorUserID
-	}
-
-	stateID := uuid.NewString()
-	err = createSOPVersionStateRecord(tx, stateID, id, StateDraft, actorID, createdAt)
-	if err != nil {
-		return "", 0, fmt.Errorf("failed to initialize version state: %w", err)
-	}
-
-	// 12. RECORD AUTHOR ACKNOWLEDGMENT
-	if actorID != "" {
-		ackID := uuid.NewString()
-		// Assuming AckTypeAuthor is defined in your constants!
-		err = createSOPAcknowledgmentRecord(tx, ackID, id, actorID, AckTypeAuthor, createdAt)
+		summary, err := normalizeChangeSummary(changeSummary)
 		if err != nil {
-			return "", 0, fmt.Errorf("failed to record author acknowledgment: %w", err)
+			return newVersion{}, err
+		}
+		if err := s.validateSOPContentAssets(sopID, content); err != nil {
+			return newVersion{}, err
+		}
+		// Markdown policy (raw HTML, URL schemes) — authoritative for all API clients.
+		if err := markdown.Validate(content); err != nil {
+			return newVersion{}, err
 		}
 
-		// Audit log the acknowledgment
-		err = s.auditLogger.Log(tx, audit.EventSOPAcknowledgmentCreated, audit.EntitySOPVersion, id, actorUserID, map[string]any{
-			"ack_type": AckTypeAuthor,
-			"ack_id":   ackID,
-		})
+		number := latestVersion + 1
+		id := uuid.NewString()
+		createdAt := time.Now().UTC().Format(time.RFC3339Nano)
+
+		// The database stores the relative path ("sops/<id>/version-1.md"); the
+		// file is written at the absolute path under DATA_DIR.
+		relPath := filepath.Join("sops", sopID, fmt.Sprintf("version-%d.md", number))
+		absPath, err := storage.SafeJoin(s.dataDir, relPath)
 		if err != nil {
-			return "", 0, fmt.Errorf("audit log failed for author acknowledgment: %w", err)
+			return newVersion{}, fmt.Errorf("invalid path construction: %w", err)
 		}
+		if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
+			return newVersion{}, fmt.Errorf("failed to create directory: %w", err)
+		}
+		if err := os.WriteFile(absPath, []byte(content), 0644); err != nil {
+			return newVersion{}, fmt.Errorf("failed to write file: %w", err)
+		}
+		writtenPath = absPath
+
+		err = createSOPVersionRecord(tx, id, sopID, strconv.Itoa(number), filepath.ToSlash(relPath), contentHash, summary, createdAt)
+		if err != nil {
+			return newVersion{}, fmt.Errorf("failed to create version record: %w", err)
+		}
+		return newVersion{
+			id:     id,
+			number: number,
+			auditPayload: map[string]any{
+				"version":        number,
+				"path":           relPath,
+				"change_summary": summary,
+			},
+		}, nil
 	}
 
-	// 13. Commit
-	if err := tx.Commit(); err != nil {
+	result, err := s.runTransition(transitionRequest{
+		transition:   transitionCreate,
+		sopID:        sopID,
+		actorUserID:  actorUserID,
+		writeVersion: writeVersion,
+	})
+	if err != nil {
+		if writtenPath != "" {
+			os.Remove(writtenPath)
+		}
 		return "", 0, err
 	}
-
-	commitSuccessful = true
-	if actorID != "" {
-		s.generateVersionPDFArtifactAfterCommit(id, StateDraft, actorID)
-	}
-	return id, newVersion, nil
+	return result.versionID, result.versionNumber, nil
 }
 
 func (s *Service) GetSOPVersionByID(id string) (*SOPVersion, error) {
@@ -320,200 +228,39 @@ func (s *Service) GetVersionPath(versionID string) (string, error) {
 	return storage.SafeJoin(s.dataDir, v.ContentPath)
 }
 
-// validateManualVersionTransition enforces the allowed API-driven lifecycle transitions.
-// Publishing and superseding are reserved for ApproveSOPVersion.
-func validateManualVersionTransition(currentState, newState string) error {
-	if newState == StatePublished || newState == StateSuperseded {
-		return fmt.Errorf("conflict: %q and %q must be applied via ApproveSOPVersion, not TransitionVersionState", StatePublished, StateSuperseded)
-	}
-	switch currentState {
-	case StateDraft:
-		if newState != StateRC && newState != StateRejected {
-			return fmt.Errorf("conflict: invalid transition from %s to %s (allowed: %s or %s)", currentState, newState, StateRC, StateRejected)
-		}
-	case StateRC:
-		if newState != StateRejected {
-			return fmt.Errorf("conflict: invalid transition from %s to %s (use ApproveSOPVersion to publish)", currentState, newState)
-		}
-	case StatePublished, StateRejected, StateSuperseded:
-		return fmt.Errorf("conflict: cannot transition from terminal state %q", currentState)
-	default:
-		if currentState == "" {
-			return fmt.Errorf("conflict: version has no resolvable lifecycle state")
-		}
-		return fmt.Errorf("conflict: unknown current state %q", currentState)
-	}
-	return nil
+// PromoteSOPVersion makes a draft the SOP's release candidate.
+func (s *Service) PromoteSOPVersion(versionID string, actorUserID string) error {
+	_, err := s.runTransition(transitionRequest{
+		transition:  transitionPromote,
+		versionID:   versionID,
+		actorUserID: actorUserID,
+	})
+	return err
 }
 
-// TransitionVersionState appends a new lifecycle state to a version.
-// Rejections go through RejectSOPVersion, which records the reason.
-func (s *Service) TransitionVersionState(versionID string, newState string, actorUserID string) error {
-	if newState == StateRejected {
-		return fmt.Errorf("conflict: %q must be applied via RejectSOPVersion, which records the reason", StateRejected)
-	}
-	return s.transitionVersionState(versionID, newState, actorUserID, nil)
-}
-
-// RejectSOPVersion rejects a draft or release candidate and stores the reason on the
-// state row and in the audit log, so the version page and an audit can show it later.
+// RejectSOPVersion rejects a release candidate and stores the reason on the state
+// row and in the audit log, so the version page and an audit can show it later.
 func (s *Service) RejectSOPVersion(versionID string, actorUserID string, reason string) error {
-	reason = strings.TrimSpace(reason)
-	if reason == "" {
-		return ErrRejectReasonRequired
-	}
-	if utf8.RuneCountInString(reason) > MaxRejectReasonRunes {
-		return ErrRejectReasonTooLong
-	}
-	return s.transitionVersionState(versionID, StateRejected, actorUserID, &reason)
+	_, err := s.runTransition(transitionRequest{
+		transition:  transitionReject,
+		versionID:   versionID,
+		actorUserID: actorUserID,
+		reason:      reason,
+	})
+	return err
 }
 
-func (s *Service) transitionVersionState(versionID string, newState string, actorUserID string, reason *string) error {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// 1. Verify the version actually exists and enforce the state machine
-	v, err := getSOPVersionByIDRecord(tx, versionID)
-	if err != nil {
-		return fmt.Errorf("could not find version: %w", err)
-	}
-	if err := requireSOPActiveRecord(tx, v.SOPID); err != nil {
-		return err
-	}
-	if err := validateManualVersionTransition(v.Status, newState); err != nil {
-		return err
-	}
-
-	if newState == StateRC {
-		other, err := hasAnotherReleaseCandidateForSOPRecord(tx, v.SOPID, versionID)
-		if err != nil {
-			return fmt.Errorf("failed to check release candidates: %w", err)
-		}
-		if other {
-			return fmt.Errorf("conflict: a release candidate already exists for this SOP; resolve it before promoting another version")
-		}
-	}
-
-	// 2. Create the new state record
-	stateID := uuid.NewString()
-	createdAt := time.Now().UTC().Format(time.RFC3339Nano)
-
-	err = createSOPVersionStateWithReasonRecord(tx, stateID, versionID, newState, actorUserID, createdAt, reason)
-	if err != nil {
-		return fmt.Errorf("failed to append new state: %w", err)
-	}
-
-	// 3. Cryptographic Audit Log
-	payload := map[string]any{
-		"new_state": newState,
-	}
-	if reason != nil {
-		payload["reason"] = *reason
-	}
-	err = s.auditLogger.Log(
-		tx,
-		audit.EventSOPVersionStateChanged,
-		audit.EntitySOPVersion,
-		versionID,
-		&actorUserID,
-		payload,
-	)
-	if err != nil {
-		return fmt.Errorf("audit log failed: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	s.generateVersionPDFArtifactAfterCommit(versionID, newState, actorUserID)
-	return nil
-}
-
-// ApproveSOPVersion records an approver's signature and promotes the version to 'published' in a single transaction.
-// It also automatically supersedes any previously published version for the same SOP.
+// ApproveSOPVersion publishes a release candidate with the approver's acknowledgment
+// and supersedes the SOP's previously published version, in one transaction.
+// It returns the approver acknowledgment's id.
 func (s *Service) ApproveSOPVersion(versionID string, approverUserID string) (string, error) {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return "", err
-	}
-	defer tx.Rollback()
-
-	// 1. Verify the version exists and is currently an RC
-	v, err := getSOPVersionByIDRecord(tx, versionID)
-	if err != nil {
-		return "", fmt.Errorf("could not find version: %w", err)
-	}
-	if err := requireSOPActiveRecord(tx, v.SOPID); err != nil {
-		return "", err
-	}
-	if v.Status != StateRC {
-		return "", fmt.Errorf("conflict: only release candidates can be approved, current state is '%s'", v.Status)
-	}
-
-	now := time.Now().UTC().Format(time.RFC3339Nano)
-	ackID := uuid.NewString()
-	stateID := uuid.NewString()
-
-	// 2. Supersede any previously published version for this SOP *before* inserting the new
-	//    published state so the DB never temporarily has two concurrently published versions.
-	oldPublishedVersionID, err := getActivePublishedVersionIDRecord(tx, v.SOPID, versionID)
-	if err != nil && err != sql.ErrNoRows {
-		return "", fmt.Errorf("failed to check for older published versions: %w", err)
-	}
-
-	if oldPublishedVersionID != "" {
-		supersedeStateID := uuid.NewString()
-
-		err = createSOPVersionStateRecord(tx, supersedeStateID, oldPublishedVersionID, StateSuperseded, approverUserID, now)
-		if err != nil {
-			return "", fmt.Errorf("failed to supersede previous version: %w", err)
-		}
-
-		err = s.auditLogger.Log(tx, audit.EventSOPVersionStateChanged, audit.EntitySOPVersion, oldPublishedVersionID, &approverUserID, map[string]any{
-			"new_state": StateSuperseded,
-			"reason":    fmt.Sprintf("Superseded by version %d", v.Version),
-		})
-		if err != nil {
-			return "", fmt.Errorf("audit log failed for superseding old version: %w", err)
-		}
-	}
-
-	// 3. Record the Signature (Acknowledgment)
-	err = createSOPAcknowledgmentRecord(tx, ackID, versionID, approverUserID, AckTypeApproved, now)
-	if err != nil {
-		return "", fmt.Errorf("failed to create acknowledgment record: %w", err)
-	}
-
-	// 4. Append the new Lifecycle State ('published') for the approved version
-	err = createSOPVersionStateRecord(tx, stateID, versionID, StatePublished, approverUserID, now)
-	if err != nil {
-		return "", fmt.Errorf("failed to append published state: %w", err)
-	}
-
-	// 5. Cryptographic Audit Logs (for the newly approved version)
-	err = s.auditLogger.Log(tx, audit.EventSOPAcknowledgmentCreated, audit.EntitySOPVersion, versionID, &approverUserID, map[string]any{
-		"ack_type": AckTypeApproved,
-		"ack_id":   ackID,
+	result, err := s.runTransition(transitionRequest{
+		transition:  transitionApprove,
+		versionID:   versionID,
+		actorUserID: approverUserID,
 	})
 	if err != nil {
-		return "", fmt.Errorf("audit log failed for acknowledgment: %w", err)
-	}
-
-	err = s.auditLogger.Log(tx, audit.EventSOPVersionStateChanged, audit.EntitySOPVersion, versionID, &approverUserID, map[string]any{
-		"new_state": StatePublished,
-	})
-	if err != nil {
-		return "", fmt.Errorf("audit log failed for state change: %w", err)
-	}
-
-	// 6. Commit the Atomic Transaction
-	if err := tx.Commit(); err != nil {
 		return "", err
 	}
-	s.generateVersionPDFArtifactAfterCommit(versionID, StatePublished, approverUserID)
-
-	return ackID, nil
+	return result.ackID, nil
 }

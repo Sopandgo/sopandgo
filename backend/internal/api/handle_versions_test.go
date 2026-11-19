@@ -245,6 +245,50 @@ func TestAPI_SOPVersions(t *testing.T) {
 		}
 	})
 
+	// =========================================================================
+	// LIFECYCLE STATUS CODES: wrong state → 409, unknown version → 404
+	// =========================================================================
+	t.Run("Lifecycle Status Codes", func(t *testing.T) {
+		sopID, err := env.SOPService.RegisterSOP("Status Code SOP", &editorID)
+		if err != nil {
+			t.Fatalf("RegisterSOP: %v", err)
+		}
+		draftID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# Draft", "First draft", editorID)
+		if err != nil {
+			t.Fatalf("RegisterSOPVersion: %v", err)
+		}
+		otherDraftID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# Other draft", "Second draft", editorID)
+		if err != nil {
+			t.Fatalf("RegisterSOPVersion: %v", err)
+		}
+		action := func(versionID, verb, token string, body any) *httptest.ResponseRecorder {
+			return doJSONRequest(http.MethodPost, fmt.Sprintf("/api/sops/%s/versions/%s/%s", sopID, versionID, verb), token, body)
+		}
+		reason := map[string]string{"reason": "Not ready"}
+		expect := func(name string, rec *httptest.ResponseRecorder, want int) {
+			t.Helper()
+			if rec.Code != want {
+				t.Errorf("%s: want %d, got %d - %s", name, want, rec.Code, rec.Body.String())
+			}
+		}
+
+		expect("approve a draft", action(draftID, "approve", approverToken, nil), http.StatusConflict)
+		expect("approve an unknown version", action("no-such-version", "approve", approverToken, nil), http.StatusNotFound)
+		expect("reject a draft", action(draftID, "reject", approverToken, reason), http.StatusConflict)
+		expect("reject an unknown version", action("no-such-version", "reject", approverToken, reason), http.StatusNotFound)
+
+		expect("promote the draft", action(draftID, "promote", editorToken, nil), http.StatusOK)
+		expect("promote a second release candidate", action(otherDraftID, "promote", editorToken, nil), http.StatusConflict)
+
+		rec := action(draftID, "approve", approverToken, nil)
+		expect("approve the release candidate", rec, http.StatusOK)
+		var approved map[string]string
+		if err := json.Unmarshal(rec.Body.Bytes(), &approved); err != nil || approved["id"] == "" || len(approved) != 1 {
+			t.Errorf("approve body: want {\"id\": <ack id>}, got %s (%v)", rec.Body.String(), err)
+		}
+		expect("promote a published version", action(draftID, "promote", editorToken, nil), http.StatusConflict)
+	})
+
 	t.Run("Version Integrity", func(t *testing.T) {
 		sopID, err := env.SOPService.RegisterSOP("Integrity Test SOP", &editorID)
 		if err != nil {

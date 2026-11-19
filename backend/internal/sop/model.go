@@ -20,6 +20,8 @@ var (
 	ErrRejectReasonTooLong   = errors.New("the reason for rejecting must be 500 characters or fewer")
 	ErrArchiveReasonRequired = errors.New("a reason for archiving is required")
 	ErrArchiveReasonTooLong  = errors.New("the reason for archiving must be 500 characters or fewer")
+	// ErrActorRequired refuses a lifecycle change without a named actor, before anything is written.
+	ErrActorRequired = errors.New("an actor is required for a lifecycle change")
 	// ErrSOPArchived blocks every change to an archived SOP's content, lifecycle and
 	// signatures. The "conflict:" prefix makes the API answer 409.
 	ErrSOPArchived = errors.New("conflict: this SOP is archived; unarchive it first")
