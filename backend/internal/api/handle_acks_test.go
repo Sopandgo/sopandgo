@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
-	"github.com/sopandgo/sopandgo/backend/internal/sop"
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
 
@@ -34,7 +33,7 @@ func TestAPI_Acknowledgments(t *testing.T) {
 
 	// 3. Setup Database State (Bypassing HTTP for speed)
 	sopID, _ := env.SOPService.RegisterSOP("API Target SOP", &author1)
-	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "Base Content", "Updated procedure", &author1)
+	v1ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "Base Content", "Updated procedure", author1)
 	if err != nil {
 		t.Fatalf("Failed to setup DB state: %v", err)
 	}
@@ -65,7 +64,7 @@ func TestAPI_Acknowledgments(t *testing.T) {
 		}
 	})
 
-	if err := env.SOPService.TransitionVersionState(v1ID, sop.StateRC, author1); err != nil {
+	if err := env.SOPService.PromoteSOPVersion(v1ID, author1); err != nil {
 		t.Fatalf("Failed to promote version: %v", err)
 	}
 	if _, err := env.SOPService.ApproveSOPVersion(v1ID, approver); err != nil {

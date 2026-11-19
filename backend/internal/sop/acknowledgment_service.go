@@ -2,83 +2,28 @@ package sop
 
 import (
 	"fmt"
-	"strings"
-	"time"
-
-	"github.com/google/uuid"
-	"github.com/sopandgo/sopandgo/backend/internal/audit"
 )
 
+// AddAcknowledgment records a reader's sign-off on a published version and returns
+// its id. Author acknowledgments are written when a version is created, approver
+// acknowledgments only by ApproveSOPVersion, so any other type is refused.
 func (s *Service) AddAcknowledgment(
 	sopVersionID string,
 	userID string,
 	ackType string,
 ) (string, error) {
-	// Author acks are written when a version is created. Approver acks are written
-	// only by ApproveSOPVersion. This path is reader sign-off on a published version.
 	if ackType != AckTypeRead {
 		return "", fmt.Errorf("conflict: only reader acknowledgments can be recorded directly")
 	}
-
-	tx, err := s.db.Begin()
+	result, err := s.runTransition(transitionRequest{
+		transition:  transitionReaderAck,
+		versionID:   sopVersionID,
+		actorUserID: userID,
+	})
 	if err != nil {
 		return "", err
 	}
-	defer tx.Rollback()
-
-	v, err := getSOPVersionByIDRecord(tx, sopVersionID)
-	if err != nil {
-		return "", err
-	}
-	if err := requireSOPActiveRecord(tx, v.SOPID); err != nil {
-		return "", err
-	}
-	if v.Status != StatePublished {
-		return "", fmt.Errorf("conflict: reader acknowledgments require a published version, current state is '%s'", v.Status)
-	}
-
-	// 1. Generate ID and Timestamp
-	id := uuid.NewString()
-	createdAt := time.Now().UTC().Format(time.RFC3339Nano)
-
-	// 2. Create DB Record using Store function
-	err = createSOPAcknowledgmentRecord(
-		tx,
-		id,
-		sopVersionID,
-		userID,
-		ackType,
-		createdAt,
-	)
-	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "unique") {
-			return "", fmt.Errorf("conflict: already acknowledged")
-		}
-		return "", fmt.Errorf("failed to create acknowledgment record: %w", err)
-	}
-
-	// 3. Audit Log
-	err = s.auditLogger.Log(
-		tx,
-		audit.EventAcknowledgmentAdded,
-		audit.EntityAcknowledgment,
-		id,
-		&userID,
-		map[string]string{
-			"sop_version_id": sopVersionID,
-			"user_id":        userID,
-			"ack_type":       ackType,
-		},
-	)
-	if err != nil {
-		return "", err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return "", err
-	}
-
-	return id, nil
+	return result.ackID, nil
 }
 
 // GetAcknowledgmentsByVersion returns all acks for a specific SOP version

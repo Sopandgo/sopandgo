@@ -60,10 +60,12 @@ draft  --promote-->  rc  --approve-->  published
 API (scopes abbreviated):
 
 - `POST /api/sops/{sopID}` — create a **draft** (`sop:write`); requires `change_summary`
-- `POST .../versions/{id}/promote` — draft → RC (`sop:write`); **409** if not a draft
-- `POST .../versions/{id}/approve` — RC → published (`sop:sign:approver`); returns `{"id"}` (approver ack)
-- `POST .../versions/{id}/reject` — body `{"reason"}` required, at most 500 characters (`sop:sign:approver`); **400** if it is missing or too long, **409** if not an RC
-- `POST .../versions/{id}/add-reader` — reader acknowledgment (`sop:sign:reader`); **409** unless the version is `published`
+- `POST .../versions/{id}/promote` — draft → RC (`sop:write`); **404** if the version does not exist, **409** if it is not a draft or another RC is pending for the SOP
+- `POST .../versions/{id}/approve` — RC → published (`sop:sign:approver`); returns `{"id"}` (approver ack); **404** if the version does not exist, **409** if it is not an RC
+- `POST .../versions/{id}/reject` — body `{"reason"}` required, at most 500 characters (`sop:sign:approver`); **400** if it is missing or too long, **404** if the version does not exist, **409** if it is not an RC
+- `POST .../versions/{id}/add-reader` — reader acknowledgment (`sop:sign:reader`); **404** if the version does not exist, **409** unless the version is `published` or if you already signed it
+
+The state is checked inside the change's transaction, so a version that changes state while the request runs also answers **409**. Only a release candidate can be rejected, whichever way the request arrives; a draft is never rejected.
 
 Author acknowledgments are recorded when the version is created. Approver acknowledgments are recorded only by **approve**. There is no separate endpoint for either.
 

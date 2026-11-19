@@ -17,11 +17,11 @@ func publishedSOP(t *testing.T, env *testenv.Env, title, actorID string) (string
 	if err != nil {
 		t.Fatalf("RegisterSOP: %v", err)
 	}
-	vID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# "+title+"\n", "First version", &actorID)
+	vID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# "+title+"\n", "First version", actorID)
 	if err != nil {
 		t.Fatalf("RegisterSOPVersion: %v", err)
 	}
-	if err := env.SOPService.TransitionVersionState(vID, sop.StateRC, actorID); err != nil {
+	if err := env.SOPService.PromoteSOPVersion(vID, actorID); err != nil {
 		t.Fatalf("promote: %v", err)
 	}
 	if _, err := env.SOPService.ApproveSOPVersion(vID, actorID); err != nil {
@@ -101,11 +101,11 @@ func TestService_ArchiveSOP_BlockedByReleaseCandidate(t *testing.T) {
 	env.SeedTestUser(t, approverID, "rc@archive.local", auth.RoleApprover)
 
 	sopID, _ := publishedSOP(t, env, "Pending review", approverID)
-	v2ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# Pending review\nMore\n", "Second", &approverID)
+	v2ID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# Pending review\nMore\n", "Second", approverID)
 	if err != nil {
 		t.Fatalf("v2: %v", err)
 	}
-	if err := env.SOPService.TransitionVersionState(v2ID, sop.StateRC, approverID); err != nil {
+	if err := env.SOPService.PromoteSOPVersion(v2ID, approverID); err != nil {
 		t.Fatalf("promote v2: %v", err)
 	}
 
@@ -129,7 +129,7 @@ func TestService_ArchivedSOPIsReadOnly(t *testing.T) {
 	env.SeedTestUser(t, readerID, "reader@archive.local", auth.RoleViewer)
 
 	sopID, publishedID := publishedSOP(t, env, "Frozen SOP", approverID)
-	draftID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# Frozen SOP\nDraft\n", "Draft change", &approverID)
+	draftID, _, err := env.SOPService.RegisterSOPVersion(sopID, "# Frozen SOP\nDraft\n", "Draft change", approverID)
 	if err != nil {
 		t.Fatalf("draft: %v", err)
 	}
@@ -139,8 +139,8 @@ func TestService_ArchivedSOPIsReadOnly(t *testing.T) {
 	}
 
 	checks := map[string]error{}
-	_, _, checks["new version"] = env.SOPService.RegisterSOPVersion(sopID, "# Frozen SOP\nNew\n", "New", &approverID)
-	checks["promote"] = env.SOPService.TransitionVersionState(draftID, sop.StateRC, approverID)
+	_, _, checks["new version"] = env.SOPService.RegisterSOPVersion(sopID, "# Frozen SOP\nNew\n", "New", approverID)
+	checks["promote"] = env.SOPService.PromoteSOPVersion(draftID, approverID)
 	checks["reject"] = env.SOPService.RejectSOPVersion(draftID, approverID, "No")
 	_, checks["approve"] = env.SOPService.ApproveSOPVersion(draftID, approverID)
 	_, checks["reader signature"] = env.SOPService.AddAcknowledgment(publishedID, readerID, sop.AckTypeRead)
@@ -163,7 +163,7 @@ func TestService_ArchivedSOPIsReadOnly(t *testing.T) {
 	if _, err := env.SOPService.AddAcknowledgment(publishedID, readerID, sop.AckTypeRead); err != nil {
 		t.Fatalf("reader signature after unarchive: %v", err)
 	}
-	if err := env.SOPService.TransitionVersionState(draftID, sop.StateRC, approverID); err != nil {
+	if err := env.SOPService.PromoteSOPVersion(draftID, approverID); err != nil {
 		t.Fatalf("promote after unarchive: %v", err)
 	}
 }

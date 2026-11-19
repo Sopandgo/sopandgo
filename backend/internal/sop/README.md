@@ -22,7 +22,7 @@ It follows a **Service Layer Pattern** (`sop.Service`) for data consistency, ato
    * **Disk:** Absolute paths under `DATA_DIR`, resolved via `SafeJoin`.
    * **Network:** Streams files with `http.ServeFile` from the API layer.
 
-4. **Version lifecycle:** Content is append-only. Status moves `draft` → `rc` → `published` (or `rejected`); prior published versions become `superseded`. A whole SOP can be archived, which freezes all of this until it is unarchived. See `docs/concepts/versioning-and-signatures.md`.
+4. **Version lifecycle:** Content is append-only. Status moves `draft` → `rc` → `published`, or `rc` → `rejected`; prior published versions become `superseded`. The rules live in one table in `lifecycle.go`; a wrong state is a `conflict:` error and an unknown version a "not found" error. A whole SOP can be archived, which freezes all of this until it is unarchived. See `docs/concepts/versioning-and-signatures.md`.
 
 ## File Structure
 
@@ -31,8 +31,9 @@ It follows a **Service Layer Pattern** (`sop.Service`) for data consistency, ato
 | **`service.go`** | `Service` constructor and PDF config | `NewService`, `IsPDFExportEnabled` |
 | **`archive_service.go`** | Archive and unarchive an SOP (reason required, blocked while a release candidate is pending). Archived SOPs leave the default list, signature status and team coverage; every write to their content, lifecycle, signatures and assets returns `ErrSOPArchived` via `requireSOPActiveRecord` inside the write's transaction | `ArchiveSOP`, `UnarchiveSOP` |
 | **`sop_service.go`** | SOP containers; list rows carry tags, favorite state, the latest version (id, number, state, date) and the published version number; the detail adds the published version's id. Both are derived from the version states on read, not stored | `RegisterSOP`, `ListSOPs`, `GetSOPByIDWithTags` |
-| **`version_service.go`** | Drafts, content I/O, lifecycle; a rejection stores its reason on the state row and in the audit event, and the summary returns it | `RegisterSOPVersion`, `TransitionVersionState`, `ApproveSOPVersion`, `RejectSOPVersion`, summaries, integrity |
-| **`acknowledgment_service.go`** | Reader sign-off on published versions, and signature status | `AddAcknowledgment`, `GetSignatureStatusByUser` |
+| **`lifecycle.go`** | The lifecycle module, private to the package. One table lists every allowed transition (new version → draft, draft → rc, rc → rejected, rc → published, reader acknowledgment on published) with its side effects. `runTransition` is the only code that opens a transaction for a lifecycle change: it loads the version, refuses an archived SOP, checks the table, writes the state row, acknowledgment and audit events, commits, then generates the PDF. The actor is required | `runTransition` (private) |
+| **`version_service.go`** | Drafts and content I/O, and the version operations, each a request for a transition; a rejection stores its reason on the state row and in the audit event, and the summary returns it | `RegisterSOPVersion`, `PromoteSOPVersion`, `ApproveSOPVersion`, `RejectSOPVersion`, summaries, integrity |
+| **`acknowledgment_service.go`** | Reader sign-off on published versions (a transition request), and signature status | `AddAcknowledgment`, `GetSignatureStatusByUser` |
 | **`asset_service.go`** | Binary uploads | `AddAsset`, `GetAssetPath`, `VerifyAssetIntegrity` |
 | **`favorite_service.go`** | Per-user bookmarks | `FavoriteSOP`, `UnfavoriteSOP` |
 | **`tag_service.go`** | Global tags + attach/detach | `CreateTag`, `AttachTagToSOP`, `SetTagStatus` |
@@ -49,13 +50,13 @@ It follows a **Service Layer Pattern** (`sop.Service`) for data consistency, ato
 ### 1. Creating a draft version
 
 ```go
-id, ver, err := sopService.RegisterSOPVersion(sopID, content, changeSummary, &actorID)
+id, ver, err := sopService.RegisterSOPVersion(sopID, content, changeSummary, actorID) // actor required
 ```
 
 ### 2. Promote / approve
 
 ```go
-err := sopService.TransitionVersionState(versionID, sop.StateRC, actorID)
+err := sopService.PromoteSOPVersion(versionID, actorID)
 ackID, err := sopService.ApproveSOPVersion(versionID, approverID)
 err = sopService.RejectSOPVersion(versionID, approverID, reason) // reason required, stored
 ```

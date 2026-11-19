@@ -58,7 +58,7 @@ func TestService_RegisterSOPVersion_ConcurrentCreatesGetDistinctVersions(t *test
 			<-start
 			editor := editors[i%len(editors)]
 			content := fmt.Sprintf("# Draft %d by %s", i, editor)
-			_, versions[i], errs[i] = svc.RegisterSOPVersion(sopID, content, "Concurrent edit", &editor)
+			_, versions[i], errs[i] = svc.RegisterSOPVersion(sopID, content, "Concurrent edit", editor)
 		}(i)
 	}
 	close(start)

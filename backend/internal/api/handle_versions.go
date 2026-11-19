@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/sopandgo/sopandgo/backend/internal/markdown"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
@@ -47,7 +49,7 @@ func (s *Server) handleRegisterSOPVersion(w http.ResponseWriter, r *http.Request
 		sopId,
 		req.Content,
 		req.ChangeSummary,
-		&actorID,
+		actorID,
 	)
 	if err != nil {
 		var pe *markdown.PolicyError
@@ -77,6 +79,9 @@ func (s *Server) handleRegisterSOPVersion(w http.ResponseWriter, r *http.Request
 		case strings.HasPrefix(msg, "conflict:"):
 			d := strings.TrimSpace(strings.TrimPrefix(msg, "conflict:"))
 			writeJSONError(w, http.StatusConflict, "conflict", d)
+			return
+		case strings.Contains(msg, "not found"):
+			http.Error(w, "SOP not found", http.StatusNotFound)
 			return
 		}
 
@@ -273,6 +278,34 @@ func (s *Server) handleDownloadSOPVersionPDF(w http.ResponseWriter, r *http.Requ
 	http.ServeFile(w, r, absPath)
 }
 
+// writeLifecycleError answers a failed promote, approve or reject. The SOP service
+// owns the lifecycle rules; the handler only maps its errors to status codes.
+func writeLifecycleError(w http.ResponseWriter, err error, action, versionID string) {
+	msg := err.Error()
+	switch {
+	case errors.Is(err, sop.ErrSOPArchived):
+		writeSOPArchived(w)
+	case errors.Is(err, sop.ErrRejectReasonRequired), errors.Is(err, sop.ErrRejectReasonTooLong):
+		http.Error(w, msg, http.StatusBadRequest)
+	case strings.HasPrefix(msg, "conflict:"):
+		http.Error(w, sentence(strings.TrimSpace(strings.TrimPrefix(msg, "conflict:"))), http.StatusConflict)
+	case strings.Contains(msg, "not found"):
+		http.Error(w, "Version not found", http.StatusNotFound)
+	default:
+		log.Printf("ERROR: %s version %s failed: %v", action, versionID, err)
+		http.Error(w, "Failed to "+action+" version", http.StatusInternalServerError)
+	}
+}
+
+// sentence capitalizes the first letter of a service error detail.
+func sentence(detail string) string {
+	r, size := utf8.DecodeRuneInString(detail)
+	if r == utf8.RuneError {
+		return detail
+	}
+	return string(unicode.ToUpper(r)) + detail[size:]
+}
+
 func (s *Server) handlePromoteSOPVersion(w http.ResponseWriter, r *http.Request) {
 	versionID := r.PathValue("sopVersionID")
 	if versionID == "" {
@@ -280,28 +313,9 @@ func (s *Server) handlePromoteSOPVersion(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// 1. Enforce State Machine: Document must currently be a 'draft'
-	v, err := s.sopService.GetSOPVersionByID(versionID)
-	if err != nil {
-		http.Error(w, "Version not found", http.StatusNotFound)
-		return
-	}
-	if v.Status != sop.StateDraft {
-		http.Error(w, "Only drafts can be promoted to release candidates", http.StatusConflict)
-		return
-	}
-
 	actorID := GetUserID(r.Context())
-
-	// 2. Transition State
-	err = s.sopService.TransitionVersionState(versionID, sop.StateRC, actorID)
-	if errors.Is(err, sop.ErrSOPArchived) {
-		writeSOPArchived(w)
-		return
-	}
-	if err != nil {
-		log.Printf("ERROR: promote version %s failed: %v", versionID, err)
-		http.Error(w, "Failed to promote version", http.StatusInternalServerError)
+	if err := s.sopService.PromoteSOPVersion(versionID, actorID); err != nil {
+		writeLifecycleError(w, err, "promote", versionID)
 		return
 	}
 
@@ -319,15 +333,10 @@ func (s *Server) handleApproveSOPVersion(w http.ResponseWriter, r *http.Request)
 
 	actorID := GetUserID(r.Context())
 
-	// The Service layer handles the transaction, the state check, AND the signature
+	// The service publishes, records the approver signature and supersedes the old version.
 	ackID, err := s.sopService.ApproveSOPVersion(versionID, actorID)
-	if errors.Is(err, sop.ErrSOPArchived) {
-		writeSOPArchived(w)
-		return
-	}
 	if err != nil {
-		log.Printf("ERROR: approve version %s failed: %v", versionID, err)
-		http.Error(w, "Failed to approve and publish SOP", http.StatusInternalServerError)
+		writeLifecycleError(w, err, "approve", versionID)
 		return
 	}
 
@@ -358,37 +367,9 @@ func (s *Server) handleRejectSOPVersion(w http.ResponseWriter, r *http.Request) 
 	}
 	reason := strings.TrimSpace(req.Reason)
 
-	// 1. Enforce State Machine: Document must currently be an 'rc'
-	v, err := s.sopService.GetSOPVersionByID(versionID)
-	if err != nil {
-		http.Error(w, "Version not found", http.StatusNotFound)
-		return
-	}
-	if v.Status != sop.StateRC {
-		http.Error(w, "Only release candidates can be rejected", http.StatusConflict)
-		return
-	}
-
 	actorID := GetUserID(r.Context())
-
-	// 2. Transition State; the reason is stored with it
-	err = s.sopService.RejectSOPVersion(versionID, actorID, reason)
-	if errors.Is(err, sop.ErrSOPArchived) {
-		writeSOPArchived(w)
-		return
-	}
-	if errors.Is(err, sop.ErrRejectReasonRequired) || errors.Is(err, sop.ErrRejectReasonTooLong) {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err != nil && strings.HasPrefix(err.Error(), "conflict:") {
-		// The version changed state after the check above
-		http.Error(w, "Only release candidates can be rejected", http.StatusConflict)
-		return
-	}
-	if err != nil {
-		log.Printf("ERROR: reject version %s failed: %v", versionID, err)
-		http.Error(w, "Failed to reject version", http.StatusInternalServerError)
+	if err := s.sopService.RejectSOPVersion(versionID, actorID, reason); err != nil {
+		writeLifecycleError(w, err, "reject", versionID)
 		return
 	}
 
