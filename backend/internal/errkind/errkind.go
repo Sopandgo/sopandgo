@@ -1,9 +1,9 @@
 // Package errkind marks an error with what kind of failure it is: a conflict
 // with the current state, a missing record, or an invalid request.
 //
-// Domain modules mark the errors a client can cause, and the HTTP module maps
-// the kind to a status code in one place. The message stays free text for
-// people to read and never decides the status.
+// Domain modules mark the errors a client can cause; callers such as the HTTP
+// module test for the kind instead of reading the message. The message stays
+// free text for people to read.
 package errkind
 
 import (
@@ -15,11 +15,11 @@ import (
 type Kind int
 
 const (
-	// Conflict: the request clashes with the current state (HTTP 409).
+	// Conflict: the request clashes with the current state.
 	Conflict Kind = iota + 1
-	// NotFound: the record the request names does not exist (HTTP 404).
+	// NotFound: the record the request names does not exist.
 	NotFound
-	// Invalid: the request itself is malformed or not allowed (HTTP 400).
+	// Invalid: the request itself is malformed or not allowed.
 	Invalid
 )
 

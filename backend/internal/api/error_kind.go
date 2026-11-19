@@ -1,14 +1,16 @@
 package api
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
-// kindStatus maps an error's kind to its HTTP status. This is the only place
-// that decides 409, 404 or 400 for a domain error. ok is false when err has no
-// kind; the handler then answers its own 500. Handlers still choose the body.
+// kindStatus maps an error's kind to its HTTP status: conflict 409, not found
+// 404, invalid 400. ok is false when err has no kind. Handlers still choose the
+// body. Named errors without a kind (backup, mail, two-factor, …) keep their
+// own explicit statuses in their handlers.
 func kindStatus(err error) (status int, ok bool) {
 	kind, ok := errkind.KindOf(err)
 	if !ok {
@@ -26,24 +28,23 @@ func kindStatus(err error) (status int, ok bool) {
 	}
 }
 
-// writeKindJSON answers err as a JSON error with the handler's code and detail,
-// at the status err's kind maps to. It writes nothing and reports false when
-// err has no kind.
-func writeKindJSON(w http.ResponseWriter, err error, code, detail string) bool {
-	status, ok := kindStatus(err)
-	if !ok {
-		return false
+// statusOrInternal is kindStatus with a 500 for an error that has no kind, so
+// a handler that expected a kind always writes a response.
+func statusOrInternal(err error) int {
+	if status, ok := kindStatus(err); ok {
+		return status
 	}
-	writeJSONError(w, status, code, detail)
-	return true
+	log.Printf("ERROR: expected an error kind, got %v", err)
+	return http.StatusInternalServerError
+}
+
+// writeKindJSON answers err as a JSON error with the handler's code and detail,
+// at the status err's kind maps to.
+func writeKindJSON(w http.ResponseWriter, err error, code, detail string) {
+	writeJSONError(w, statusOrInternal(err), code, detail)
 }
 
 // writeKindText is writeKindJSON for handlers that answer in plain text.
-func writeKindText(w http.ResponseWriter, err error, body string) bool {
-	status, ok := kindStatus(err)
-	if !ok {
-		return false
-	}
-	http.Error(w, body, status)
-	return true
+func writeKindText(w http.ResponseWriter, err error, body string) {
+	http.Error(w, body, statusOrInternal(err))
 }

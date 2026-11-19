@@ -277,7 +277,8 @@ func (s *Server) handleDownloadSOPVersionPDF(w http.ResponseWriter, r *http.Requ
 }
 
 // writeLifecycleError answers a failed promote, approve or reject. The SOP service
-// owns the lifecycle rules; the handler only maps its errors to status codes.
+// owns the lifecycle rules and marks its errors with a kind; the handler only
+// picks the response body.
 func writeLifecycleError(w http.ResponseWriter, err error, action, versionID, failMsg string) {
 	switch {
 	case errors.Is(err, sop.ErrSOPArchived):

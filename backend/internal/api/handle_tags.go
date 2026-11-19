@@ -2,7 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
 // handleCreateTag creates a new global tag.
@@ -69,8 +72,8 @@ func (s *Server) handleSetTagStatus(w http.ResponseWriter, r *http.Request) {
 	actorID := GetUserID(r.Context())
 
 	if err := s.sopService.SetTagStatus(tagID, req.IsActive, &actorID); err != nil {
-		if status, ok := kindStatus(err); ok && status == http.StatusNotFound {
-			http.Error(w, "tag not found", status)
+		if errors.Is(err, errkind.NotFound) {
+			writeKindText(w, err, "tag not found")
 			return
 		}
 		http.Error(w, "failed to update tag status", http.StatusInternalServerError)
