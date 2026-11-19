@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/integrity"
 	"github.com/sopandgo/sopandgo/backend/internal/storage"
-	"github.com/google/uuid"
 )
 
 func (s *Service) AddAsset(
@@ -18,9 +18,6 @@ func (s *Service) AddAsset(
 	content []byte,
 	actorUserID *string,
 ) (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return "", err
@@ -114,24 +111,15 @@ func (s *Service) AddAsset(
 }
 
 func (s *Service) GetAssetByID(id string) (*SOPAsset, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return getSOPAssetByIDRecord(s.db, id)
 }
 
 func (s *Service) GetAssetsBySOPID(sopID string) ([]SOPAsset, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return getSOPAssetsBySOPIDRecord(s.db, sopID)
 }
 
 // GetAssetContent securely reads the file content from disk
 func (s *Service) GetAssetContent(id string) ([]byte, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	asset, err := getSOPAssetByIDRecord(s.db, id)
 	if err != nil {
 		return nil, err
@@ -149,9 +137,6 @@ func (s *Service) GetAssetContent(id string) ([]byte, error) {
 // GetAssetPath resolves the secure absolute path for an asset.
 // This allows the handler to use http.ServeFile (better for caching/streaming).
 func (s *Service) GetAssetPath(assetID string) (string, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	asset, err := getSOPAssetByIDRecord(s.db, assetID)
 	if err != nil {
 		return "", err
@@ -163,9 +148,6 @@ func (s *Service) GetAssetPath(assetID string) (string, error) {
 
 // VerifyAssetIntegrity checks if the file on disk matches the DB hash
 func (s *Service) VerifyAssetIntegrity(assetID string) (bool, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	asset, err := getSOPAssetByIDRecord(s.db, assetID)
 	if err != nil {
 		return false, err

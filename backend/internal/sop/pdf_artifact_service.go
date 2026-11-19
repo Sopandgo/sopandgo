@@ -185,8 +185,6 @@ func (s *Service) GetVersionPDFArtifactPath(versionID string, stage string) (str
 	if !s.IsPDFExportEnabled() {
 		return "", "", ErrPDFExportDisabled
 	}
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 
 	version, err := getSOPVersionByIDRecord(s.db, versionID)
 	if err != nil {

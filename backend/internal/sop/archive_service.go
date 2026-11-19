@@ -22,9 +22,6 @@ func (s *Service) ArchiveSOP(sopID string, actorUserID string, reason string) er
 		return ErrArchiveReasonTooLong
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -70,9 +67,6 @@ func (s *Service) ArchiveSOP(sopID string, actorUserID string, reason string) er
 
 // UnarchiveSOP puts an archived SOP back in use, exactly as it was archived.
 func (s *Service) UnarchiveSOP(sopID string, actorUserID string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err

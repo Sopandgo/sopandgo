@@ -14,7 +14,10 @@ It is designed to participate in transactions owned by other packages (`auth`, `
 2. **Store Layer (`store.go`):**
    * Raw INSERT/SELECT; unexported `*Record` helpers.
    * On insert, reads the previous chain tip and computes the new hash.
-   * Reading the tip and inserting must happen under one write lock, or two writers can link to the same tip and fork the chain. With a caller's transaction that already wrote, the caller holds the lock. `Log(nil, …)` and `Log(db, …)` serialize calls per logger and open their own `BEGIN IMMEDIATE` transaction on one pooled connection. SQLite waits up to `AUDIT_BUSY_TIMEOUT` (default `5s`) for another logger, process, or transaction; timeout errors are returned to the caller and must be surfaced.
+   * Reading the tip and inserting must happen under one write lock, or two writers can link to the same tip and fork the chain.
+   * **Rule:** every transaction holds the write lock from begin. `storage.Open` opens every connection with immediate transactions, so a caller's transaction already holds the lock when it calls `Log`, whatever it did before. `Log(nil, …)` and `Log(db, …)` open an ordinary transaction on the shared handle, insert, and commit.
+   * A writer waits up to `DB_BUSY_TIMEOUT` (default `5s`, set by the storage package) for another writer, process, or transaction. Timeout errors are returned to the caller and must be surfaced.
+   * The logger relies on a handle opened by `storage.Open` or `storage.OpenInMemory`. A handle opened another way may lack these settings.
 
 3. **Model (`model.go`):**
    * `AuditEvent`, `ListFilters`, `AuditEventWithVerification`.

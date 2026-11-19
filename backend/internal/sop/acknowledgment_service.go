@@ -20,9 +20,6 @@ func (s *Service) AddAcknowledgment(
 		return "", fmt.Errorf("conflict: only reader acknowledgments can be recorded directly")
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return "", err
@@ -86,32 +83,20 @@ func (s *Service) AddAcknowledgment(
 
 // GetAcknowledgmentsByVersion returns all acks for a specific SOP version
 func (s *Service) GetAcknowledgmentsByVersion(versionID string) ([]SOPAcknowledgment, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return getSOPAcknowledgmentsBySOPVersionIDRecord(s.db, versionID)
 }
 
 // GetAcknowledgmentsByVersionWithUser returns all acks for a specific SOP version with User Structs
 func (s *Service) GetAcknowledgmentsByVersionWithUser(versionID string) ([]SOPAcknowledgmentWithUser, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return getSOPAcknowledgmentsWithUserBySOPVersionIDRecord(s.db, versionID)
 }
 
 // GetAcknowledgmentsByUser returns all acks made by a specific user
 func (s *Service) GetAcknowledgmentsByUser(userID string) ([]SOPAcknowledgment, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return getSOPAcknowledgmentsByUserIDRecord(s.db, userID)
 }
 
 // GetSignatureStatusByUser returns the status of all published SOPs for a user
 func (s *Service) GetSignatureStatusByUser(userID string) ([]UserSignatureStatus, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return getSignatureStatusByUserIDRecord(s.db, userID)
 }

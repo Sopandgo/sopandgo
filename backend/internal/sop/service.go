@@ -2,13 +2,17 @@ package sop
 
 import (
 	"database/sql"
-	"sync"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/pdfgen"
 )
 
-// Service orchestrates SOP operations, managing state and concurrency.
+// Service orchestrates SOP operations.
+//
+// Consistency comes from transactions: the storage package opens every
+// transaction with the write lock held from begin, so concurrent writers
+// serialize at Begin and no process-wide lock is needed. Reads use plain
+// queries and never wait behind writes or PDF generation.
 type Service struct {
 	db                  *sql.DB
 	dataDir             string
@@ -16,7 +20,6 @@ type Service struct {
 	pdfGenerator        pdfgen.Renderer
 	pdfGeneratorVersion string
 	pdfExportEnabled    bool
-	mu                  sync.RWMutex
 }
 
 // NewService creates a new SOP service instance.

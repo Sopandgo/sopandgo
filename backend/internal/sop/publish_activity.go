@@ -22,9 +22,6 @@ func (s *Service) readVersionContent(v *SOPVersion) (string, error) {
 // DiffSOPVersion compares versionID to another version of the same SOP.
 // againstVersionID empty selects the previous published version, or the previous version if none is published.
 func (s *Service) DiffSOPVersion(sopID, versionID, againstVersionID string) (*VersionDiff, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	current, err := getSOPVersionByIDRecord(s.db, versionID)
 	if err != nil {
 		return nil, err
@@ -77,9 +74,6 @@ func (s *Service) DiffSOPVersion(sopID, versionID, againstVersionID string) (*Ve
 }
 
 func (s *Service) ListRecentPublishes(limit int) ([]PublishedActivity, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	if limit <= 0 {
 		limit = 12
 	}

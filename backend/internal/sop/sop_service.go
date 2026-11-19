@@ -4,17 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/google/uuid"
+	"github.com/sopandgo/sopandgo/backend/internal/audit"
 )
 
 func (s *Service) RegisterSOP(
 	title string,
 	actorUserID *string,
 ) (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return "", err
@@ -48,9 +45,6 @@ func (s *Service) RegisterSOP(
 }
 
 func (s *Service) GetSOPByID(id string) (*SOP, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return getSOPByIDRecord(s.db, id)
 }
 
@@ -62,16 +56,10 @@ func (s *Service) ListSOPs(
 	favoritesOnly, favoritesFirst bool,
 	archived ArchiveFilter,
 ) ([]SOPListItem, int, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return listSOPsRecord(s.db, actorUserID, limit, offset, tagID, searchQuery, favoritesOnly, favoritesFirst, archived)
 }
 
 func (s *Service) GetSOPByIDWithTags(id string, viewerUserID string) (*SOPWithTags, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	base, err := getSOPByIDRecord(s.db, id) // returns your existing *SOP (minimal)
 	if err != nil {
 		return nil, err

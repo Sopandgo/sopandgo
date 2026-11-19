@@ -9,9 +9,6 @@ import (
 
 // FavoriteSOP adds the SOP to the user's favorites (idempotent).
 func (s *Service) FavoriteSOP(sopID, actorUserID string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -46,9 +43,6 @@ func (s *Service) FavoriteSOP(sopID, actorUserID string) error {
 
 // UnfavoriteSOP removes the SOP from the user's favorites (idempotent).
 func (s *Service) UnfavoriteSOP(sopID, actorUserID string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err

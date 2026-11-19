@@ -7,7 +7,7 @@ It follows a **struct-based service pattern** so all business logic goes through
 
 1. **The Service Struct (`auth.Service`):**
    * **Single entry point** for business logic; holds `*sql.DB`, `*audit.Logger`, and `dataDir` for profile pictures.
-   * **Concurrency:** Internal `sync.RWMutex` for critical writes.
+   * **Concurrency:** Transactions hold the database write lock from begin. An internal `sync.RWMutex` additionally guards read-then-write steps that run without a transaction (email-code attempts, session creation, email codes, TOTP setup start, locale and theme); see the comment on the field.
    * **Transactions:** Owns `Begin` / `Rollback` / `Commit`.
    * **Audit:** Writes compliance logs in the same transaction as the data change.
 

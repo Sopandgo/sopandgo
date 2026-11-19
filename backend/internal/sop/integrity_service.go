@@ -9,9 +9,6 @@ import (
 )
 
 func (s *Service) RunSystemIntegrityCheck() (*SystemIntegrityReport, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	report := &SystemIntegrityReport{
 		CheckedAt: time.Now().UTC().Format(time.RFC3339Nano),
 	}

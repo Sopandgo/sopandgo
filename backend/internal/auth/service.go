@@ -15,7 +15,13 @@ type Service struct {
 	// encKey seals TOTP secrets (SECRET_ENCRYPTION_KEY). Without it, 2FA
 	// cannot be set up and stored secrets cannot be read.
 	encKey []byte
-	mu     sync.RWMutex
+	// mu is the only guard for read-then-write steps that run without a
+	// transaction: email-code attempt counting (VerifySecondFactor), session
+	// creation (CreateSession), issuing email codes (IssueEmailCode), starting
+	// TOTP setup (BeginTOTPSetup), and setting locale and theme (SetUserLocale,
+	// SetUserTheme). Keep it until those steps move into transactions, which
+	// hold the write lock from begin. It only works within one process.
+	mu sync.RWMutex
 }
 
 // NewService creates a new auth service. dataDir is the app DATA_DIR used for
