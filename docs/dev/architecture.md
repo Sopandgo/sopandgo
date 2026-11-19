@@ -107,7 +107,9 @@ Integrity is verified via SHA-256 cryptographic hashes in two distinct ways:
 
 1. **Content Integrity:** SOP versions and assets are hashed upon creation. This is automatically checked when retrieving a SOP version summary to detect disk tampering.
 
-2. **Audit Integrity:** Audit logs are formed into a Hash Chain. The backend verifies the chain continuity on read to detect if logs have been deleted or altered.
+2. **Audit Integrity:** Audit logs are formed into a Hash Chain. The backend verifies the chain continuity on read to detect if logs have been deleted or altered. Each row records its `hash_version`. Version 2 (every row since migration v30) length-prefixes all columns, including actor and entity type (`backend/internal/audit/hash.go`).
+
+4. **External anchoring (optional):** `backend/internal/anchor` timestamps the chain tip with an RFC 3161 TSA on an interval. It stores the receipt in `audit_anchors` and copies it to the backup S3 bucket. Before each anchor it verifies the rows written since the previous one (`audit.VerifySince`) and refuses to anchor a chain that changed. The admin integrity scan compares the chain with every receipt on the server and in S3. Admin routes are under `/api/admin/audit-anchoring` (settings, probe, run, evidence bundle). See [Verifying audit anchors](../ops/verifying-anchors.md).
 
 3. **On-Demand Checks:** `GET /api/sops/{sopID}/versions/{versionID}/integrity` and `GET /api/sops/{sopID}/assets/{assetID}/integrity` re-hash one file. They return `{"hash_valid": bool}`, or a JSON error: 404 `version_not_found` / `asset_not_found` when the record does not exist or belongs to another SOP, 404 `file_missing` when the file is gone from disk, and 500 `integrity_check_failed` otherwise. `GET /api/admin/integrity` scans everything, audits the run, and notifies on failure.
 
@@ -117,7 +119,7 @@ All state-changing events (logins, password updates, role changes) are recorded.
 
 * **Transactional:** State-changing actions commit their audit event in the same SQL transaction. Writes with no caller transaction (login, mail, notifications, startup, PDF artifacts) open their own transaction. Every transaction holds SQLite's write lock from begin, so reading the chain tip and inserting the next entry can never interleave with another writer, and concurrent writers cannot fork the chain. Lock waits are bounded by `DB_BUSY_TIMEOUT`; failures are reported to the application log.
 * **Immutable:** The API prevents modification or deletion of logs.
-* **Tamper-Evident:** Logs are cryptographically linked. Any modification breaks the hash chain, which the system can detect and flag.
+* **Tamper-Evident:** Logs are cryptographically linked. Any modification breaks the hash chain, which the system can detect and flag. A rewrite that recomputes the whole chain is only detectable against external anchors.
 * **Canonical Taxonomy:** `event_type` and `entity_type` are normalized to lowercase to keep filtering/reporting stable over time.
 * **Optional Strict Mode:** With `AUDIT_STRICT_TYPES=true`, only known canonical audit types are accepted.
 

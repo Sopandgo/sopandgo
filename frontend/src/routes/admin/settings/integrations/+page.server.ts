@@ -9,7 +9,10 @@ const ALL_EVENTS: IntegrationEvent[] = [
     'sop_rejected',
     'backup_s3_failed',
     'integrity_check_failed',
-    'break_glass_used'
+    'break_glass_used',
+    'audit_anchor_failed',
+    'audit_anchoring_changed',
+    'backup_restored'
 ];
 
 function parseEvents(fd: FormData): IntegrationEvent[] {

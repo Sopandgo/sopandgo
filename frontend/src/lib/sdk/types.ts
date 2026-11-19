@@ -138,6 +138,106 @@ export interface AdminIntegrity {
     audit: AdminAuditIntegritySection;
     versions: AdminSOPIntegritySection;
     assets: AdminSOPIntegritySection;
+    /** Present once audit anchoring has been used. */
+    anchoring?: AnchorCheckReport;
+}
+
+export type AnchorFindingStatus =
+    | 'tampered'
+    | 'bad_receipt'
+    | 'missing_from_server'
+    | 'receipt_differs'
+    | 'not_uploaded'
+    | 'replaced_by_restore';
+
+export interface AnchorFinding {
+    source: 'server' | 's3';
+    event_id: number;
+    tip_hash: string;
+    gen_time?: string;
+    s3_key?: string;
+    status: AnchorFindingStatus;
+    /** problem fails the scan; explained needs review; warning weakens protection. */
+    severity: 'problem' | 'explained' | 'warning';
+    detail: string;
+}
+
+export interface AuditChainFailure {
+    event_id: number;
+    error: string;
+}
+
+export interface AnchorCheckReport {
+    enabled: boolean;
+    anchors: number;
+    s3_receipts: number;
+    ok: number;
+    problems: number;
+    explained: number;
+    warnings: number;
+    findings: AnchorFinding[];
+    known_broken: AuditChainFailure[];
+    object_lock?: boolean;
+    s3_error?: string;
+}
+
+export interface AuditAnchor {
+    id: number;
+    event_id: number;
+    tip_hash: string;
+    hash_version: number;
+    gen_time: string;
+    tsa_url: string;
+    s3_key: string;
+    created_at: string;
+}
+
+export type AuditAnchoringAuth = 'none' | 'basic' | 'bearer';
+
+export interface AuditAnchoringStatus {
+    enabled: boolean;
+    tsa_url: string;
+    auth_type: AuditAnchoringAuth;
+    username: string;
+    secret_set: boolean;
+    /** Go duration, e.g. `1h0m0s`. */
+    interval: string;
+    fingerprint?: string;
+    subject?: string;
+    instance_id?: string;
+    /** Unknown until anchoring was switched on or a scan ran. */
+    object_lock?: boolean;
+    last_anchor?: AuditAnchor;
+    anchors: number;
+    pending_uploads: number;
+    last_attempt_utc?: string;
+    last_error?: string;
+    next_run_utc?: string;
+}
+
+export interface AuditAnchoringInput {
+    enabled: boolean;
+    tsa_url: string;
+    auth_type: AuditAnchoringAuth;
+    username: string;
+    /** Empty keeps the stored password or token. */
+    secret: string;
+    interval: string;
+    /** For TSAs that send only their own certificate. */
+    pinned_ca_pem?: string;
+    repin?: boolean;
+    confirm_fingerprint?: string;
+    accept_broken?: number[];
+}
+
+/** What a test request to the TSA found; shown for the admin to confirm. */
+export interface AuditAnchoringProbe {
+    fingerprint: string;
+    subject: string;
+    pinned_ca_pem: string;
+    object_lock: boolean;
+    broken_rows: AuditChainFailure[];
+    already_known: number;
 }
 
 export interface SOPAsset {
@@ -302,7 +402,10 @@ export type IntegrationEvent =
     | 'sop_rejected'
     | 'backup_s3_failed'
     | 'integrity_check_failed'
-    | 'break_glass_used';
+    | 'break_glass_used'
+    | 'audit_anchor_failed'
+    | 'audit_anchoring_changed'
+    | 'backup_restored';
 
 export interface PublicIntegrationChannel {
     enabled: boolean;

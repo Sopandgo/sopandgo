@@ -75,6 +75,14 @@ const (
 	EventBrandingLogoUpdated          = "branding_logo_updated"
 	EventBrandingLogoRemoved          = "branding_logo_removed"
 	EventBrandingReset                = "branding_reset"
+	EventAuditAnchored                = "audit_anchored"
+	EventAuditAnchorFailed            = "audit_anchor_failed"
+	EventAuditAnchoringEnabled        = "audit_anchoring_enabled"
+	EventAuditAnchoringDisabled       = "audit_anchoring_disabled"
+	EventAuditAnchoringUpdated        = "audit_anchoring_settings_updated"
+	EventIntegrityBaseline            = "integrity_baseline"
+	EventBackupRestored               = "backup_restored"
+	EventAuditEvidenceExported        = "audit_evidence_exported"
 )
 
 var knownEventTypes = map[string]struct{}{
@@ -137,6 +145,14 @@ var knownEventTypes = map[string]struct{}{
 	EventBrandingLogoUpdated:          {},
 	EventBrandingLogoRemoved:          {},
 	EventBrandingReset:                {},
+	EventAuditAnchored:                {},
+	EventAuditAnchorFailed:            {},
+	EventAuditAnchoringEnabled:        {},
+	EventAuditAnchoringDisabled:       {},
+	EventAuditAnchoringUpdated:        {},
+	EventIntegrityBaseline:            {},
+	EventBackupRestored:               {},
+	EventAuditEvidenceExported:        {},
 }
 
 var knownEntityTypes = map[string]struct{}{

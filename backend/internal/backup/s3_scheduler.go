@@ -80,6 +80,12 @@ type s3Target struct {
 	listPrefix string
 }
 
+// NewS3Client builds a client for cfg's bucket. Audit anchoring uses it to
+// write receipts to the same bucket as backups.
+func NewS3Client(ctx context.Context, cfg S3SchedulerConfig) (*s3.Client, error) {
+	return newS3Client(ctx, cfg)
+}
+
 func newS3Client(ctx context.Context, cfg S3SchedulerConfig) (*s3.Client, error) {
 	opts := []func(*config.LoadOptions) error{}
 	if cfg.Region != "" {

@@ -13,6 +13,34 @@ type AuditEvent struct {
 	CreatedAt  time.Time `json:"created_at"`
 	Hash       string    `json:"hash"`
 	PrevHash   string    `json:"prev_hash"`
+	// HashVersion selects the row hash algorithm (see hash.go).
+	HashVersion int `json:"hash_version"`
+
+	// createdAtRaw is created_at exactly as stored, which is what the hash
+	// covers. CreatedAt is the parsed value for display.
+	createdAtRaw string
+}
+
+// CreatedAtRaw returns created_at exactly as stored and hashed.
+func (e AuditEvent) CreatedAtRaw() string { return e.createdAtRaw }
+
+// hashInput returns the fields the row hash covers.
+func (e AuditEvent) hashInput() HashInput {
+	return HashInput{
+		PrevHash:    e.PrevHash,
+		EventType:   e.EventType,
+		EntityType:  e.EntityType,
+		EntityID:    e.EntityID,
+		ActorUserID: e.ActorID,
+		Payload:     e.Payload,
+		CreatedAt:   e.createdAtRaw,
+	}
+}
+
+// rowHashValid recomputes the row hash and compares it with the stored one.
+func (e AuditEvent) rowHashValid() bool {
+	calc, err := ComputeHash(e.HashVersion, e.hashInput())
+	return err == nil && calc == e.Hash
 }
 
 type ListFilters struct {
@@ -38,6 +66,10 @@ type ChainIntegrityReport struct {
 	Valid   int
 	Invalid int
 	Failed  []ChainFailure
+	// TipID and TipHash are the last row checked (0 and GenesisHash when the
+	// range was empty).
+	TipID   int64
+	TipHash string
 }
 
 type ChainFailure struct {

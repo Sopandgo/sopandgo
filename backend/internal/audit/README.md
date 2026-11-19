@@ -29,6 +29,7 @@ It is designed to participate in transactions owned by other packages (`auth`, `
 | **`audit.go`** | Logger API | `New`, `Log`, `List`, `ListFilterOptions` |
 | **`store.go`** | SQL + hashing | `insertEventRecord`, `listEventsRecord` |
 | **`model.go`** | Types | `AuditEvent`, `ListFilters` |
+| **`hash.go`** | Row hash versions | `ComputeHash`, `HashV1`, `HashV2` |
 
 ## Usage Examples
 
@@ -75,8 +76,17 @@ The HTTP API only **lists** logs (`GET /api/admin/audit-logs`). There is no publ
 
 ## Integrity Algorithm
 
-At insert time:
+Each row stores `hash_version` (`hash.go`, `ComputeHash`). New rows are written with version 2.
 
-`CurrentHash = SHA256( PrevHash + EventType + EntityID + PayloadJSON + CreatedAt )`
+* **Version 2:** `SHA256( "sopandgo-audit-v2" + for each of PrevHash, EventType, EntityType, EntityID, ActorUserID ("" when NULL), PayloadJSON, CreatedAt: uint32 big-endian byte length + bytes )`.
+* **Version 1** (rows from before migration v30): `SHA256( PrevHash + EventType + EntityID + PayloadJSON + CreatedAt )`, plain concatenation. It does not cover `entity_type` or `actor_user_id`.
 
-The record **ID is not** part of the hash input. The first record uses a fixed genesis `PrevHash`.
+The record **ID is not** part of the hash input. The first record uses `GenesisHash` (64 `0` characters) as `PrevHash`. `CreatedAt` is hashed exactly as stored.
+
+The algorithm is a public contract: auditors recompute it from an evidence bundle with `docs/ops/verify_anchors.py`, and `hash_test.go` holds the shared reference vectors. Never change an existing version; add a new one.
+
+## Verification helpers
+
+* **`VerifyEntireChain`:** walks every row and reports `broken_chain_link` and `hash_mismatch`.
+* **`VerifySince(id, hash)`:** checks that row `id` still has `hash`, then walks only the rows after it. Returns `ErrAnchorMoved` when the anchored row changed or is gone. The anchor package uses it before each anchor.
+* **`Tip`** and **`ChainEvents`:** the newest row, and all rows in chain order (with `CreatedAtRaw()` exactly as hashed), for anchoring and evidence export.

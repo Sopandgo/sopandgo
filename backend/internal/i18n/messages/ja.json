@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "バージョン {version} が却下されました。",
   "notify.reason": "理由: {reason}",
   "notify.integrity.title": "整合性チェック失敗",
-  "notify.integrity.message": "システム整合性チェックで失敗が報告されました（無効なバージョン={versions}、無効な添付={assets}、無効な監査={audit}）。",
+  "notify.integrity.message": "システム整合性チェックで失敗が報告されました（無効なバージョン={versions}、無効な添付={assets}、無効な監査={audit}、問題のあるアンカー={anchors}）。",
   "notify.backup_failed.title": "S3 バックアップ失敗",
   "notify.test.title": "{app_name} テスト通知",
   "notify.test.message": "これを受け取った場合、{channel} 連携は正しく設定されています。",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "{app_name} のサインインコード",
   "mail.two_factor_code.body": "{name} 様\n\nサインインコードは次のとおりです。\n\n{code}\n\nこのコードは 1 回だけ使用でき、10 分で期限切れになります。\n\nサインインを試みていない場合は、パスワードを変更し、管理者に連絡してください。\n\n{app_name} チーム",
   "notify.break_glass.title": "サーバー上で管理者のサインインがリセットされました",
-  "notify.break_glass.message": "recover-admin コマンドがホスト {hostname} で {email} のサインインをリセットしました。チームの誰も実行していない場合は、監査ログを確認してください。"
+  "notify.break_glass.message": "recover-admin コマンドがホスト {hostname} で {email} のサインインをリセットしました。チームの誰も実行していない場合は、監査ログを確認してください。",
+  "notify.anchor_failed.title": "監査アンカリングに失敗しました",
+  "notify.anchoring_changed.title": "監査アンカリングの設定が変更されました",
+  "notify.backup_restored.title": "バックアップを復元しました：監査ログが置き換えられました",
+  "notify.backup_restored.message": "バックアップの復元により監査ログが置き換えられました。{archive_tip} より後（{old_tip} まで）の行が置き換えられています。整合性チェックでは、復元前に取得されたアンカーが確認用に表示されます。"
 }

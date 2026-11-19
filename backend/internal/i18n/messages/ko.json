@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "버전 {version}이(가) 거부되었습니다.",
   "notify.reason": "사유: {reason}",
   "notify.integrity.title": "무결성 검사 실패",
-  "notify.integrity.message": "시스템 무결성 검사가 실패를 보고했습니다(잘못된 버전={versions}, 잘못된 첨부={assets}, 잘못된 감사={audit}).",
+  "notify.integrity.message": "시스템 무결성 검사가 실패를 보고했습니다(잘못된 버전={versions}, 잘못된 첨부={assets}, 잘못된 감사={audit}, 문제가 있는 앵커={anchors}).",
   "notify.backup_failed.title": "S3 백업 실패",
   "notify.test.title": "{app_name} 테스트 알림",
   "notify.test.message": "이 메시지를 받으셨다면 {channel} 연동이 올바르게 구성된 것입니다.",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "{app_name} 로그인 코드",
   "mail.two_factor_code.body": "{name}님, 안녕하세요.\n\n로그인 코드는 다음과 같습니다.\n\n{code}\n\n이 코드는 한 번만 사용할 수 있으며 10분 후에 만료됩니다.\n\n로그인을 시도하지 않았다면 비밀번호를 변경하고 관리자에게 알려 주세요.\n\n{app_name} 팀 드림",
   "notify.break_glass.title": "서버에서 관리자 로그인이 재설정되었습니다",
-  "notify.break_glass.message": "recover-admin 명령이 호스트 {hostname}에서 {email}의 로그인을 재설정했습니다. 팀에서 아무도 이 작업을 하지 않았다면 감사 로그를 확인하세요."
+  "notify.break_glass.message": "recover-admin 명령이 호스트 {hostname}에서 {email}의 로그인을 재설정했습니다. 팀에서 아무도 이 작업을 하지 않았다면 감사 로그를 확인하세요.",
+  "notify.anchor_failed.title": "감사 앵커링 실패",
+  "notify.anchoring_changed.title": "감사 앵커링 설정이 변경됨",
+  "notify.backup_restored.title": "백업 복원됨: 감사 로그가 교체됨",
+  "notify.backup_restored.message": "백업 복원으로 감사 로그가 교체되었습니다. {archive_tip} 이후({old_tip}까지)의 행이 교체되었습니다. 무결성 검사에서 복원 전에 만든 앵커를 검토용으로 보여 줍니다."
 }

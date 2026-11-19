@@ -73,6 +73,8 @@ Six short sample SOPs, each tagged *Demo* plus topic tags (*Molecular Biology*, 
 
 You do not need real SMTP for a first look: with no email transport switched on, inviting another user gives you a **manual link** to share.
 
+To try audit anchoring, you need an S3 bucket and outbound internet access. A local MinIO works for the bucket: create it with Object Lock enabled, for example `mc mb --with-lock local/sopandgo-trial`. Save it under **Settings → Backup** with the MinIO endpoint and path-style addressing. Then open **Settings → Audit anchoring** and enter a public TSA such as `https://freetsa.org/tsr`. Confirm the certificate fingerprint and choose **Anchor now**. Under **Integrity**, run the check and download the evidence bundle. [Verifying audit anchors](./verifying-anchors.md) shows how to check it with OpenSSL and the bundled script. Only a hash is sent to the TSA, never demo data.
+
 To try two-factor authentication, set `SECRET_ENCRYPTION_KEY` in `.env` and restart, then set it up under **Account settings** with any authenticator app. As admin, keep the recovery codes; if you lock yourself out of a trial anyway, run `docker compose exec sopandgo ./sopandgo recover-admin --email admin`.
 
 Before sign-in, the top bar has a language menu and a light/dark toggle. Supported locales include English, German, French, Spanish, Portuguese, Chinese, Italian, Dutch, Polish, Japanese, Korean, Turkish, Swedish, Czech, and Slovak. The appearance choice stays in the browser until sign-in. After sign-in, the avatar menu at the top right switches appearance (light, dark, or system) and links to **Account settings** (`/profile/settings`), where you can also change your language and set a profile picture (crop, then upload). Admins set the organization language on **Settings**; that language is used for shared notifications and PDF chrome. The seeded sample SOPs stay in the English Markdown they were written in.
@@ -86,5 +88,6 @@ Before sign-in, the top bar has a language menu and a light/dark toggle. Support
 
 - [Deployment](./deployment.md) — environment variables and day-two ops
 - [Security model](../concepts/security-model.md) — auth and invitation assumptions
+- [Verifying audit anchors](./verifying-anchors.md) — checking the audit log against TSA receipts
 - [Versioning and signatures](../concepts/versioning-and-signatures.md) — draft → RC → published
 - [Home dashboard](../concepts/home-dashboard.md) — what the landing page after login shows

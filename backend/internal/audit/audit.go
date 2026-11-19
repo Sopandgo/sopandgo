@@ -1,14 +1,12 @@
 package audit
 
 import (
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
-	"time"
 )
 
 type Logger struct {
@@ -108,25 +106,8 @@ func (l *Logger) List(limit, offset int, filters ListFilters) ([]AuditEventWithV
 	for i, raw := range rawEvents {
 		verifiedEvents[i] = AuditEventWithVerification{
 			AuditEvent: raw,
+			HashValid:  raw.rowHashValid(),
 		}
-
-		// 2. Format the timestamp EXACTLY as it was stored
-		createdAtStr := raw.CreatedAt.UTC().Format(time.RFC3339Nano)
-
-		// 3. Reconstruct the hash recipe
-		// Order must be: PrevHash + EventType + EntityID + Payload + CreatedAt
-		recordToHash := raw.PrevHash +
-			raw.EventType +
-			raw.EntityID +
-			raw.Payload +
-			createdAtStr
-
-		hasher := sha256.New()
-		hasher.Write([]byte(recordToHash))
-		calculatedHash := hex.EncodeToString(hasher.Sum(nil))
-
-		// 4. Compare
-		verifiedEvents[i].HashValid = (calculatedHash == raw.Hash)
 	}
 
 	return verifiedEvents, total, nil
@@ -136,45 +117,76 @@ func (l *Logger) ListFilterOptions() (FilterOptions, error) {
 	return listDistinctAuditTypesRecord(l.db)
 }
 
-// audit.go
-
 // VerifyEntireChain reads the audit log sequentially to ensure no links are broken.
 // It returns a detailed report of the chain's health.
 func (l *Logger) VerifyEntireChain() (ChainIntegrityReport, error) {
-	events, err := listAllEventsAscRecord(l.db)
+	events, err := listEventsAscRecord(l.db, 0)
 	if err != nil {
 		return ChainIntegrityReport{}, err
 	}
+	return verifyEvents(events, GenesisHash), nil
+}
 
-	report := ChainIntegrityReport{}
-	expectedPrevHash := GenesisHash
+// ErrAnchorMoved means the row an anchor points at no longer has the hash that
+// was anchored, or no longer exists.
+var ErrAnchorMoved = errors.New("audit: anchored row changed or missing")
+
+// VerifySince checks the chain after an anchored row: that row id still has
+// hash, every later row links to the one before it, and every later row hash
+// recomputes. afterID 0 with GenesisHash checks the whole chain.
+func (l *Logger) VerifySince(afterID int64, hash string) (ChainIntegrityReport, error) {
+	if afterID > 0 {
+		stored, err := eventHashRecord(l.db, afterID)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ChainIntegrityReport{}, ErrAnchorMoved
+		}
+		if err != nil {
+			return ChainIntegrityReport{}, err
+		}
+		if stored != hash {
+			return ChainIntegrityReport{}, ErrAnchorMoved
+		}
+	}
+	events, err := listEventsAscRecord(l.db, afterID)
+	if err != nil {
+		return ChainIntegrityReport{}, err
+	}
+	report := verifyEvents(events, hash)
+	if report.Checked == 0 {
+		report.TipID, report.TipHash = afterID, hash
+	}
+	return report, nil
+}
+
+// Tip returns the newest event's id and hash, or (0, GenesisHash) when the
+// log is empty.
+func (l *Logger) Tip() (int64, string, error) {
+	return tipRecord(l.db)
+}
+
+// ChainEvents returns every event in chain order, for verification and export.
+func (l *Logger) ChainEvents() ([]AuditEvent, error) {
+	return listEventsAscRecord(l.db, 0)
+}
+
+// verifyEvents walks events in id order starting from expectedPrevHash.
+func verifyEvents(events []AuditEvent, expectedPrevHash string) ChainIntegrityReport {
+	report := ChainIntegrityReport{TipHash: expectedPrevHash}
 
 	for _, ev := range events {
 		report.Checked++
-		rowValid := true
 		var errMsg string
 
-		// A. Check if the chain link is broken
+		// A. Check if the chain link is broken, then B. whether the row's own
+		// hash was tampered with.
 		if ev.PrevHash != expectedPrevHash {
-			rowValid = false
 			errMsg = "broken_chain_link"
-		} else {
-			// B. Verify the row's internal hash hasn't been tampered with
-			createdAtStr := ev.CreatedAt.UTC().Format(time.RFC3339Nano)
-			recordToHash := ev.PrevHash + ev.EventType + ev.EntityID + ev.Payload + createdAtStr
-
-			hasher := sha256.New()
-			hasher.Write([]byte(recordToHash))
-			calcHash := hex.EncodeToString(hasher.Sum(nil))
-
-			if calcHash != ev.Hash {
-				rowValid = false
-				errMsg = "hash_mismatch"
-			}
+		} else if !ev.rowHashValid() {
+			errMsg = "hash_mismatch"
 		}
 
 		// C. Tally the results
-		if rowValid {
+		if errMsg == "" {
 			report.Valid++
 		} else {
 			report.Invalid++
@@ -184,10 +196,12 @@ func (l *Logger) VerifyEntireChain() (ChainIntegrityReport, error) {
 			})
 		}
 
-		// D. Resync! The current row's stored hash becomes the expected prev_hash
-		// for the next iteration, even if this row was tampered with. This prevents cascading failures.
+		// D. Resync: the current row's stored hash becomes the expected
+		// prev_hash for the next row even if this row was tampered with, so one
+		// edit does not cascade into failures for every later row.
 		expectedPrevHash = ev.Hash
+		report.TipID, report.TipHash = ev.ID, ev.Hash
 	}
 
-	return report, nil
+	return report
 }

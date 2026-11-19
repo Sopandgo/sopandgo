@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sopandgo/sopandgo/backend/internal/anchor"
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
@@ -32,6 +33,7 @@ type Server struct {
 	s3Settings          *backup.S3SettingsStore
 	s3Backup            *backup.S3Scheduler
 	brandingService     *branding.Service
+	anchoring           *anchor.Service // nil until SetAuditAnchoring
 	// twoFactorLimiter is keyed by user, not IP, so second-factor guesses
 	// spread over many addresses still hit a ceiling.
 	twoFactorLimiter *IPRateLimiter
@@ -250,6 +252,23 @@ func (s *Server) registerRoutes() {
 	//admin/integrity
 	s.mux.HandleFunc("GET /api/admin/integrity", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminIntegrity)),
+	)
+
+	// admin/audit-anchoring (external anchoring of the audit chain)
+	s.mux.HandleFunc("GET /api/admin/audit-anchoring", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminGetAuditAnchoring)),
+	)
+	s.mux.HandleFunc("PUT /api/admin/audit-anchoring", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutAuditAnchoring)),
+	)
+	s.mux.HandleFunc("POST /api/admin/audit-anchoring/probe", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminProbeAuditAnchoring)),
+	)
+	s.mux.HandleFunc("POST /api/admin/audit-anchoring/run", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminRunAuditAnchoring)),
+	)
+	s.mux.HandleFunc("GET /api/admin/audit-anchoring/bundle", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminAuditEvidenceBundle)),
 	)
 
 	// admin / email (SMTP + optional Resend)

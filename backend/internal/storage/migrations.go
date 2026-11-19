@@ -613,6 +613,56 @@ var migrations = []migration{
 			return err
 		},
 	},
+	// v30: audit row hash version. Existing rows keep version 1 (the original
+	// hash, which does not cover entity_type or actor_user_id). New rows are
+	// written with version 2; see backend/internal/audit/hash.go.
+	{
+		version: 30,
+		up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`
+				ALTER TABLE audit_events ADD COLUMN hash_version INTEGER NOT NULL DEFAULT 1;
+			`)
+			return err
+		},
+	},
+	// v31: external anchoring of the audit chain (one settings row) and the
+	// RFC 3161 receipts it collects. tsr is the TSA's DER TimeStampResp;
+	// tsa_ca_pem is the CA it was verified against when it was taken.
+	// s3_key is empty until the receipt has been copied to S3.
+	{
+		version: 31,
+		up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`
+				CREATE TABLE audit_anchoring_settings (
+					id INTEGER PRIMARY KEY CHECK (id = 1),
+					enabled INTEGER NOT NULL DEFAULT 0,
+					tsa_url TEXT NOT NULL DEFAULT '',
+					auth_type TEXT NOT NULL DEFAULT 'none',
+					username TEXT NOT NULL DEFAULT '',
+					secret_enc BLOB,
+					interval TEXT NOT NULL DEFAULT '1h',
+					pinned_ca_pem TEXT NOT NULL DEFAULT '',
+					instance_id TEXT NOT NULL DEFAULT '',
+					updated_at TEXT NOT NULL
+				);
+
+				CREATE TABLE audit_anchors (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					event_id INTEGER NOT NULL,
+					tip_hash TEXT NOT NULL,
+					hash_version INTEGER NOT NULL,
+					tsr BLOB NOT NULL,
+					gen_time TEXT NOT NULL,
+					tsa_url TEXT NOT NULL,
+					tsa_ca_pem TEXT NOT NULL,
+					s3_key TEXT NOT NULL DEFAULT '',
+					created_at TEXT NOT NULL,
+					UNIQUE (event_id, tip_hash)
+				);
+			`)
+			return err
+		},
+	},
 }
 
 func LatestSchemaVersion() int {

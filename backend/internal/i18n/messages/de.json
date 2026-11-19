@@ -19,7 +19,7 @@
   "notify.sop_rejected.message": "Version {version} wurde abgelehnt.",
   "notify.reason": "Grund: {reason}",
   "notify.integrity.title": "Integritätsprüfung fehlgeschlagen",
-  "notify.integrity.message": "Die Systemintegritätsprüfung hat Fehler gemeldet (Versionen ungültig={versions}, Anhänge ungültig={assets}, Audit ungültig={audit}).",
+  "notify.integrity.message": "Die Systemintegritätsprüfung hat Fehler gemeldet (Versionen ungültig={versions}, Anhänge ungültig={assets}, Audit ungültig={audit}, Verankerungen mit Problemen={anchors}).",
   "notify.backup_failed.title": "S3-Backup fehlgeschlagen",
   "notify.test.title": "{app_name}-Testbenachrichtigung",
   "notify.test.message": "Wenn du das siehst, ist die {channel}-Integration korrekt eingerichtet.",
@@ -41,5 +41,9 @@
   "mail.two_factor_code.subject": "Dein {app_name}-Anmeldecode",
   "mail.two_factor_code.body": "Hallo {name},\n\ndein Anmeldecode lautet:\n\n{code}\n\nEr gilt einmal und läuft in 10 Minuten ab.\n\nWenn du dich nicht anmelden wolltest, ändere dein Passwort und informiere deine Administration.\n\nViele Grüße\nDas {app_name}-Team",
   "notify.break_glass.title": "Admin-Anmeldung auf dem Server zurückgesetzt",
-  "notify.break_glass.message": "Der Befehl recover-admin hat die Anmeldung von {email} auf dem Host {hostname} zurückgesetzt. Falls das niemand aus deinem Team war, prüfe das Audit-Log."
+  "notify.break_glass.message": "Der Befehl recover-admin hat die Anmeldung von {email} auf dem Host {hostname} zurückgesetzt. Falls das niemand aus deinem Team war, prüfe das Audit-Log.",
+  "notify.anchor_failed.title": "Audit-Verankerung fehlgeschlagen",
+  "notify.anchoring_changed.title": "Einstellungen der Audit-Verankerung geändert",
+  "notify.backup_restored.title": "Sicherung wiederhergestellt: Audit-Protokoll ersetzt",
+  "notify.backup_restored.message": "Eine Wiederherstellung hat das Audit-Protokoll ersetzt. Einträge nach {archive_tip} (bis {old_tip}) wurden ersetzt. Die Integritätsprüfung listet Verankerungen von vor der Wiederherstellung zur Prüfung auf."
 }

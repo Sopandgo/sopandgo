@@ -144,7 +144,19 @@ SOPandGO distinguishes between **content** and **metadata**:
 - **Referential Integrity:** Every database connection enforces foreign keys, so a new acknowledgment, lifecycle state or audit entry cannot point at a user, SOP or version that does not exist. Older releases enforced them on only one pooled connection, and SQLite does not re-check existing rows. At startup the backend logs a `WARNING` for each table that still holds such orphan rows. It does not repair them or refuse to start.
 - **Proactive Verification of SOPs:** The Service Layer re-verifies SHA-256 hashes during retrieval of full SOP summaries and Audit Logs to ensure that what the user sees is exactly what was originally committed to disk.
 - **On-Demand Checks:** Any signed-in user can re-check a single version or asset file from the SOP pages. The result is one of **verified** (hash matches), **hash mismatch** (hash differs), **missing** (file gone from disk), or **couldn't check** (the check itself failed). The check only answers for the SOP named in the request path; an asset or version from another SOP returns 404.
-- **System Scan:** Admins can run a full scan at **Admin → Integrity** (`/admin/integrity`). It re-hashes every version and asset and verifies the audit hash chain. Each run is written to the audit log, and a failed run sends `integrity_check_failed` to enabled integrations. The scan runs only when an admin starts it; nothing schedules it.
+- **System Scan:** Admins can run a full scan at **Admin → Integrity** (`/admin/integrity`). It re-hashes every version and asset and verifies the audit hash chain. When audit anchoring is used, it also checks every anchor receipt (see below). Each run is written to the audit log, and a failed run sends `integrity_check_failed` to enabled integrations. The scan runs only when an admin starts it; nothing schedules it.
+- **What the row hash covers:** rows written since migration v30 (hash version 2) cover the event type, entity type, entity ID, actor, payload, time, and the previous row's hash, as length-prefixed fields. Older rows (version 1) do not cover the entity type or the actor, so who performed an older action is not protected by the chain. Events that create a SOP version, add an asset, or record an acknowledgment carry the content hash of the file, so the chain also commits to SOP content.
+
+## External anchoring of the audit log
+
+A hash chain catches an edited row, but not someone who rewrites the database and recomputes every hash after the edit. With **Settings → Audit anchoring** switched on, a Time Stamping Authority (TSA) signs the newest chain hash at a set interval (RFC 3161). The receipt is kept on the server and copied to the S3 bucket from **Settings → Backup**. After that, a rewrite of anything before the newest receipt is detectable. An auditor can check this without trusting the server: see [Verifying audit anchors](../ops/verifying-anchors.md).
+
+- **Off by default and admin-controlled.** Only the 32-byte hash leaves the server. Every switch-on, switch-off, and change is audited and sent to integrations (`audit_anchoring_changed`). Switching off first takes a final anchor.
+- **The receipt copy in S3 is what protects you.** Anyone with a shell on the host can read `SECRET_ENCRYPTION_KEY` and therefore the S3 credentials. Unless the bucket has Object Lock or the key cannot delete, that person can also delete receipts. SOPandGO warns while the bucket reports no Object Lock.
+- **The TSA is trusted.** Receipts must chain to the CA certificate pinned when anchoring was switched on. The admin confirms its fingerprint. Legal weight depends on the TSA: a qualified TSA under eIDAS gives the timestamp a legal presumption of accuracy in the EU. Any other TSA gives technical evidence. 21 CFR Part 11 does not require third-party timestamps; anchoring strengthens audit-trail evidence but is not a Part 11 control by itself.
+- **The newest rows are not covered.** Rows written since the last anchor can still be deleted without trace. The interval (default one hour) sets that window.
+- **Already-broken rows are frozen, not fixed.** If rows fail verification when anchoring is switched on, the admin must confirm them. They are recorded in an `integrity_baseline` event, and later scans report them as known.
+- **Restores are explained, not hidden.** A restore replaces the chain. SOPandGO records the overwritten and the restored tip (`backup_restored`), alerts integrations, and anchors again. The scan then lists receipts that no longer match as *replaced by a restore* for a person to review.
 
 
 ## What SOPandGO protects against
@@ -156,14 +168,14 @@ SOPandGO is designed to reduce risk from:
 - Confusion regarding which SOP version was active at a specific time.
 - Unauthorized viewing of internal SOPs
 - Brute-force credential attacks.
-- Undetected tampering of audit history, although external anchoring is not enforced by SOPandGO yet.
+- Undetected tampering of audit history: the hash chain detects edits, and with audit anchoring switched on, a rewrite of history before the newest TSA receipt is detectable too.
 
 ## What SOPandGO does NOT protect against
 
 SOPandGO does **not** protect against:
 
 - A compromised host operating system on the server.
-- Malicious administrators or users with direct file/database access, although hash chained audit logs make this detectable.
+- Malicious administrators or users with direct file/database access, although hash chained audit logs make this detectable. Without audit anchoring, such a person can rewrite the log and recompute the chain undetected. With anchoring, they can still delete rows written since the last anchor, and receipts in an S3 bucket without Object Lock.
 - Someone with a shell in the container resetting an admin's sign-in with `recover-admin`. This is the intended recovery path; it is audited and alerted, not prevented.
 - Physical access to the server.
 - Institutional network breaches or 'Man-in-the-Middle' attacks between the client and the server. While the internal Caddy instance handles routing, end-to-end encryption depends on the operator correctly configuring external SSL/TLS termination.

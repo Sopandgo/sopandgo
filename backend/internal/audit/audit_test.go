@@ -25,7 +25,8 @@ func setupTestDB(t *testing.T) *sql.DB {
 			payload TEXT,
 			created_at TEXT,
 			hash TEXT,
-			prev_hash TEXT
+			prev_hash TEXT,
+			hash_version INTEGER NOT NULL DEFAULT 1
 		);
 		CREATE TABLE users (
 			id TEXT PRIMARY KEY,

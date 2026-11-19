@@ -29,7 +29,10 @@
         sop_rejected: m.notify_event_rejected(),
         backup_s3_failed: m.notify_event_backup(),
         integrity_check_failed: m.notify_event_integrity(),
-        break_glass_used: m.notify_event_break_glass()
+        break_glass_used: m.notify_event_break_glass(),
+        audit_anchor_failed: m.notify_event_anchor_failed(),
+        audit_anchoring_changed: m.notify_event_anchoring_changed(),
+        backup_restored: m.notify_event_backup_restored()
     };
 
     const knownEvents = $derived(
