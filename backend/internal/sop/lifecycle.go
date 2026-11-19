@@ -29,6 +29,9 @@ const (
 
 // transitionRule is one row of the lifecycle table.
 type transitionRule struct {
+	// createsVersion marks the transition that writes a new version. It needs the
+	// request's writeVersion step and names the SOP instead of a version.
+	createsVersion bool
 	// from lists the states the version may be in. Empty for a new version.
 	from []string
 	// refusal is the conflict message when the version is in any other state.
@@ -52,6 +55,7 @@ type transitionRule struct {
 // published, rejected or superseded, and draft → rejected.
 var lifecycleTable = map[transition]transitionRule{
 	transitionCreate: {
+		createsVersion:   true,
 		to:               StateDraft,
 		ackType:          AckTypeAuthor,
 		pendingRCRefusal: "cannot create a new version while a release candidate is pending approval for this SOP",
@@ -132,6 +136,9 @@ func (s *Service) runTransition(req transitionRequest) (transitionResult, error)
 	if strings.TrimSpace(req.actorUserID) == "" {
 		return transitionResult{}, ErrActorRequired
 	}
+	if rule.createsVersion && req.writeVersion == nil {
+		return transitionResult{}, fmt.Errorf("lifecycle transition %q needs a step that writes the version", req.transition)
+	}
 	var reason *string
 	if rule.needsReason {
 		r := strings.TrimSpace(req.reason)
@@ -153,7 +160,7 @@ func (s *Service) runTransition(req transitionRequest) (transitionResult, error)
 	// 1. Load the version and its current state.
 	sopID := req.sopID
 	var current *SOPVersion
-	if req.transition != transitionCreate {
+	if !rule.createsVersion {
 		current, err = getSOPVersionByIDRecord(tx, req.versionID)
 		if err != nil {
 			return transitionResult{}, err
@@ -188,7 +195,7 @@ func (s *Service) runTransition(req transitionRequest) (transitionResult, error)
 		result.versionNumber = current.Version
 	}
 
-	if req.transition == transitionCreate {
+	if rule.createsVersion {
 		created, err := req.writeVersion(tx)
 		if err != nil {
 			return transitionResult{}, err

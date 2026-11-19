@@ -280,7 +280,7 @@ func (s *Server) handleDownloadSOPVersionPDF(w http.ResponseWriter, r *http.Requ
 
 // writeLifecycleError answers a failed promote, approve or reject. The SOP service
 // owns the lifecycle rules; the handler only maps its errors to status codes.
-func writeLifecycleError(w http.ResponseWriter, err error, action, versionID string) {
+func writeLifecycleError(w http.ResponseWriter, err error, action, versionID, failMsg string) {
 	msg := err.Error()
 	switch {
 	case errors.Is(err, sop.ErrSOPArchived):
@@ -293,7 +293,7 @@ func writeLifecycleError(w http.ResponseWriter, err error, action, versionID str
 		http.Error(w, "Version not found", http.StatusNotFound)
 	default:
 		log.Printf("ERROR: %s version %s failed: %v", action, versionID, err)
-		http.Error(w, "Failed to "+action+" version", http.StatusInternalServerError)
+		http.Error(w, failMsg, http.StatusInternalServerError)
 	}
 }
 
@@ -315,7 +315,7 @@ func (s *Server) handlePromoteSOPVersion(w http.ResponseWriter, r *http.Request)
 
 	actorID := GetUserID(r.Context())
 	if err := s.sopService.PromoteSOPVersion(versionID, actorID); err != nil {
-		writeLifecycleError(w, err, "promote", versionID)
+		writeLifecycleError(w, err, "promote", versionID, "Failed to promote version")
 		return
 	}
 
@@ -336,7 +336,7 @@ func (s *Server) handleApproveSOPVersion(w http.ResponseWriter, r *http.Request)
 	// The service publishes, records the approver signature and supersedes the old version.
 	ackID, err := s.sopService.ApproveSOPVersion(versionID, actorID)
 	if err != nil {
-		writeLifecycleError(w, err, "approve", versionID)
+		writeLifecycleError(w, err, "approve", versionID, "Failed to approve and publish SOP")
 		return
 	}
 
@@ -369,7 +369,7 @@ func (s *Server) handleRejectSOPVersion(w http.ResponseWriter, r *http.Request) 
 
 	actorID := GetUserID(r.Context())
 	if err := s.sopService.RejectSOPVersion(versionID, actorID, reason); err != nil {
-		writeLifecycleError(w, err, "reject", versionID)
+		writeLifecycleError(w, err, "reject", versionID, "Failed to reject version")
 		return
 	}
 

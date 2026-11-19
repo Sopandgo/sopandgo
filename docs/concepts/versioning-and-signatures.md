@@ -59,7 +59,7 @@ draft  --promote-->  rc  --approve-->  published
 
 API (scopes abbreviated):
 
-- `POST /api/sops/{sopID}` — create a **draft** (`sop:write`); requires `change_summary`
+- `POST /api/sops/{sopID}` — create a **draft** (`sop:write`); requires `change_summary`; **404** if the SOP does not exist, **409** while a release candidate is pending for it
 - `POST .../versions/{id}/promote` — draft → RC (`sop:write`); **404** if the version does not exist, **409** if it is not a draft or another RC is pending for the SOP
 - `POST .../versions/{id}/approve` — RC → published (`sop:sign:approver`); returns `{"id"}` (approver ack); **404** if the version does not exist, **409** if it is not an RC
 - `POST .../versions/{id}/reject` — body `{"reason"}` required, at most 500 characters (`sop:sign:approver`); **400** if it is missing or too long, **404** if the version does not exist, **409** if it is not an RC
