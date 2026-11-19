@@ -38,7 +38,7 @@ Login (password verify + session create) is orchestrated in the **API** layer (`
 | **`token.go`** | PASETO access tokens and 2FA challenge tokens | `GenerateAccessToken`, `GenerateTwoFactorChallenge` |
 | **`rbac.go`** | Role → scopes | `HasScope` |
 | **`bootstrap.go`** | Default admin | `EnsureAdminUser` |
-| **`model.go`** | Types and constants | `User` (includes `has_avatar`, `avatar_content_hash`), `Session`, `ScopeAdminTools` (`admin:integrity`) |
+| **`model.go`** | Types and constants | `User` (includes `has_avatar`, `avatar_content_hash`), `PublicUser` (how other users appear outside user administration: id, display name, avatar), `Session`, `ScopeAdminTools` (`admin:integrity`) |
 
 ## Usage Examples
 

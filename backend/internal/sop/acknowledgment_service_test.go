@@ -127,17 +127,17 @@ func TestService_GetAcknowledgments(t *testing.T) {
 		t.Errorf("Expected 3 detailed acks, got %d", len(detailedAcks))
 	}
 
-	// Verify the SQL JOIN actually mapped the user email into the nested struct correctly
-	foundReaderEmail := false
+	// Verify the SQL JOIN mapped the signer into the nested public user
+	foundReader := false
 	for _, ack := range detailedAcks {
 		if ack.UserID == readerID {
-			foundReaderEmail = true
-			if ack.User.Email != "reader200@demo.local" {
-				t.Errorf("SQL JOIN failed: Expected email 'reader200@demo.local', got %q", ack.User.Email)
+			foundReader = true
+			if ack.User.ID != readerID || ack.User.DisplayName == "" {
+				t.Errorf("SQL JOIN failed: got user %+v", ack.User)
 			}
 		}
 	}
-	if !foundReaderEmail {
+	if !foundReader {
 		t.Error("Did not find the reader's detailed acknowledgment in the JOIN results")
 	}
 }

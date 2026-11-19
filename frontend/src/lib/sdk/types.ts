@@ -99,8 +99,22 @@ export interface Acknowledgment {
     created_at: string;
 }
 
+/**
+ * Another user as non-admin responses show them: id, name and picture only.
+ * Field names match `User`.
+ */
+export interface PublicUser {
+    /** UUID v4 */
+    id: string;
+    display_name: string;
+    /** True when the user has uploaded a profile picture */
+    has_avatar: boolean;
+    /** Content hash of the current picture; use as a cache-busting `v` value */
+    avatar_content_hash?: string;
+}
+
 export interface AcknowledgmentWithUser extends Acknowledgment {
-    user: User;
+    user: PublicUser;
 }
 
 // 1. Define the specific failure shapes

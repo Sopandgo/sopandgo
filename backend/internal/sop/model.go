@@ -193,7 +193,8 @@ type SOPAcknowledgmentWithUser struct {
 	UserID             string    `json:"user_id"`
 	AcknowledgmentType string    `json:"ack_type"`
 	CreatedAt          time.Time `json:"created_at"`
-	User               auth.User `json:"user"`
+	// User is the signer by public fields only.
+	User auth.PublicUser `json:"user"`
 }
 
 // Acknowledgment Types
