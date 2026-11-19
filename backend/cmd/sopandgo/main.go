@@ -181,7 +181,7 @@ func main() {
 
 	// Scheduled S3 backups: configured under Settings → Backup, applied without a restart.
 	s3Settings := backup.NewS3SettingsStore(store.DB, encKey)
-	s3Scheduler := backup.NewS3Scheduler(backupService, auditLogger)
+	s3Scheduler := backup.NewS3Scheduler(backupService, s3Settings, s3Settings.OpenObjectStore, auditLogger)
 	s3Scheduler.SetOnFailure(func(c context.Context, failErr error) {
 		notifyService.Dispatch(c, notify.Event{
 			Type:    notify.EventBackupS3Failed,
@@ -189,9 +189,7 @@ func main() {
 			Message: failErr.Error(),
 		})
 	})
-	if s3Cfg, err := s3Settings.LoadConfig(); err != nil {
-		log.Printf("WARNING: S3 backups stay off until the settings are saved again: %v", err)
-	} else if err := s3Scheduler.Configure(ctx, s3Cfg); err != nil {
+	if s3Cfg, err := s3Scheduler.LoadSaved(); err != nil {
 		log.Printf("WARNING: S3 backups stay off until the settings are saved again: %v", err)
 	} else if s3Cfg.Enabled {
 		log.Printf("S3 automatic backups enabled: bucket=%s key_prefix=%s interval=%s",
@@ -201,7 +199,7 @@ func main() {
 	backupService.AddStageHook(anchor.WriteCarryOver)
 
 	// External anchoring of the audit chain: configured under Settings → Backup.
-	anchorService := anchor.NewService(anchor.NewStore(store.DB, encKey), auditLogger, anchor.S3Opener(s3Settings), nil)
+	anchorService := anchor.NewService(anchor.NewStore(store.DB, encKey), auditLogger, s3Settings.OpenObjectStore, nil)
 	anchorService.SetOnFailure(func(c context.Context, failErr error) {
 		notifyService.Dispatch(c, notify.Event{
 			Type:    notify.EventAuditAnchorFailed,
@@ -266,8 +264,8 @@ func main() {
 	apiServer.SetAuditAnchoring(anchorService)
 	log.Println("backend initialized successfully")
 
-	s3Scheduler.Start(ctx)
-	anchorService.Start(ctx)
+	go s3Scheduler.Start(ctx)
+	go anchorService.Start(ctx)
 
 	// Run the HTTP server in a separate goroutine so it doesn't block the main thread.
 	// This allows the main thread to listen for the shutdown signal below.

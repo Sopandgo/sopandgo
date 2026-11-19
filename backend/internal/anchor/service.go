@@ -1,6 +1,7 @@
 package anchor
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"encoding/hex"
@@ -14,11 +15,16 @@ import (
 	"time"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/backup"
+	"github.com/sopandgo/sopandgo/backend/internal/objectstore"
+	"github.com/sopandgo/sopandgo/backend/internal/schedule"
 )
 
 var (
 	// ErrNotEnabled is returned by AnchorNow when anchoring is off.
 	ErrNotEnabled = errors.New("audit anchoring is off")
+	// ErrS3NotConfigured means no S3 bucket is saved under Settings → Backup.
+	ErrS3NotConfigured = errors.New("anchoring needs an S3 bucket: configure one under Settings → Backup")
 	// ErrInvalidSettings wraps every validation failure.
 	ErrInvalidSettings = errors.New("invalid audit anchoring settings")
 )
@@ -46,39 +52,49 @@ type Notice struct {
 }
 
 // Service anchors the audit chain tip with a TSA on a schedule, copies each
-// receipt to S3, and runs the enable, change and disable flows.
+// receipt to S3, and runs the enable, change and disable flows. The schedule
+// package owns timing, backoff, status and failure reporting.
 type Service struct {
 	store      *Store
 	logger     *audit.Logger
-	openStore  OpenObjectStore
+	openStore  objectstore.Opener
 	httpClient *http.Client
+	job        *schedule.Scheduled[*Anchor]
 
 	onFailure func(ctx context.Context, err error)
 	onChange  func(ctx context.Context, n Notice)
 
 	saveMu sync.Mutex // one settings change at a time
-	runMu  sync.Mutex // one anchor run at a time
-	wake   chan struct{}
 
-	mu          sync.Mutex
-	settings    Settings
-	nextRun     time.Time
-	failures    int
-	lastAttempt time.Time
-	lastError   string
-	objectLock  *bool
+	mu         sync.Mutex
+	settings   Settings
+	objectLock *bool
 }
 
 // NewService returns a service that is off until Load finds enabled settings.
-// httpClient may be nil.
-func NewService(store *Store, logger *audit.Logger, openStore OpenObjectStore, httpClient *http.Client) *Service {
+// openStore opens the bucket saved under Settings → Backup; anchoring uses it
+// even when scheduled backups are off. httpClient may be nil.
+func NewService(store *Store, logger *audit.Logger, openStore objectstore.Opener, httpClient *http.Client) *Service {
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 30 * time.Second}
 	}
-	return &Service{store: store, logger: logger, openStore: openStore, httpClient: httpClient, wake: make(chan struct{}, 1)}
+	s := &Service{store: store, logger: logger, openStore: openStore, httpClient: httpClient}
+	s.job = schedule.New(schedule.Job[*Anchor]{
+		Name:            "audit anchoring",
+		Run:             func(ctx context.Context) (*Anchor, error) { return s.anchorOnce(ctx, s.snapshot()) },
+		FailureEvent:    audit.EventAuditAnchorFailed,
+		FailureEntityID: "audit_anchoring",
+		OnFailure: func(ctx context.Context, err error) {
+			if s.onFailure != nil {
+				s.onFailure(ctx, err)
+			}
+		},
+	}, logger)
+	return s
 }
 
-// SetOnFailure registers a callback for failed anchor runs. Safe before Start.
+// SetOnFailure registers a notice for failed anchor runs. It runs on its own
+// goroutine after the run is over. Safe before Start.
 func (s *Service) SetOnFailure(fn func(ctx context.Context, err error)) { s.onFailure = fn }
 
 // SetOnChange registers a callback for anchoring being switched on, off, or
@@ -91,27 +107,22 @@ func (s *Service) Load() error {
 	if err != nil {
 		return err
 	}
-	s.apply(st, time.Now().UTC().Add(st.Interval))
+	s.apply(st)
 	return nil
 }
 
-func (s *Service) apply(st Settings, next time.Time) {
+// apply makes st the current settings and schedule. When switching off, the
+// schedule stops before the settings change, and when switching on the
+// settings change first, so a run never sees settings that are off.
+func (s *Service) apply(st Settings) {
+	if !st.Enabled {
+		s.job.Configure(false, st.Interval)
+	}
 	s.mu.Lock()
 	s.settings = st
-	s.failures = 0
-	if st.Enabled {
-		s.nextRun = next
-	} else {
-		s.nextRun = time.Time{}
-	}
 	s.mu.Unlock()
-	s.signal()
-}
-
-func (s *Service) signal() {
-	select {
-	case s.wake <- struct{}{}:
-	default:
+	if st.Enabled {
+		s.job.Configure(true, st.Interval)
 	}
 }
 
@@ -123,108 +134,44 @@ func (s *Service) snapshot() Settings {
 
 // Start runs scheduled anchors until ctx is done.
 func (s *Service) Start(ctx context.Context) {
-	go func() {
-		for {
-			s.mu.Lock()
-			next := s.nextRun
-			s.mu.Unlock()
-
-			var due <-chan time.Time
-			var timer *time.Timer
-			if !next.IsZero() {
-				timer = time.NewTimer(time.Until(next))
-				due = timer.C
-			}
-			select {
-			case <-ctx.Done():
-				if timer != nil {
-					timer.Stop()
-				}
-				return
-			case <-s.wake:
-				if timer != nil {
-					timer.Stop()
-				}
-			case <-due:
-				_, _ = s.run(ctx)
-			}
-		}
-	}()
+	s.job.Start(ctx)
 }
 
 // AnchorNow takes an anchor immediately. It returns (nil, nil) when nothing
-// was written to the audit log since the last anchor.
+// was written to the audit log since the last anchor, and the anchor with an
+// error when its receipt is saved here but not copied to S3.
 func (s *Service) AnchorNow(ctx context.Context) (*Anchor, error) {
-	a, err := s.run(ctx)
-	s.signal()
+	a, err := s.job.RunNow(ctx)
+	if errors.Is(err, schedule.ErrNotEnabled) {
+		return nil, ErrNotEnabled
+	}
 	return a, err
 }
 
 // TriggerSoon schedules a run right away, for example after a restore.
 func (s *Service) TriggerSoon() {
-	s.mu.Lock()
-	if s.settings.Enabled {
-		s.nextRun = time.Now().UTC()
-	}
-	s.mu.Unlock()
-	s.signal()
+	s.job.RunSoon()
 }
 
 func (s *Service) tsa(st Settings) *TSA {
 	return &TSA{URL: st.TSAURL, AuthType: st.AuthType, Username: st.Username, Secret: st.Secret, Client: s.httpClient}
 }
 
-// run takes one anchor with the current settings.
-func (s *Service) run(ctx context.Context) (*Anchor, error) {
-	s.runMu.Lock()
-	defer s.runMu.Unlock()
-
-	st := s.snapshot()
-	if !st.Enabled {
-		return nil, ErrNotEnabled
+// open opens the bucket saved under Settings → Backup.
+func (s *Service) open(ctx context.Context) (objectstore.Store, error) {
+	if s.openStore == nil {
+		return nil, ErrS3NotConfigured
 	}
-	a, err := s.anchorOnce(ctx, st)
-	s.finishRun(ctx, st, a, err)
-	return a, err
+	objs, err := s.openStore(ctx)
+	if errors.Is(err, backup.ErrS3NotConfigured) {
+		return nil, ErrS3NotConfigured
+	}
+	return objs, err
 }
 
-// finishRun records the outcome, schedules the next run (backing off after
-// failures), and audits and reports failures.
-func (s *Service) finishRun(ctx context.Context, st Settings, a *Anchor, err error) {
-	now := time.Now().UTC()
-	s.mu.Lock()
-	s.lastAttempt = now
-	if err != nil {
-		s.failures++
-		s.lastError = err.Error()
-		backoff := time.Minute << min(s.failures-1, 10)
-		if backoff > st.Interval {
-			backoff = st.Interval
-		}
-		if s.settings.Enabled {
-			s.nextRun = now.Add(backoff)
-		}
-	} else {
-		s.failures = 0
-		s.lastError = ""
-		if s.settings.Enabled {
-			s.nextRun = now.Add(st.Interval)
-		}
-	}
-	s.mu.Unlock()
-
-	if err == nil {
-		return
-	}
-	log.Printf("audit anchoring failed: %v", err)
-	if auditErr := s.logger.Log(nil, audit.EventAuditAnchorFailed, audit.EntitySystem, "audit_anchoring", nil, map[string]any{
-		"error": err.Error(),
-	}); auditErr != nil {
-		log.Printf("audit write failed for anchoring failure: %v", auditErr)
-	}
-	if s.onFailure != nil {
-		s.onFailure(ctx, err)
-	}
+// receiptPrefix is where this instance's receipts live in the bucket.
+func receiptPrefix(objs objectstore.Store, instanceID string) string {
+	return objectstore.Join(objs.Root(), "anchors", instanceID)
 }
 
 // anchorOnce verifies the chain since the last anchor, timestamps the tip,
@@ -236,7 +183,12 @@ func (s *Service) anchorOnce(ctx context.Context, st Settings) (*Anchor, error) 
 		return nil, fmt.Errorf("pinned TSA certificate: %w", err)
 	}
 
-	uploadErr := s.uploadPending(ctx, st)
+	// One bucket for the whole run. Without it the receipt is still taken and
+	// kept here, and copied on a later run.
+	objs, uploadErr := s.open(ctx)
+	if uploadErr == nil {
+		uploadErr = s.uploadPending(ctx, objs, st)
+	}
 
 	last, err := s.store.Latest()
 	if err != nil {
@@ -308,10 +260,12 @@ func (s *Service) anchorOnce(ctx context.Context, st Settings) (*Anchor, error) 
 		return nil, err
 	}
 
-	if key, err := s.upload(ctx, st, a); err != nil {
-		uploadErr = err
-	} else {
-		a.S3Key = key
+	if objs != nil {
+		if key, err := s.upload(ctx, objs, st, a); err != nil {
+			uploadErr = err
+		} else {
+			a.S3Key = key
+		}
 	}
 
 	if err := s.logger.Log(nil, audit.EventAuditAnchored, audit.EntitySystem, "audit_anchoring", nil, map[string]any{
@@ -361,23 +315,16 @@ func receiptBaseName(a Anchor) string {
 	return fmt.Sprintf("%012d-%s", a.EventID, a.TipHash[:16])
 }
 
-func (s *Service) upload(ctx context.Context, st Settings, a Anchor) (string, error) {
-	if s.openStore == nil {
-		return "", ErrS3NotConfigured
-	}
-	objs, err := s.openStore(ctx)
-	if err != nil {
-		return "", err
-	}
-	base := objs.Prefix(st.InstanceID) + receiptBaseName(a)
+func (s *Service) upload(ctx context.Context, objs objectstore.Store, st Settings, a Anchor) (string, error) {
+	base := receiptPrefix(objs, st.InstanceID) + receiptBaseName(a)
 	side, err := json.MarshalIndent(sidecarFor(st.InstanceID, a), "", "  ")
 	if err != nil {
 		return "", err
 	}
-	if err := objs.Put(ctx, base+".tsr", a.TSR, "application/timestamp-reply"); err != nil {
+	if err := objs.Put(ctx, base+".tsr", bytes.NewReader(a.TSR), "application/timestamp-reply"); err != nil {
 		return "", err
 	}
-	if err := objs.Put(ctx, base+".json", side, "application/json"); err != nil {
+	if err := objs.Put(ctx, base+".json", bytes.NewReader(side), "application/json"); err != nil {
 		return "", err
 	}
 	key := base + ".tsr"
@@ -387,14 +334,14 @@ func (s *Service) upload(ctx context.Context, st Settings, a Anchor) (string, er
 	return key, nil
 }
 
-func (s *Service) uploadPending(ctx context.Context, st Settings) error {
+func (s *Service) uploadPending(ctx context.Context, objs objectstore.Store, st Settings) error {
 	pending, err := s.store.pendingUploads()
 	if err != nil {
 		return err
 	}
 	var firstErr error
 	for _, a := range pending {
-		if _, err := s.upload(ctx, st, a); err != nil && firstErr == nil {
+		if _, err := s.upload(ctx, objs, st, a); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}
@@ -494,10 +441,7 @@ func (s *Service) Probe(ctx context.Context, in SettingsInput) (ProbeResult, err
 func (s *Service) probe(ctx context.Context, st Settings, pastedPEM string) (ProbeResult, error) {
 	var res ProbeResult
 
-	if s.openStore == nil {
-		return res, ErrS3NotConfigured
-	}
-	store, err := s.openStore(ctx)
+	store, err := s.open(ctx)
 	if err != nil {
 		return res, err
 	}
@@ -620,19 +564,18 @@ func (s *Service) enable(ctx context.Context, st Settings, probe ProbeResult, ac
 	}
 
 	s.setObjectLock(probe.ObjectLock)
-	s.apply(st, time.Now().UTC().Add(st.Interval))
+	s.apply(st)
 	s.notify(ctx, Notice{Event: audit.EventAuditAnchoringEnabled, Message: fmt.Sprintf("Audit anchoring was switched on with TSA %s.", st.TSAURL)})
 
 	// First anchor right away. A failure is reported and retried by the
 	// scheduler; anchoring stays on.
-	_, _ = s.run(ctx)
+	_, _ = s.job.RunNow(ctx)
 	return nil
 }
 
+// update saves changed settings and their audit entry in one transaction,
+// then applies the schedule: the same interval keeps the next run.
 func (s *Service) update(ctx context.Context, cur, st Settings, tsaChanged bool, probe ProbeResult, actorUserID *string) error {
-	if err := s.store.save(s.store.DB(), st); err != nil {
-		return err
-	}
 	payload := map[string]any{
 		"tsa_url":  st.TSAURL,
 		"interval": st.Interval.String(),
@@ -640,28 +583,26 @@ func (s *Service) update(ctx context.Context, cur, st Settings, tsaChanged bool,
 	if tsaChanged {
 		payload["fingerprint"] = probe.Fingerprint
 		payload["previous_tsa_url"] = cur.TSAURL
-		s.setObjectLock(probe.ObjectLock)
 	}
-	if err := s.logger.Log(nil, audit.EventAuditAnchoringUpdated, audit.EntitySystem, "audit_anchoring", actorUserID, payload); err != nil {
+	if err := s.saveAndAudit(st, audit.EventAuditAnchoringUpdated, actorUserID, payload); err != nil {
 		return err
 	}
-	next := time.Now().UTC().Add(st.Interval)
-	s.mu.Lock()
-	if cur.Interval == st.Interval && !s.nextRun.IsZero() {
-		next = s.nextRun
+	if tsaChanged {
+		s.setObjectLock(probe.ObjectLock)
 	}
-	s.mu.Unlock()
-	s.apply(st, next)
+	s.apply(st)
 	s.notify(ctx, Notice{Event: audit.EventAuditAnchoringUpdated, Message: fmt.Sprintf("Audit anchoring settings were changed (TSA %s, every %s).", st.TSAURL, st.Interval)})
 	return nil
 }
 
+// disable takes a final anchor, then saves the settings and their audit
+// entry in one transaction.
 func (s *Service) disable(ctx context.Context, cur, st Settings, actorUserID *string) error {
 	finalNote := "no final anchor was needed"
 	if cur.Enabled {
 		// Final anchor: the last receipt in S3 proves the history up to the
 		// moment anchoring was switched off.
-		a, err := s.run(ctx)
+		a, err := s.AnchorNow(ctx)
 		switch {
 		case err != nil:
 			finalNote = "the final anchor failed: " + err.Error()
@@ -669,24 +610,36 @@ func (s *Service) disable(ctx context.Context, cur, st Settings, actorUserID *st
 			finalNote = fmt.Sprintf("final anchor at audit row %d", a.EventID)
 		}
 	}
-	if err := s.store.save(s.store.DB(), st); err != nil {
-		return err
-	}
+
+	event, payload := audit.EventAuditAnchoringUpdated, map[string]any{"enabled": false, "tsa_url": st.TSAURL}
 	if cur.Enabled {
-		if err := s.logger.Log(nil, audit.EventAuditAnchoringDisabled, audit.EntitySystem, "audit_anchoring", actorUserID, map[string]any{
-			"final_anchor": finalNote,
-		}); err != nil {
-			return err
-		}
-		s.notify(ctx, Notice{Event: audit.EventAuditAnchoringDisabled, Message: "Audit anchoring was switched off (" + finalNote + ")."})
-	} else if err := s.logger.Log(nil, audit.EventAuditAnchoringUpdated, audit.EntitySystem, "audit_anchoring", actorUserID, map[string]any{
-		"enabled": false,
-		"tsa_url": st.TSAURL,
-	}); err != nil {
+		event, payload = audit.EventAuditAnchoringDisabled, map[string]any{"final_anchor": finalNote}
+	}
+	if err := s.saveAndAudit(st, event, actorUserID, payload); err != nil {
 		return err
 	}
-	s.apply(st, time.Time{})
+	s.apply(st)
+	if cur.Enabled {
+		s.notify(ctx, Notice{Event: audit.EventAuditAnchoringDisabled, Message: "Audit anchoring was switched off (" + finalNote + ")."})
+	}
 	return nil
+}
+
+// saveAndAudit writes the settings row and one audit event together or not
+// at all.
+func (s *Service) saveAndAudit(st Settings, eventType string, actorUserID *string, payload any) error {
+	tx, err := s.store.DB().Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := s.store.save(tx, st); err != nil {
+		return err
+	}
+	if err := s.logger.Log(tx, eventType, audit.EntitySystem, "audit_anchoring", actorUserID, payload); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (s *Service) notify(ctx context.Context, n Notice) {

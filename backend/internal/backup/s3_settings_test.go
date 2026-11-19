@@ -11,6 +11,12 @@ import (
 
 var testS3Key = []byte("01234567890123456789012345678901")
 
+// saveS3 saves in without an audit entry, for tests of the settings rules.
+func saveS3(s *S3SettingsStore, in SaveS3Input) error {
+	_, err := s.saveAudited(in, nil, nil)
+	return err
+}
+
 func validS3Input() SaveS3Input {
 	return SaveS3Input{
 		Enabled:         true,
@@ -37,7 +43,7 @@ func TestS3SettingsStore_SaveAndLoad(t *testing.T) {
 		t.Fatalf("defaults: got %+v", pub)
 	}
 
-	if err := s.Save(validS3Input()); err != nil {
+	if err := saveS3(s, validS3Input()); err != nil {
 		t.Fatal(err)
 	}
 	pub, err = s.GetPublic()
@@ -59,7 +65,7 @@ func TestS3SettingsStore_SaveAndLoad(t *testing.T) {
 		in := validS3Input()
 		in.SecretAccessKey = ""
 		in.Enabled = false
-		if err := s.Save(in); err != nil {
+		if err := saveS3(s, in); err != nil {
 			t.Fatal(err)
 		}
 		cfg, err := s.LoadConfig()
@@ -75,7 +81,7 @@ func TestS3SettingsStore_SaveAndLoad(t *testing.T) {
 		in := validS3Input()
 		in.AccessKeyID = "AKIDOTHER"
 		in.SecretAccessKey = ""
-		if err := s.Save(in); !errors.Is(err, ErrInvalidS3Settings) {
+		if err := saveS3(s, in); !errors.Is(err, ErrInvalidS3Settings) {
 			t.Fatalf("want ErrInvalidS3Settings, got %v", err)
 		}
 	})
@@ -84,7 +90,7 @@ func TestS3SettingsStore_SaveAndLoad(t *testing.T) {
 		in := validS3Input()
 		in.AccessKeyID = ""
 		in.SecretAccessKey = ""
-		if err := s.Save(in); err != nil {
+		if err := saveS3(s, in); err != nil {
 			t.Fatal(err)
 		}
 		pub, _ := s.GetPublic()
@@ -115,21 +121,21 @@ func TestS3SettingsStore_Validation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			in := validS3Input()
 			tc.edit(&in)
-			if err := s.Save(in); !errors.Is(err, ErrInvalidS3Settings) {
+			if err := saveS3(s, in); !errors.Is(err, ErrInvalidS3Settings) {
 				t.Fatalf("want ErrInvalidS3Settings, got %v", err)
 			}
 		})
 	}
 
 	t.Run("off without bucket is fine", func(t *testing.T) {
-		if err := s.Save(SaveS3Input{}); err != nil {
+		if err := saveS3(s, SaveS3Input{}); err != nil {
 			t.Fatal(err)
 		}
 	})
 
 	t.Run("secret needs the encryption key", func(t *testing.T) {
 		noKey := NewS3SettingsStore(store.DB, nil)
-		if err := noKey.Save(validS3Input()); !errors.Is(err, ErrS3KeyMissing) {
+		if err := saveS3(noKey, validS3Input()); !errors.Is(err, ErrS3KeyMissing) {
 			t.Fatalf("want ErrS3KeyMissing, got %v", err)
 		}
 	})
@@ -155,7 +161,7 @@ func TestRestore_KeepsCurrentS3Settings(t *testing.T) {
 
 			old := validS3Input()
 			old.Bucket = "old-bucket"
-			if err := settings.Save(old); err != nil {
+			if err := saveS3(settings, old); err != nil {
 				t.Fatal(err)
 			}
 			zipPath, _, _, err := svc.ExportZip()
@@ -173,7 +179,7 @@ func TestRestore_KeepsCurrentS3Settings(t *testing.T) {
 			} else {
 				live := validS3Input()
 				live.Bucket = tc.liveBucket
-				if err := settings.Save(live); err != nil {
+				if err := saveS3(settings, live); err != nil {
 					t.Fatal(err)
 				}
 			}

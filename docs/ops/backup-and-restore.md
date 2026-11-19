@@ -109,9 +109,21 @@ Objects are stored under:
 **Test connection** writes and deletes a small probe object
 (`<key prefix>/automated/sopandgo-connection-test.txt`) with the **saved**
 settings, so it checks credentials, bucket and write permission without uploading
-an archive. **Back up now** (while on) uploads one archive immediately and moves the
-next scheduled run one interval out. Changing only retention keeps the next run
-time; changing the schedule or switching on starts the interval again.
+an archive. Saving the settings does not contact S3, so wrong credentials show up
+in **Test connection** or as the next run's error. **Back up now** (while on)
+uploads one archive immediately. When it succeeds, the next scheduled run moves
+one interval out; when it fails, the next run is the retry time. Changing only
+retention keeps the next run time; changing the schedule or switching on starts
+the interval again. Switching off cancels the next run, and **Back up now** then
+answers that backups are off.
+
+**Failed backups are retried.** A failed run (S3 unreachable, an export or restore
+holding the maintenance lock, a failed retention prune) is tried again after
+1 minute, then 2, 4, 8… minutes, but never later than the schedule. The first
+success puts the next run one full interval out again. With the daily schedule, a
+full day of S3 outage gives about a dozen attempts before the retries reach the
+daily interval. Each run uses the bucket and credentials saved when it started,
+from upload through retention, even if someone saves new settings meanwhile.
 
 **Retention semantics:** objects matching the automated naming pattern under the
 prefix are listed. Any object **older than** the age limit (when set) is deleted.
@@ -127,14 +139,18 @@ with a different `SECRET_ENCRYPTION_KEY` never leaves an S3 secret it cannot dec
 The [audit anchoring](deployment.md#audit-anchoring) settings are kept the same way.
 
 The admin **Backup** page and `GET /api/admin/backups/status` include a
-`s3_scheduled` object (bucket, prefix, interval, retention settings, last
-success, next run, last error). `GET /api/admin/settings/backup-s3` returns the
+`s3_scheduled` object (bucket, prefix, interval, retention settings, last run,
+last success, last object key, next run, last error). After a failure, the next
+run is the retry time. `GET /api/admin/settings/backup-s3` returns the
 saved settings. **Secrets are never returned.**
 
 Successful uploads and failures are written to the **audit log**
-(`backup_s3_uploaded`, `backup_s3_failed`), and failures also go to the
-`backup_s3_failed` integration event. Every settings change is audited as
-`backup_s3_settings_updated` (without the secret).
+(`backup_s3_uploaded`, `backup_s3_failed`). Every failed attempt, retries
+included, also goes to the `backup_s3_failed` integration event. Notifications
+are sent after the run, so a slow or unreachable webhook never delays
+**Back up now** or the schedule. Every settings change is audited as
+`backup_s3_settings_updated` (without the secret), in the same transaction as
+the save: a change is either saved and audited, or neither.
 
 **Security notes:** an admin can point backups at any bucket, which sends a full
 copy of the data there on every run. That is no more than an admin can already do

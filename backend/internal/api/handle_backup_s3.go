@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
 )
 
@@ -42,7 +41,8 @@ func (s *Server) handleAdminPutBackupS3Settings(w http.ResponseWriter, r *http.R
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	err := s.s3Settings.Save(backup.SaveS3Input{
+	actorID := GetUserID(r.Context())
+	err := s.s3Backup.SaveSettings(backup.SaveS3Input{
 		Enabled:         req.Enabled,
 		Bucket:          req.Bucket,
 		Region:          req.Region,
@@ -54,63 +54,25 @@ func (s *Server) handleAdminPutBackupS3Settings(w http.ResponseWriter, r *http.R
 		Interval:        req.Interval,
 		RetentionMax:    req.RetentionMax,
 		RetentionDays:   req.RetentionDays,
-	})
+	}, &actorID)
 	switch {
 	case errors.Is(err, backup.ErrS3KeyMissing):
 		http.Error(w, err.Error(), http.StatusPreconditionFailed)
-		return
 	case errors.Is(err, backup.ErrInvalidS3Settings):
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
 	case err != nil:
 		log.Printf("save s3 backup settings: %v", err)
 		http.Error(w, "failed to save S3 backup settings", http.StatusInternalServerError)
-		return
+	default:
+		w.WriteHeader(http.StatusNoContent)
 	}
-
-	saved, _ := s.s3Settings.GetPublic()
-	actorID := GetUserID(r.Context())
-	if saved != nil {
-		s.writeAudit(audit.EventBackupS3SettingsUpdated, audit.EntitySystem, "backup", &actorID, map[string]any{
-			"enabled":            saved.Enabled,
-			"bucket":             saved.Bucket,
-			"region":             saved.Region,
-			"key_prefix":         saved.KeyPrefix,
-			"endpoint":           saved.Endpoint,
-			"interval":           saved.Interval,
-			"retention_max":      saved.RetentionMax,
-			"retention_days":     saved.RetentionDays,
-			"static_credentials": saved.AccessKeyID != "",
-		})
-	}
-
-	if err := s.applyBackupS3Settings(r.Context()); err != nil {
-		log.Printf("apply s3 backup settings: %v", err)
-		http.Error(w, "settings saved, but the scheduler could not use them: "+err.Error(), http.StatusBadGateway)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
-
-// applyBackupS3Settings hands the saved settings to the running scheduler.
-func (s *Server) applyBackupS3Settings(ctx context.Context) error {
-	cfg, err := s.s3Settings.LoadConfig()
-	if err != nil {
-		return err
-	}
-	return s.s3Backup.Configure(ctx, cfg)
 }
 
 func (s *Server) handleAdminPostBackupS3Test(w http.ResponseWriter, r *http.Request) {
-	cfg, err := s.s3Settings.LoadConfig()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusPreconditionFailed)
-		return
-	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
-	if err := backup.CheckS3Connection(ctx, cfg); err != nil {
-		if errors.Is(err, backup.ErrS3NotConfigured) {
+	if err := s.s3Backup.TestConnection(ctx); err != nil {
+		if errors.Is(err, backup.ErrS3NotConfigured) || errors.Is(err, backup.ErrS3SettingsUnreadable) {
 			http.Error(w, err.Error(), http.StatusPreconditionFailed)
 			return
 		}
