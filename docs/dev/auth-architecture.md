@@ -144,7 +144,8 @@ The `audit_events` table is the system's Tamper-Evident "Black Box."
     * Every log entry contains a cryptographic hash of itself and the previous entry's hash.
     * This creates an immutable chain.
     * The API automatically verifies this chain on retrieval to detect if logs have been modified or deleted manually.
-    * Events written without a caller transaction (mail, notifications, logins, settings changes, startup, PDF artifacts) serialize per logger and take SQLite's write lock before reading the chain tip, so concurrent writers cannot link two entries to the same predecessor. If another writer holds the lock beyond `AUDIT_BUSY_TIMEOUT`, the failure is reported to the application log.
+    * Every transaction holds SQLite's write lock from begin (the storage package opens connections with immediate transactions). Reading the chain tip and inserting is therefore safe whether the event joins a caller's transaction or, like mail, notifications, logins, settings changes, startup and PDF artifacts, opens its own. Concurrent writers cannot link two entries to the same predecessor. If another writer holds the lock beyond `DB_BUSY_TIMEOUT`, the write fails and the failure is reported to the application log.
+* **Service lock:** `auth.Service` keeps a process-wide mutex. It is the only guard for read-then-write steps that run without a transaction: email-code attempt counting, session creation, issuing email codes, starting TOTP setup, and setting locale and theme. It stays until those steps move into transactions.
 
 
 ## 6. Database Schema (Security Relevant)

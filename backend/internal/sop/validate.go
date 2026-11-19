@@ -14,9 +14,6 @@ func (s *Service) ValidateSOPContentAssets(
 	sopID string,
 	content string,
 ) error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return s.validateSOPContentAssets(sopID, content)
 }
 

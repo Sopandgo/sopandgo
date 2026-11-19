@@ -52,10 +52,12 @@ To simplify the frontend's communication with the backend, we use a Reverse Prox
 
 The backend guarantees data consistency through a strict **Concurrency Model**:
 
-* **Mutex Locking:** Each Service (`auth`, `sop`) utilizes internal `sync.RWMutex` locks.
-* **Writes:** Serialized (one at a time) to prevent race conditions (e.g., creating two "Version 1"s simultaneously).
-* **Reads:** Concurrent (`RLock`) to allow high performance during heavy load.
+* **Connection settings:** `storage.Open` (and `storage.OpenInMemory` for tests) opens every pooled connection with foreign keys on, a busy timeout (`DB_BUSY_TIMEOUT`, default `5s`), and immediate transactions. These settings travel in the connection string, so the driver applies them to each connection it opens, not just the first.
+* **Writes:** Every transaction holds SQLite's write lock from `Begin`, so writers serialize at begin, in this process and in maintenance commands run against the same database. A writer waits up to the busy timeout for another writer and then fails with a busy error. This is what keeps two concurrent saves from both becoming "Version 1".
+* **Reads:** Plain queries outside transactions. In WAL mode they never wait behind a writer. Do not open a transaction just to read; it takes the write lock.
+* **Auth lock:** `auth.Service` keeps a process-wide `sync.RWMutex` for read-then-write steps that still run without a transaction (see the comment on the field). The `sop` service has no such lock.
 * **Atomic Transactions:** All complex operations (e.g., "Create SOP" or "Register User") are wrapped in a SQL Transaction.
+* **Startup check:** After migrations, the backend runs `PRAGMA foreign_key_check` and logs one `WARNING` per table with orphan rows left by older releases. It keeps starting.
 * **Rule:** If the Audit Log fails to write, the Data change is rolled back.
 
 
@@ -113,7 +115,7 @@ Integrity is verified via SHA-256 cryptographic hashes in two distinct ways:
 
 All state-changing events (logins, password updates, role changes) are recorded.
 
-* **Transactional:** State-changing actions commit their audit event in the same SQL transaction. Writes with no caller transaction (login, mail, notifications, startup, PDF artifacts) serialize per logger and take SQLite's write lock before reading the chain tip, so concurrent writers cannot fork the chain. Lock waits are bounded by `AUDIT_BUSY_TIMEOUT`; failures are reported to the application log.
+* **Transactional:** State-changing actions commit their audit event in the same SQL transaction. Writes with no caller transaction (login, mail, notifications, startup, PDF artifacts) open their own transaction. Every transaction holds SQLite's write lock from begin, so reading the chain tip and inserting the next entry can never interleave with another writer, and concurrent writers cannot fork the chain. Lock waits are bounded by `DB_BUSY_TIMEOUT`; failures are reported to the application log.
 * **Immutable:** The API prevents modification or deletion of logs.
 * **Tamper-Evident:** Logs are cryptographically linked. Any modification breaks the hash chain, which the system can detect and flag.
 * **Canonical Taxonomy:** `event_type` and `entity_type` are normalized to lowercase to keep filtering/reporting stable over time.

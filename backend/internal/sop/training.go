@@ -52,9 +52,6 @@ func coverageForPublished(row publishedVersionRow, readers []auth.User, acks map
 // sopID empty returns every published SOP. A specific SOP with no published version
 // returns a single row with HasPublished false.
 func (s *Service) TrainingCoverage(sopID string, users []auth.User) ([]SOPTrainingCoverage, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	readers := expectedReaders(users)
 	rows, err := listCurrentlyPublishedVersionsRecord(s.db, sopID)
 	if err != nil {

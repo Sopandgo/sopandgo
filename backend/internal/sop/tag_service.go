@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/google/uuid"
+	"github.com/sopandgo/sopandgo/backend/internal/audit"
 )
 
 // CreateTag creates a new global tag that can be attached to any SOP.
@@ -15,9 +15,6 @@ func (s *Service) CreateTag(title string, actorUserID *string) (string, error) {
 	if title == "" {
 		return "", fmt.Errorf("tag title cannot be empty")
 	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -61,17 +58,11 @@ func (s *Service) CreateTag(title string, actorUserID *string) (string, error) {
 
 // ListTags returns all available global tags.
 func (s *Service) ListTags() ([]Tag, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return getTagsRecord(s.db)
 }
 
 // AttachTagToSOP links an existing tag to an existing SOP.
 func (s *Service) AttachTagToSOP(sopID, tagID string, actorUserID *string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -102,9 +93,6 @@ func (s *Service) AttachTagToSOP(sopID, tagID string, actorUserID *string) error
 
 // DetachTagFromSOP removes a tag link from an SOP.
 func (s *Service) DetachTagFromSOP(sopID, tagID string, actorUserID *string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -135,9 +123,6 @@ func (s *Service) DetachTagFromSOP(sopID, tagID string, actorUserID *string) err
 // SetTagStatus retires (soft-deletes) or revives a global tag.
 // Inactive tags should be hidden from UI dropdowns, but remain visible on historical SOPs.
 func (s *Service) SetTagStatus(tagID string, isActive bool, actorUserID *string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err

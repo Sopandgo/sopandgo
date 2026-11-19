@@ -10,11 +10,11 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/integrity"
 	"github.com/sopandgo/sopandgo/backend/internal/markdown"
 	"github.com/sopandgo/sopandgo/backend/internal/storage"
-	"github.com/google/uuid"
 )
 
 func normalizeChangeSummary(raw string) (string, error) {
@@ -36,9 +36,6 @@ func (s *Service) RegisterSOPVersion(
 	actorUserID *string,
 ) (string, int, error) {
 	contentHash := integrity.HashBytes([]byte(content))
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -213,30 +210,16 @@ func (s *Service) RegisterSOPVersion(
 }
 
 func (s *Service) GetSOPVersionByID(id string) (*SOPVersion, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return getSOPVersionByIDRecord(s.db, id)
 }
 
 func (s *Service) GetSOPVersionsBySOPID(sopID string) ([]SOPVersion, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	return getSOPVersionsBySOPIDRecord(s.db, sopID)
 }
 
 func (s *Service) GetSOPVersionIDLatestPublished(sopID string) (string, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	tx, err := s.db.Begin()
-	if err != nil {
-		return "", err
-	}
-	defer tx.Rollback()
-
-	latestPublishedVersion, err := getActivePublishedVersionIDRecord(tx, sopID, "exclude-none")
+	// A plain query: a transaction would take the write lock for a read.
+	latestPublishedVersion, err := getActivePublishedVersionIDRecord(s.db, sopID, "exclude-none")
 	if err != nil && err != sql.ErrNoRows {
 		return "", fmt.Errorf("failed to check for older published versions: %w", err)
 	}
@@ -245,9 +228,6 @@ func (s *Service) GetSOPVersionIDLatestPublished(sopID string) (string, error) {
 }
 
 func (s *Service) GetSOPVersionSummaryByID(id string) (*SOPVersionSummary, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	v, err := getSOPVersionByIDRecord(s.db, id)
 	if err != nil {
 		return nil, err
@@ -312,9 +292,6 @@ func (s *Service) GetSOPVersionSummaryByID(id string) (*SOPVersionSummary, error
 
 // VerifyVersionIntegrity checks if the version file on disk matches the DB hash
 func (s *Service) VerifyVersionIntegrity(versionID string) (bool, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	// 1. Get metadata from DB
 	v, err := getSOPVersionByIDRecord(s.db, versionID)
 	if err != nil {
@@ -333,9 +310,6 @@ func (s *Service) VerifyVersionIntegrity(versionID string) (bool, error) {
 
 // GetVersionPath resolves the secure absolute path for a version file.
 func (s *Service) GetVersionPath(versionID string) (string, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	// 1. Get metadata from DB using the ID
 	v, err := getSOPVersionByIDRecord(s.db, versionID)
 	if err != nil {
@@ -395,9 +369,6 @@ func (s *Service) RejectSOPVersion(versionID string, actorUserID string, reason 
 }
 
 func (s *Service) transitionVersionState(versionID string, newState string, actorUserID string, reason *string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -464,9 +435,6 @@ func (s *Service) transitionVersionState(versionID string, newState string, acto
 // ApproveSOPVersion records an approver's signature and promotes the version to 'published' in a single transaction.
 // It also automatically supersedes any previously published version for the same SOP.
 func (s *Service) ApproveSOPVersion(versionID string, approverUserID string) (string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	tx, err := s.db.Begin()
 	if err != nil {
 		return "", err

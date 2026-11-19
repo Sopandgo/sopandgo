@@ -1,7 +1,6 @@
 package audit
 
 import (
-	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -9,18 +8,15 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
 type Logger struct {
-	db                    *sql.DB
-	standaloneMu          sync.Mutex
-	standaloneBusyTimeout time.Duration
+	db *sql.DB
 }
 
-const defaultStandaloneBusyTimeout = 5 * time.Second
-
+// New returns a logger that writes to db. The chain relies on db being opened
+// by the storage package, whose transactions hold the write lock from begin.
 func New(db *sql.DB) (*Logger, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database connection cannot be nil")
@@ -29,15 +25,7 @@ func New(db *sql.DB) (*Logger, error) {
 		return nil, fmt.Errorf("failed to connect to audit database: %w", err)
 	}
 	strictAuditTypes = strings.EqualFold(os.Getenv("AUDIT_STRICT_TYPES"), "true")
-	busyTimeout := defaultStandaloneBusyTimeout
-	if raw := strings.TrimSpace(os.Getenv("AUDIT_BUSY_TIMEOUT")); raw != "" {
-		parsed, err := time.ParseDuration(raw)
-		if err != nil || parsed < time.Millisecond {
-			return nil, fmt.Errorf("AUDIT_BUSY_TIMEOUT must be a duration of at least 1ms")
-		}
-		busyTimeout = parsed
-	}
-	return &Logger{db: db, standaloneBusyTimeout: busyTimeout}, nil
+	return &Logger{db: db}, nil
 }
 
 // Log writes an audit entry.
@@ -90,67 +78,21 @@ func (l *Logger) Log(executor DBTX, eventType, entityType, entityID string, acto
 // tip and both insert a row pointing at it, which forks the chain and makes
 // VerifyEntireChain report a broken link that is not tampering.
 //
-// BEGIN IMMEDIATE takes SQLite's write lock before the tip is read, so the
-// next writer waits and then reads the tip this call wrote.
+// Every transaction holds SQLite's write lock from begin (the storage package
+// opens connections with immediate transactions and a busy timeout), so the
+// next writer waits and then reads the tip this call wrote. A writer that
+// cannot get the lock within the busy timeout gets the error back.
 func (l *Logger) insertStandalone(db *sql.DB, eventType, entityType, entityID string, actorUserID *string, payloadJSON string) error {
-	// Avoid opening one waiting SQLite connection per concurrent goroutine.
-	// The database lock below remains necessary when another Logger or process
-	// writes the same database.
-	l.standaloneMu.Lock()
-	defer l.standaloneMu.Unlock()
-
-	if db == nil {
-		db = l.db
-	}
-	ctx := context.Background()
-	conn, err := db.Conn(ctx)
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer tx.Rollback()
 
-	// busy_timeout is per connection; without it BEGIN IMMEDIATE fails at once
-	// when another writer holds the lock.
-	busyTimeoutMs := l.standaloneBusyTimeout.Milliseconds()
-	if _, err := conn.ExecContext(ctx, fmt.Sprintf("PRAGMA busy_timeout = %d", busyTimeoutMs)); err != nil {
+	if err := insertEventRecord(tx, eventType, entityType, entityID, actorUserID, payloadJSON); err != nil {
 		return err
 	}
-	if _, err := conn.ExecContext(ctx, "BEGIN IMMEDIATE"); err != nil {
-		return err
-	}
-	committed := false
-	defer func() {
-		if !committed {
-			_, _ = conn.ExecContext(ctx, "ROLLBACK")
-		}
-	}()
-
-	if err := insertEventRecord(connExecutor{ctx: ctx, conn: conn}, eventType, entityType, entityID, actorUserID, payloadJSON); err != nil {
-		return err
-	}
-	if _, err := conn.ExecContext(ctx, "COMMIT"); err != nil {
-		return err
-	}
-	committed = true
-	return nil
-}
-
-// connExecutor adapts a single *sql.Conn to DBTX.
-type connExecutor struct {
-	ctx  context.Context
-	conn *sql.Conn
-}
-
-func (c connExecutor) Exec(query string, args ...any) (sql.Result, error) {
-	return c.conn.ExecContext(c.ctx, query, args...)
-}
-
-func (c connExecutor) Query(query string, args ...any) (*sql.Rows, error) {
-	return c.conn.QueryContext(c.ctx, query, args...)
-}
-
-func (c connExecutor) QueryRow(query string, args ...any) *sql.Row {
-	return c.conn.QueryRowContext(c.ctx, query, args...)
+	return tx.Commit()
 }
 
 // List retrieves audit events, total count, and performs integrity checks.
