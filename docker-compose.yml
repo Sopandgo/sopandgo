@@ -7,7 +7,7 @@ services:
       - ./backend/data:/app/data
     environment:
       - DATA_DIR=/app/data
-      # false skips demo users and the sample SOPs on first start (no effect once app.db exists).
+      # true seeds demo users and the sample SOPs on first start (no effect once app.db exists).
       - SEED_DEMO_DATA=${SEED_DEMO_DATA:-false}
       # Read-only public demo. Wipes and reseeds the data directory at every start.
       # Never set it on a real lab; see docs/ops/deployment.md#demo-mode.

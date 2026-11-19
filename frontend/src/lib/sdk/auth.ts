@@ -1,7 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import type { SerializeOptions } from 'cookie';
 import type { Client } from './client';
-import { demoCookieOptions, type DemoRole } from '#lib/demo.js';
+import { demoCookieOptions, SESSION_SECONDS, sessionCookieOptions, type DemoRole } from '#lib/demo.js';
 import type {
     TwoFactorChallenge,
     TwoFactorMethod,
@@ -50,21 +50,15 @@ export const auth = (client: Client, event: RequestEvent) => {
         };
     };
 
-    const setSession = (result: AuthResult) => {
-        const defaults = getCookieOptions();
-
-        // Access Token: 5 minutes
-        event.cookies.set('access_token', result.access_token, { 
-            ...defaults, 
-            maxAge: 60 * 5 
-        });
-
-        // Refresh Token: 7 days
+    // Access token: 5 minutes. Refresh token: as long as its session (7 days,
+    // or 4 hours for a demo session).
+    const setSession = (
+        result: AuthResult,
+        options = sessionCookieOptions(event.url.protocol === 'https:', SESSION_SECONDS)
+    ) => {
+        event.cookies.set('access_token', result.access_token, options.access);
         if (result.refresh_token) {
-            event.cookies.set('refresh_token', result.refresh_token, {
-                ...defaults,
-                maxAge: 60 * 60 * 24 * 7
-            });
+            event.cookies.set('refresh_token', result.refresh_token, options.refresh);
         }
     };
 
@@ -178,12 +172,7 @@ export const auth = (client: Client, event: RequestEvent) => {
             }, false);
             if (res.status === 429) throw new Error('TOO_MANY_ATTEMPTS');
             if (!res.ok) throw new Error('DEMO_SESSION_FAILED');
-            const result: AuthResult = await res.json();
-            const options = demoCookieOptions(event.url.protocol === 'https:');
-            event.cookies.set('access_token', result.access_token, options.access);
-            if (result.refresh_token) {
-                event.cookies.set('refresh_token', result.refresh_token, options.refresh);
-            }
+            setSession(await res.json(), demoCookieOptions(event.url.protocol === 'https:'));
         },
 
         refresh: async (refreshToken: string): Promise<AuthResult> => {

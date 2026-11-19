@@ -17,7 +17,9 @@
     }
 
     let { children, block = false }: Props = $props();
-    const tipId = `demo-locked-${Math.random().toString(36).slice(2, 10)}`;
+    // Stable across server render and hydration, so aria-describedby holds.
+    const uid = $props.id();
+    const tipId = `demo-locked-${uid}`;
 </script>
 
 <div class="dropdown dropdown-hover {block ? 'dropdown-top block w-full' : 'dropdown-end inline-block'}">

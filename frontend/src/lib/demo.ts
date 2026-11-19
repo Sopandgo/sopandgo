@@ -10,8 +10,11 @@ export type DemoRole = 'viewer' | 'auditor';
 /** Matches the API's demo session lifetime: refresh tokens last four hours. */
 export const DEMO_SESSION_SECONDS = 4 * 60 * 60;
 
-/** Access tokens last five minutes, as for a normal sign-in. */
+/** Access tokens last five minutes. */
 const ACCESS_TOKEN_SECONDS = 5 * 60;
+
+/** A normal sign-in's refresh cookie lasts as long as its session: seven days. */
+export const SESSION_SECONDS = 60 * 60 * 24 * 7;
 
 /** Where the banner and every disabled control send visitors who want to edit. */
 export const DEMO_INSTALL_URL = 'https://github.com/Sopandgo/sopandgo#readme';
@@ -39,13 +42,21 @@ export function otherDemoRole(role: string): DemoRole {
     return role === 'viewer' ? 'auditor' : 'viewer';
 }
 
-/** Cookie options for a demo session; the refresh cookie lives as long as the session. */
-export function demoCookieOptions(secure: boolean) {
+/**
+ * Access and refresh cookie options for a session whose refresh token lasts
+ * refreshSeconds. Password sign-in and demo sessions both use it.
+ */
+export function sessionCookieOptions(secure: boolean, refreshSeconds: number) {
     const base = { path: '/', httpOnly: true, secure, sameSite: 'lax' as const };
     return {
         access: { ...base, maxAge: ACCESS_TOKEN_SECONDS },
-        refresh: { ...base, maxAge: DEMO_SESSION_SECONDS }
+        refresh: { ...base, maxAge: refreshSeconds }
     };
+}
+
+/** Cookie options for a demo session; the refresh cookie lives as long as the session. */
+export function demoCookieOptions(secure: boolean) {
+    return sessionCookieOptions(secure, DEMO_SESSION_SECONDS);
 }
 
 /** True for the error the SDK throws when the demo API refuses a write. */

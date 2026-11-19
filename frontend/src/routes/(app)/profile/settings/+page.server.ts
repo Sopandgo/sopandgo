@@ -1,8 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import * as m from '#lib/paraglide/messages.js';
-import { isLocale } from '#lib/paraglide/runtime.js';
+import { cookieName as localeCookieName, isLocale } from '#lib/paraglide/runtime.js';
 import { isDemoReadOnlyError } from '#lib/demo.js';
-import { cookieName as localeCookieName } from '#lib/paraglide/runtime.js';
 import { isThemePreference, themeCookieMaxAge, themeCookieName } from '#lib/theme.js';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -11,10 +10,9 @@ const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 /** Maps a 2FA error code from the SDK to a message for the form. */
 function twoFactorMessage(err: unknown): string {
+    if (isDemoReadOnlyError(err)) return m.demo_disabled();
     const code = err instanceof Error ? err.message : '';
     switch (code) {
-        case 'DEMO_READ_ONLY':
-            return m.demo_disabled();
         case 'WRONG_PASSWORD':
             return m.error_current_password_wrong();
         case 'TOO_MANY_ATTEMPTS':
@@ -123,10 +121,9 @@ export const actions: Actions = {
         } catch (err: unknown) {
             console.error('Change Password Error:', err);
             const message = err instanceof Error ? err.message : '';
-            const msg =
-                message === 'DEMO_READ_ONLY'
-                    ? m.demo_disabled()
-                    : message === 'WEAK_PASSWORD'
+            const msg = isDemoReadOnlyError(err)
+                ? m.demo_disabled()
+                : message === 'WEAK_PASSWORD'
                     ? m.error_weak_password()
                     : message === 'WRONG_CURRENT_PASSWORD'
                       ? m.error_current_password_wrong()
