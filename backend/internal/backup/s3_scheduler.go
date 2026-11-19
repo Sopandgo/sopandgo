@@ -14,15 +14,12 @@ import (
 	"time"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/sopandgo/sopandgo/backend/internal/objectstore"
+	"github.com/sopandgo/sopandgo/backend/internal/schedule"
 )
 
 const (
-	automatedKeySegment = "automated/"
+	automatedKeySegment = "automated"
 	connectionTestName  = "sopandgo-connection-test.txt"
 )
 
@@ -60,11 +57,7 @@ type S3SchedulerConfig struct {
 }
 
 func automatedListPrefix(rootPrefix string) string {
-	p := strings.Trim(rootPrefix, "/")
-	if p == "" {
-		return automatedKeySegment
-	}
-	return p + "/" + automatedKeySegment
+	return objectstore.Join(strings.Trim(rootPrefix, "/"), automatedKeySegment)
 }
 
 // auditLogger is satisfied by *audit.Logger.
@@ -72,235 +65,158 @@ type auditLogger interface {
 	Log(executor audit.DBTX, eventType, entityType, entityID string, actorUserID *string, payload any) error
 }
 
-// s3Target is everything one run needs, snapshotted so a concurrent Configure
-// cannot change the bucket halfway through an upload.
-type s3Target struct {
-	client     *s3.Client
-	cfg        S3SchedulerConfig
-	listPrefix string
-}
-
-// NewS3Client builds a client for cfg's bucket. Audit anchoring uses it to
-// write receipts to the same bucket as backups.
-func NewS3Client(ctx context.Context, cfg S3SchedulerConfig) (*s3.Client, error) {
-	return newS3Client(ctx, cfg)
-}
-
-func newS3Client(ctx context.Context, cfg S3SchedulerConfig) (*s3.Client, error) {
-	opts := []func(*config.LoadOptions) error{}
-	if cfg.Region != "" {
-		opts = append(opts, config.WithRegion(cfg.Region))
-	}
-	if cfg.StaticKey != "" {
-		opts = append(opts, config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(cfg.StaticKey, cfg.StaticSecret, ""),
-		))
-	}
-	awsCfg, err := config.LoadDefaultConfig(ctx, opts...)
-	if err != nil {
-		return nil, fmt.Errorf("aws config: %w", err)
-	}
-
-	s3Opts := []func(*s3.Options){}
-	if cfg.Endpoint != "" {
-		ep := cfg.Endpoint
-		s3Opts = append(s3Opts, func(o *s3.Options) {
-			o.BaseEndpoint = aws.String(ep)
-			o.UsePathStyle = cfg.UsePathStyle
-		})
-	} else if cfg.UsePathStyle {
-		s3Opts = append(s3Opts, func(o *s3.Options) {
-			o.UsePathStyle = true
-		})
-	}
-	return s3.NewFromConfig(awsCfg, s3Opts...), nil
-}
-
-// S3Scheduler runs periodic uploads of the standard backup zip to S3. It always
-// exists; Configure switches it on, off, or to new settings without a restart.
+// S3Scheduler is the automatic S3 backup job. It always exists; SaveSettings
+// and Configure switch it on, off, or to new settings without a restart. The
+// schedule package owns timing, backoff, status and failure reporting.
 type S3Scheduler struct {
 	backupSvc   *Service
+	settings    *S3SettingsStore
+	open        objectstore.Opener
 	auditLogger auditLogger
 	onFailure   func(ctx context.Context, err error)
+	job         *schedule.Scheduled[string]
 
-	runMu sync.Mutex // one upload at a time (timer and RunNow)
-	wake  chan struct{}
+	// applyMu pairs a saved row with the Configure that follows it, so a run
+	// snapshots the settings and opens the bucket from the same save.
+	applyMu sync.Mutex
 
 	mu            sync.Mutex
-	target        s3Target
-	lastRun       time.Time
-	lastSuccess   time.Time
+	cfg           S3SchedulerConfig
 	lastObjectKey string
-	lastError     string
-	nextRun       time.Time
 }
 
-// NewS3Scheduler returns a scheduler that is off until Configure enables it.
-// auditLogger may be nil (no audit entries).
-func NewS3Scheduler(backupSvc *Service, auditLogger auditLogger) *S3Scheduler {
-	return &S3Scheduler{
-		backupSvc:   backupSvc,
-		auditLogger: auditLogger,
-		wake:        make(chan struct{}, 1),
-	}
+// NewS3Scheduler returns a job that is off until Configure enables it. Runs
+// and the connection test reach the bucket through open. auditLogger may be
+// nil (no audit entries).
+func NewS3Scheduler(backupSvc *Service, settings *S3SettingsStore, open objectstore.Opener, auditLogger auditLogger) *S3Scheduler {
+	sch := &S3Scheduler{backupSvc: backupSvc, settings: settings, open: open, auditLogger: auditLogger}
+	sch.job = schedule.New(schedule.Job[string]{
+		Name:            "s3 automatic backup",
+		Run:             sch.run,
+		FailureEvent:    audit.EventBackupS3Failed,
+		FailureEntityID: "backup",
+		OnFailure: func(ctx context.Context, err error) {
+			if sch.onFailure != nil {
+				sch.onFailure(ctx, err)
+			}
+		},
+	}, auditLogger)
+	return sch
 }
 
-// SetOnFailure registers an optional callback invoked after a failed automated backup
-// (in addition to the audit log entry). Safe to call before Start.
+// SetOnFailure registers an optional notice sent after each failed backup (in
+// addition to the audit log entry). It runs on its own goroutine after the
+// run is over. Safe to call before Start.
 func (sch *S3Scheduler) SetOnFailure(fn func(ctx context.Context, err error)) {
 	sch.onFailure = fn
 }
 
 // Configure applies cfg. A disabled cfg stops scheduled runs. Keeping the same
 // interval keeps the next run time; otherwise the next run is one interval away.
-func (sch *S3Scheduler) Configure(ctx context.Context, cfg S3SchedulerConfig) error {
-	var client *s3.Client
-	if cfg.Enabled {
-		c, err := newS3Client(ctx, cfg)
-		if err != nil {
-			return err
-		}
-		client = c
-	}
-
+// It does not contact the bucket.
+func (sch *S3Scheduler) Configure(cfg S3SchedulerConfig) {
 	sch.mu.Lock()
-	prev := sch.target.cfg
-	sch.target = s3Target{client: client, cfg: cfg, listPrefix: automatedListPrefix(cfg.RootPrefix)}
-	switch {
-	case !cfg.Enabled:
-		sch.nextRun = time.Time{}
-	case prev.Enabled && prev.Interval == cfg.Interval && !sch.nextRun.IsZero():
-	default:
-		sch.nextRun = time.Now().UTC().Add(cfg.Interval)
-	}
+	sch.cfg = cfg
 	sch.mu.Unlock()
+	sch.job.Configure(cfg.Enabled, cfg.Interval)
+}
 
-	sch.signal()
+// LoadSaved configures the job from the saved settings, at startup.
+func (sch *S3Scheduler) LoadSaved() (S3SchedulerConfig, error) {
+	cfg, err := sch.settings.LoadConfig()
+	if err != nil {
+		return S3SchedulerConfig{}, err
+	}
+	sch.Configure(cfg)
+	return cfg, nil
+}
+
+// SaveSettings validates in, saves it and writes backup_s3_settings_updated
+// in one transaction, then applies the saved settings to the schedule.
+// Credentials are not checked here: TestConnection or the next run reports them.
+func (sch *S3Scheduler) SaveSettings(in SaveS3Input, actorUserID *string) error {
+	sch.applyMu.Lock()
+	defer sch.applyMu.Unlock()
+	row, err := sch.settings.saveAudited(in, sch.auditLogger, actorUserID)
+	if err != nil {
+		return err
+	}
+	sch.Configure(configFromRow(row))
 	return nil
 }
 
-func (sch *S3Scheduler) signal() {
-	select {
-	case sch.wake <- struct{}{}:
-	default:
-	}
-}
-
-// Status returns the latest scheduler snapshot.
+// Status returns the latest job snapshot.
 func (sch *S3Scheduler) Status() S3SchedulerStatus {
+	snap := sch.job.Status()
 	sch.mu.Lock()
-	defer sch.mu.Unlock()
-	cfg := sch.target.cfg
+	cfg, lastKey := sch.cfg, sch.lastObjectKey
+	sch.mu.Unlock()
+
 	st := S3SchedulerStatus{
-		Enabled:       cfg.Enabled,
-		LastError:     sch.lastError,
-		LastObjectKey: sch.lastObjectKey,
+		Enabled:        snap.Enabled,
+		LastError:      snap.LastError,
+		LastObjectKey:  lastKey,
+		LastRunUTC:     formatUTC(snap.LastAttempt),
+		LastSuccessUTC: formatUTC(snap.LastSuccess),
+		NextRunUTC:     formatUTC(snap.NextRun),
 	}
-	if cfg.Enabled {
+	if snap.Enabled {
 		st.Bucket = cfg.Bucket
-		st.KeyPrefix = sch.target.listPrefix
+		st.KeyPrefix = automatedListPrefix(cfg.RootPrefix)
 		st.Interval = cfg.Interval.String()
 		st.RetentionMax = cfg.RetentionMax
 		st.RetentionDays = cfg.RetentionDays
 	}
-	if !sch.lastRun.IsZero() {
-		st.LastRunUTC = sch.lastRun.UTC().Format(time.RFC3339)
-	}
-	if !sch.lastSuccess.IsZero() {
-		st.LastSuccessUTC = sch.lastSuccess.UTC().Format(time.RFC3339)
-	}
-	if !sch.nextRun.IsZero() {
-		st.NextRunUTC = sch.nextRun.UTC().Format(time.RFC3339)
-	}
 	return st
 }
 
-// Start runs scheduled backups until ctx is done, following Configure calls.
-func (sch *S3Scheduler) Start(ctx context.Context) {
-	go func() {
-		for {
-			sch.mu.Lock()
-			next := sch.nextRun
-			sch.mu.Unlock()
-
-			var due <-chan time.Time
-			var timer *time.Timer
-			if !next.IsZero() {
-				timer = time.NewTimer(time.Until(next))
-				due = timer.C
-			}
-			select {
-			case <-ctx.Done():
-				if timer != nil {
-					timer.Stop()
-				}
-				return
-			case <-sch.wake:
-				if timer != nil {
-					timer.Stop()
-				}
-			case <-due:
-				_, _ = sch.run(ctx)
-			}
-		}
-	}()
+func formatUTC(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
 }
 
-// RunNow uploads one backup with the saved settings and moves the next scheduled
-// run one interval out. It returns the object key.
+// Start runs scheduled backups until ctx is done.
+func (sch *S3Scheduler) Start(ctx context.Context) {
+	sch.job.Start(ctx)
+}
+
+// RunNow uploads one backup with the saved settings and returns the object
+// key. Success moves the next run one interval out; failure, to the retry time.
 func (sch *S3Scheduler) RunNow(ctx context.Context) (string, error) {
-	key, err := sch.run(ctx)
-	sch.signal()
+	key, err := sch.job.RunNow(ctx)
+	if errors.Is(err, schedule.ErrNotEnabled) {
+		return "", ErrS3NotEnabled
+	}
 	return key, err
 }
 
+// run is one backup: export, upload, prune. It opens the bucket once, so the
+// archive and its prune always go to the same bucket.
 func (sch *S3Scheduler) run(ctx context.Context) (string, error) {
-	sch.runMu.Lock()
-	defer sch.runMu.Unlock()
-
+	sch.applyMu.Lock()
 	sch.mu.Lock()
-	t := sch.target
+	cfg := sch.cfg
 	sch.mu.Unlock()
-	if !t.cfg.Enabled || t.client == nil {
-		return "", ErrS3NotEnabled
-	}
-
-	runAt := time.Now().UTC()
-	objKey, manifest, err := uploadBackup(ctx, sch.backupSvc, t, runAt)
-
-	sch.mu.Lock()
-	sch.lastRun = runAt
-	if sch.target.cfg.Enabled {
-		sch.nextRun = runAt.Add(sch.target.cfg.Interval)
-	}
+	store, err := sch.open(ctx)
+	sch.applyMu.Unlock()
 	if err != nil {
-		sch.lastError = err.Error()
-	} else {
-		sch.lastError = ""
-		sch.lastObjectKey = objKey
-		sch.lastSuccess = runAt
-	}
-	sch.mu.Unlock()
-
-	if err != nil {
-		log.Printf("s3 automatic backup failed: %v", err)
-		if sch.auditLogger != nil {
-			if auditErr := sch.auditLogger.Log(nil, audit.EventBackupS3Failed, audit.EntitySystem, "backup", nil, map[string]any{
-				"error": err.Error(),
-			}); auditErr != nil {
-				log.Printf("audit write failed for S3 backup failure: %v", auditErr)
-			}
-		}
-		if sch.onFailure != nil {
-			sch.onFailure(ctx, err)
-		}
 		return "", err
 	}
+	objKey, manifest, err := uploadBackup(ctx, sch.backupSvc, store, cfg, time.Now().UTC())
+	if err != nil {
+		return "", err
+	}
+
+	sch.mu.Lock()
+	sch.lastObjectKey = objKey
+	sch.mu.Unlock()
 
 	log.Printf("s3 automatic backup uploaded: %s", objKey)
 	if sch.auditLogger != nil {
 		if auditErr := sch.auditLogger.Log(nil, audit.EventBackupS3Uploaded, audit.EntitySystem, "backup", nil, map[string]any{
-			"bucket":     t.cfg.Bucket,
+			"bucket":     cfg.Bucket,
 			"object_key": objKey,
 			"manifest":   manifest,
 		}); auditErr != nil {
@@ -310,14 +226,15 @@ func (sch *S3Scheduler) run(ctx context.Context) (string, error) {
 	return objKey, nil
 }
 
-func uploadBackup(ctx context.Context, svc *Service, t s3Target, runAt time.Time) (string, Manifest, error) {
+func uploadBackup(ctx context.Context, svc *Service, store objectstore.Store, cfg S3SchedulerConfig, runAt time.Time) (string, Manifest, error) {
 	zipPath, _, manifest, err := svc.ExportZip()
 	if err != nil {
 		return "", Manifest{}, fmt.Errorf("export zip: %w", err)
 	}
 	defer os.RemoveAll(filepath.Dir(zipPath))
 
-	key := objectKeyForRun(t.listPrefix, runAt)
+	listPrefix := automatedListPrefix(store.Root())
+	key := objectKeyForRun(listPrefix, runAt)
 
 	f, err := os.Open(zipPath)
 	if err != nil {
@@ -325,46 +242,28 @@ func uploadBackup(ctx context.Context, svc *Service, t s3Target, runAt time.Time
 	}
 	defer f.Close()
 
-	_, err = t.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:      aws.String(t.cfg.Bucket),
-		Key:         aws.String(key),
-		Body:        f,
-		ContentType: aws.String("application/zip"),
-	})
-	if err != nil {
+	if err := store.Put(ctx, key, f, "application/zip"); err != nil {
 		return "", manifest, fmt.Errorf("s3 PutObject: %w", err)
 	}
-
-	if err := pruneOldObjects(ctx, t); err != nil {
+	if err := pruneOldObjects(ctx, store, listPrefix, cfg); err != nil {
 		return "", manifest, fmt.Errorf("retention prune: %w", err)
 	}
 	return key, manifest, nil
 }
 
-// CheckS3Connection checks that cfg can write and delete under the backup prefix:
-// it uploads a small probe object next to the automated archives and removes it.
-// The probe name never matches the retention filter.
-func CheckS3Connection(ctx context.Context, cfg S3SchedulerConfig) error {
-	if cfg.Bucket == "" {
-		return ErrS3NotConfigured
-	}
-	client, err := newS3Client(ctx, cfg)
+// TestConnection checks that the saved settings can write and delete under
+// the backup prefix: it uploads a small probe object next to the automated
+// archives and removes it. The probe name never matches the retention filter.
+func (sch *S3Scheduler) TestConnection(ctx context.Context) error {
+	store, err := sch.open(ctx)
 	if err != nil {
 		return err
 	}
-	key := automatedListPrefix(cfg.RootPrefix) + connectionTestName
-	if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:      aws.String(cfg.Bucket),
-		Key:         aws.String(key),
-		Body:        strings.NewReader("sopandgo connection test\n"),
-		ContentType: aws.String("text/plain"),
-	}); err != nil {
+	key := automatedListPrefix(store.Root()) + connectionTestName
+	if err := store.Put(ctx, key, strings.NewReader("sopandgo connection test\n"), "text/plain"); err != nil {
 		return fmt.Errorf("s3 PutObject: %w", err)
 	}
-	if _, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(cfg.Bucket),
-		Key:    aws.String(key),
-	}); err != nil {
+	if err := store.Delete(ctx, key); err != nil {
 		return fmt.Errorf("s3 DeleteObject: %w", err)
 	}
 	return nil
@@ -375,57 +274,44 @@ func objectKeyForRun(listPrefix string, t time.Time) string {
 	return listPrefix + name
 }
 
-type s3ObjectMeta struct {
-	key string
-	t   time.Time
-}
-
-func listAutomatedObjects(ctx context.Context, t s3Target) ([]s3ObjectMeta, error) {
-	var out []s3ObjectMeta
-	paginator := s3.NewListObjectsV2Paginator(t.client, &s3.ListObjectsV2Input{
-		Bucket: aws.String(t.cfg.Bucket),
-		Prefix: aws.String(t.listPrefix),
-	})
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
+// listAutomatedObjects returns the automated archives under listPrefix. Any
+// other object (the connection probe, files the lab keeps there) is left out.
+func listAutomatedObjects(ctx context.Context, store objectstore.Store, listPrefix string) ([]objectstore.Object, error) {
+	all, err := store.List(ctx, listPrefix)
+	if err != nil {
+		return nil, err
+	}
+	var out []objectstore.Object
+	for _, o := range all {
+		if o.LastModified.IsZero() || !strings.HasSuffix(o.Key, ".zip") {
+			continue
 		}
-		for _, obj := range page.Contents {
-			if obj.Key == nil || obj.LastModified == nil {
-				continue
-			}
-			if !strings.HasSuffix(*obj.Key, ".zip") {
-				continue
-			}
-			base := path.Base(*obj.Key)
-			if !strings.HasPrefix(base, "sopandgo-automated-") {
-				continue
-			}
-			out = append(out, s3ObjectMeta{key: *obj.Key, t: *obj.LastModified})
+		if !strings.HasPrefix(path.Base(o.Key), "sopandgo-automated-") {
+			continue
 		}
+		out = append(out, o)
 	}
 	return out, nil
 }
 
-// keysToDelete returns object keys to remove given retention rules.
-// objs must be sorted by time ascending (oldest first).
-func keysToDeleteForRetention(objs []s3ObjectMeta, maxKeep int, retentionDays int, now time.Time) []string {
+// keysToDeleteForRetention returns the keys to remove: first everything older
+// than retentionDays, then the oldest survivors beyond maxKeep.
+func keysToDeleteForRetention(objs []objectstore.Object, maxKeep int, retentionDays int, now time.Time) []string {
 	if len(objs) == 0 {
 		return nil
 	}
 	sort.Slice(objs, func(i, j int) bool {
-		return objs[i].t.Before(objs[j].t)
+		return objs[i].LastModified.Before(objs[j].LastModified)
 	})
 	var toDelete []string
-	var survivors []s3ObjectMeta
+	var survivors []objectstore.Object
 	cutoff := time.Time{}
 	if retentionDays > 0 {
 		cutoff = now.Add(-time.Duration(retentionDays) * 24 * time.Hour)
 	}
 	for _, o := range objs {
-		if retentionDays > 0 && o.t.Before(cutoff) {
-			toDelete = append(toDelete, o.key)
+		if retentionDays > 0 && o.LastModified.Before(cutoff) {
+			toDelete = append(toDelete, o.Key)
 			continue
 		}
 		survivors = append(survivors, o)
@@ -433,24 +319,20 @@ func keysToDeleteForRetention(objs []s3ObjectMeta, maxKeep int, retentionDays in
 	if maxKeep > 0 && len(survivors) > maxKeep {
 		excess := len(survivors) - maxKeep
 		for i := 0; i < excess; i++ {
-			toDelete = append(toDelete, survivors[i].key)
+			toDelete = append(toDelete, survivors[i].Key)
 		}
 	}
 	return toDelete
 }
 
-func pruneOldObjects(ctx context.Context, t s3Target) error {
-	objs, err := listAutomatedObjects(ctx, t)
+func pruneOldObjects(ctx context.Context, store objectstore.Store, listPrefix string, cfg S3SchedulerConfig) error {
+	objs, err := listAutomatedObjects(ctx, store, listPrefix)
 	if err != nil {
 		return err
 	}
-	toDel := keysToDeleteForRetention(objs, t.cfg.RetentionMax, t.cfg.RetentionDays, time.Now().UTC())
+	toDel := keysToDeleteForRetention(objs, cfg.RetentionMax, cfg.RetentionDays, time.Now().UTC())
 	for _, key := range toDel {
-		_, err := t.client.DeleteObject(ctx, &s3.DeleteObjectInput{
-			Bucket: aws.String(t.cfg.Bucket),
-			Key:    aws.String(key),
-		})
-		if err != nil {
+		if err := store.Delete(ctx, key); err != nil {
 			return fmt.Errorf("delete %q: %w", key, err)
 		}
 	}

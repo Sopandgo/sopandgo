@@ -13,6 +13,8 @@ import (
 
 	"github.com/sopandgo/sopandgo/backend/internal/anchor"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
+	"github.com/sopandgo/sopandgo/backend/internal/backup"
+	"github.com/sopandgo/sopandgo/backend/internal/objectstore"
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
 
@@ -55,7 +57,7 @@ func TestAPI_AuditAnchoring(t *testing.T) {
 		t.Fatalf("integrity = %d %s", rec.Code, rec.Body.String())
 	}
 
-	noS3 := func(context.Context) (anchor.ObjectStore, error) { return nil, anchor.ErrS3NotConfigured }
+	noS3 := func(context.Context) (objectstore.Store, error) { return nil, backup.ErrS3NotConfigured }
 	svc := anchor.NewService(anchor.NewStore(env.Store.DB, []byte("01234567890123456789012345678901")), env.AuditLogger, noS3, nil)
 	if err := svc.Load(); err != nil {
 		t.Fatal(err)

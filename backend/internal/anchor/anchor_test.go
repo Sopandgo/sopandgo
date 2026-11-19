@@ -16,7 +16,6 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
-	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -27,6 +26,7 @@ import (
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
+	"github.com/sopandgo/sopandgo/backend/internal/objectstore"
 	"github.com/sopandgo/sopandgo/backend/internal/storage"
 )
 
@@ -141,54 +141,6 @@ func (tsa *testTSA) rotateCA(t *testing.T) {
 	tsa.mu.Unlock()
 }
 
-// --- fake S3 ----------------------------------------------------------------
-
-type memStore struct {
-	mu      sync.Mutex
-	objects map[string][]byte
-	lock    bool
-	failPut bool
-}
-
-func newMemStore() *memStore { return &memStore{objects: map[string][]byte{}} }
-
-func (m *memStore) Prefix(id string) string { return "backups/anchors/" + id + "/" }
-
-func (m *memStore) Put(_ context.Context, key string, body []byte, _ string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.failPut {
-		return errors.New("s3 unavailable")
-	}
-	m.objects[key] = append([]byte(nil), body...)
-	return nil
-}
-
-func (m *memStore) Get(_ context.Context, key string) ([]byte, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	b, ok := m.objects[key]
-	if !ok {
-		return nil, errors.New("not found")
-	}
-	return b, nil
-}
-
-func (m *memStore) List(_ context.Context, prefix string) ([]string, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	var keys []string
-	for k := range m.objects {
-		if strings.HasPrefix(k, prefix) {
-			keys = append(keys, k)
-		}
-	}
-	sort.Strings(keys)
-	return keys, nil
-}
-
-func (m *memStore) ObjectLockEnabled(context.Context) (bool, error) { return m.lock, nil }
-
 // --- harness ----------------------------------------------------------------
 
 type harness struct {
@@ -196,10 +148,12 @@ type harness struct {
 	svc     *Service
 	logger  *audit.Logger
 	store   *Store
-	s3      *memStore
+	s3      *objectstore.Memory
 	tsa     *testTSA
 	notices []Notice
-	fails   []error
+
+	failMu sync.Mutex
+	fails  []error
 }
 
 func newHarness(t *testing.T) *harness {
@@ -213,15 +167,41 @@ func newHarness(t *testing.T) *harness {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := &harness{t: t, logger: logger, s3: newMemStore(), tsa: newTestTSA(t)}
+	h := &harness{t: t, logger: logger, s3: objectstore.NewMemory("backups"), tsa: newTestTSA(t)}
 	h.store = NewStore(st.DB, []byte("01234567890123456789012345678901"))
-	h.svc = NewService(h.store, logger, func(context.Context) (ObjectStore, error) { return h.s3, nil }, h.tsa.srv.Client())
+	h.svc = NewService(h.store, logger, h.s3.Opener(), h.tsa.srv.Client())
 	h.svc.SetOnChange(func(_ context.Context, n Notice) { h.notices = append(h.notices, n) })
-	h.svc.SetOnFailure(func(_ context.Context, err error) { h.fails = append(h.fails, err) })
+	h.svc.SetOnFailure(func(_ context.Context, err error) {
+		h.failMu.Lock()
+		h.fails = append(h.fails, err)
+		h.failMu.Unlock()
+	})
 	if err := h.svc.Load(); err != nil {
 		t.Fatal(err)
 	}
 	return h
+}
+
+// waitFails waits until n failure notices were sent, and fails the test if
+// more arrive.
+func (h *harness) waitFails(n int) {
+	h.t.Helper()
+	deadline := time.Now().Add(time.Second)
+	for {
+		h.failMu.Lock()
+		got := len(h.fails)
+		h.failMu.Unlock()
+		if got > n {
+			h.t.Fatalf("failure notices = %d, want %d", got, n)
+		}
+		if got == n {
+			return
+		}
+		if time.Now().After(deadline) {
+			h.t.Fatalf("failure notices = %d, want %d", got, n)
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
 }
 
 func (h *harness) log(n int) {
@@ -293,8 +273,10 @@ func TestEnable_BaselineAndFirstAnchor(t *testing.T) {
 	if last.S3Key == "" {
 		t.Fatal("first anchor was not copied to S3")
 	}
-	keys, _ := h.s3.List(context.Background(), "")
-	if len(keys) != 2 {
+	st, _ := h.svc.Status()
+	base := "backups/anchors/" + st.InstanceID + "/" + receiptBaseName(*last)
+	keys := h.s3.Keys("")
+	if last.S3Key != base+".tsr" || len(keys) != 2 || keys[0] != base+".json" || keys[1] != base+".tsr" {
 		t.Fatalf("S3 objects = %v", keys)
 	}
 	if len(h.notices) != 1 || h.notices[0].Event != audit.EventAuditAnchoringEnabled {
@@ -364,9 +346,7 @@ func TestTamperAfterAnchor_DetectedByRunAndScan(t *testing.T) {
 	if _, err := h.svc.AnchorNow(context.Background()); err == nil || !strings.Contains(err.Error(), "changed after it was anchored") {
 		t.Fatalf("AnchorNow after tamper: %v", err)
 	}
-	if len(h.fails) == 0 {
-		t.Fatal("failure callback not called")
-	}
+	h.waitFails(1)
 
 	rep := h.check()
 	if rep.Problems == 0 {
@@ -474,16 +454,17 @@ func TestTSAOutage_BacksOffAndAlerts(t *testing.T) {
 	}
 	var failed int
 	h.store.DB().QueryRow(`SELECT COUNT(*) FROM audit_events WHERE event_type = 'audit_anchor_failed'`).Scan(&failed)
-	if failed != 1 || len(h.fails) != 1 {
-		t.Fatalf("failed events = %d, callbacks = %d", failed, len(h.fails))
+	if failed != 1 {
+		t.Fatalf("failed events = %d", failed)
 	}
+	h.waitFails(1)
 }
 
 func TestS3Outage_KeepsReceiptAndRetries(t *testing.T) {
 	h := newHarness(t)
 	h.log(1)
 	h.enable()
-	h.s3.failPut = true
+	h.s3.FailPut(errors.New("s3 unavailable"))
 	h.log(1)
 	a, err := h.svc.AnchorNow(context.Background())
 	if err == nil || a == nil || a.S3Key != "" {
@@ -492,7 +473,7 @@ func TestS3Outage_KeepsReceiptAndRetries(t *testing.T) {
 	if rep := h.check(); rep.Warnings == 0 {
 		t.Fatalf("not-uploaded receipt should warn: %+v", rep)
 	}
-	h.s3.failPut = false
+	h.s3.FailPut(nil)
 	if _, err := h.svc.AnchorNow(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -643,5 +624,95 @@ func TestCheckTSAKeyUsage(t *testing.T) {
 	leaf, _ := x509.ParseCertificate(der)
 	if err := checkTSAKeyUsage(leaf); err == nil {
 		t.Fatal("non-critical extended key usage accepted")
+	}
+}
+
+func TestFailureNotice_DoesNotBlockAnchorNowOrDisable(t *testing.T) {
+	h := newHarness(t)
+	h.log(1)
+	h.enable()
+	block := make(chan struct{})
+	t.Cleanup(func() { close(block) })
+	h.svc.SetOnFailure(func(context.Context, error) { <-block }) // a webhook that never answers
+
+	h.tsa.fail.Store(true)
+	h.log(1)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		if _, err := h.svc.AnchorNow(context.Background()); err == nil {
+			t.Error("expected the TSA outage to fail the run")
+		}
+		if _, err := h.svc.AnchorNow(context.Background()); err == nil {
+			t.Error("expected the TSA outage to fail the run")
+		}
+		in := h.input()
+		in.Enabled = false
+		if err := h.svc.Save(context.Background(), in, nil); err != nil {
+			t.Error(err)
+		}
+	}()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("a blocked failure notice held up AnchorNow or switching off")
+	}
+	if st, _ := h.svc.Status(); st.Enabled {
+		t.Fatal("still enabled")
+	}
+}
+
+// failAuditEvent makes every audit write of eventType fail.
+func (h *harness) failAuditEvent(eventType string) {
+	h.t.Helper()
+	if _, err := h.store.DB().Exec(`CREATE TRIGGER fail_audit BEFORE INSERT ON audit_events
+		WHEN NEW.event_type = '` + eventType + `' BEGIN SELECT RAISE(ABORT, 'audit write refused'); END`); err != nil {
+		h.t.Fatal(err)
+	}
+}
+
+func TestUpdate_SettingsAndAuditEntryAgree(t *testing.T) {
+	h := newHarness(t)
+	h.log(1)
+	h.enable()
+	h.failAuditEvent(audit.EventAuditAnchoringUpdated)
+
+	in := h.input()
+	in.Interval = "2h"
+	if err := h.svc.Save(context.Background(), in, nil); err == nil {
+		t.Fatal("Save should fail when its audit entry can't be written")
+	}
+	saved, err := h.store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved.Interval != time.Hour {
+		t.Fatalf("settings changed without an audit entry: interval %s", saved.Interval)
+	}
+	if st, _ := h.svc.Status(); st.Interval != "1h0m0s" {
+		t.Fatalf("schedule changed without an audit entry: %+v", st)
+	}
+}
+
+func TestDisable_SettingsAndAuditEntryAgree(t *testing.T) {
+	h := newHarness(t)
+	h.log(1)
+	h.enable()
+	h.failAuditEvent(audit.EventAuditAnchoringDisabled)
+
+	in := h.input()
+	in.Enabled = false
+	if err := h.svc.Save(context.Background(), in, nil); err == nil {
+		t.Fatal("Save should fail when its audit entry can't be written")
+	}
+	saved, err := h.store.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !saved.Enabled {
+		t.Fatal("anchoring was switched off without an audit entry")
+	}
+	if st, _ := h.svc.Status(); !st.Enabled {
+		t.Fatal("schedule was switched off without an audit entry")
 	}
 }

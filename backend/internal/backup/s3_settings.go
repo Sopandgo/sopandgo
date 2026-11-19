@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/objectstore"
 	"github.com/sopandgo/sopandgo/backend/internal/secrets"
 )
 
@@ -31,7 +34,17 @@ var (
 	ErrInvalidS3Settings = errors.New("invalid S3 backup settings")
 	// ErrS3NotConfigured is returned when a test or run needs a bucket that is not saved yet.
 	ErrS3NotConfigured = errors.New("S3 backups are not configured")
+	// ErrS3SettingsUnreadable marks a failure to read or decrypt the saved
+	// settings. The error's message is the underlying one.
+	ErrS3SettingsUnreadable = errors.New("S3 backup settings can't be read")
 )
+
+// unreadableError keeps the underlying message and also matches
+// ErrS3SettingsUnreadable.
+type unreadableError struct{ err error }
+
+func (e unreadableError) Error() string   { return e.err.Error() }
+func (e unreadableError) Unwrap() []error { return []error{e.err, ErrS3SettingsUnreadable} }
 
 func invalidS3(format string, args ...any) error {
 	return fmt.Errorf("%w: %s", ErrInvalidS3Settings, fmt.Sprintf(format, args...))
@@ -106,7 +119,13 @@ func defaultS3Row() s3Row {
 	return s3Row{Interval: DefaultS3Interval.String(), RetentionMax: 14, RetentionDays: 30}
 }
 
-func loadS3Row(db *sql.DB) (*s3Row, error) {
+// dbtx is *sql.DB or *sql.Tx.
+type dbtx interface {
+	Exec(query string, args ...any) (sql.Result, error)
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+func loadS3Row(db dbtx) (*s3Row, error) {
 	var r s3Row
 	var enabled, pathStyle int
 	err := db.QueryRow(`
@@ -126,7 +145,7 @@ func loadS3Row(db *sql.DB) (*s3Row, error) {
 	return &r, nil
 }
 
-func writeS3Row(db *sql.DB, r s3Row) error {
+func writeS3Row(db dbtx, r s3Row) error {
 	_, err := db.Exec(`
 		INSERT INTO backup_s3_settings (
 			id, enabled, bucket, region, key_prefix, endpoint, use_path_style,
@@ -179,11 +198,36 @@ func (s *S3SettingsStore) GetPublic() (*PublicS3Settings, error) {
 	}, nil
 }
 
-// Save validates and stores the settings.
-func (s *S3SettingsStore) Save(in SaveS3Input) error {
-	stored, err := loadS3Row(s.db)
+// saveAudited validates in, then writes the row and backup_s3_settings_updated
+// in one transaction. logger may be nil (no audit entry). It returns what it
+// wrote. The backup job's SaveSettings is the only caller outside tests.
+func (s *S3SettingsStore) saveAudited(in SaveS3Input, logger auditLogger, actorUserID *string) (s3Row, error) {
+	tx, err := s.db.Begin()
 	if err != nil {
-		return err
+		return s3Row{}, err
+	}
+	defer tx.Rollback()
+
+	row, err := s.save(tx, in)
+	if err != nil {
+		return s3Row{}, err
+	}
+	if logger != nil {
+		if err := logger.Log(tx, audit.EventBackupS3SettingsUpdated, audit.EntitySystem, "backup", actorUserID, settingsAuditPayload(row)); err != nil {
+			return s3Row{}, fmt.Errorf("audit s3 backup settings: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return s3Row{}, err
+	}
+	return row, nil
+}
+
+// save validates in and writes the row through db, returning what it wrote.
+func (s *S3SettingsStore) save(db dbtx, in SaveS3Input) (s3Row, error) {
+	stored, err := loadS3Row(db)
+	if err != nil {
+		return s3Row{}, err
 	}
 	if stored == nil {
 		d := defaultS3Row()
@@ -203,15 +247,15 @@ func (s *S3SettingsStore) Save(in SaveS3Input) error {
 	}
 
 	if strings.ContainsAny(r.Bucket, " /\t") {
-		return invalidS3("bucket must be a bucket name, not a path or URL")
+		return s3Row{}, invalidS3("bucket must be a bucket name, not a path or URL")
 	}
 	if r.Enabled && r.Bucket == "" {
-		return invalidS3("bucket is required when backups are on")
+		return s3Row{}, invalidS3("bucket is required when backups are on")
 	}
 	if r.Endpoint != "" {
 		u, err := url.Parse(r.Endpoint)
 		if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
-			return invalidS3("endpoint must be a valid http(s) URL")
+			return s3Row{}, invalidS3("endpoint must be a valid http(s) URL")
 		}
 	}
 
@@ -221,40 +265,58 @@ func (s *S3SettingsStore) Save(in SaveS3Input) error {
 	}
 	d, err := time.ParseDuration(interval)
 	if err != nil {
-		return invalidS3("interval must be a duration such as 24h or 6h")
+		return s3Row{}, invalidS3("interval must be a duration such as 24h or 6h")
 	}
 	if d < MinS3Interval {
-		return invalidS3("interval must be at least %s", MinS3Interval)
+		return s3Row{}, invalidS3("interval must be at least %s", MinS3Interval)
 	}
 	r.Interval = d.String()
 
 	if r.RetentionMax < 0 || r.RetentionDays < 0 {
-		return invalidS3("retention values must be zero or positive")
+		return s3Row{}, invalidS3("retention values must be zero or positive")
 	}
 
 	secret := strings.TrimSpace(in.SecretAccessKey)
 	switch {
 	case r.AccessKeyID == "" && secret != "":
-		return invalidS3("enter the access key ID that belongs to the secret access key")
+		return s3Row{}, invalidS3("enter the access key ID that belongs to the secret access key")
 	case r.AccessKeyID == "":
 		// Default credential chain (IAM role, AWS_* env, shared config): no stored secret.
 		r.SecretEnc = nil
 	case secret != "":
 		if !s.KeyConfigured() {
-			return ErrS3KeyMissing
+			return s3Row{}, ErrS3KeyMissing
 		}
 		r.SecretEnc, err = secrets.Seal(s.key, []byte(secret))
 		if err != nil {
-			return fmt.Errorf("encrypt s3 secret access key: %w", err)
+			return s3Row{}, fmt.Errorf("encrypt s3 secret access key: %w", err)
 		}
 	case r.AccessKeyID != stored.AccessKeyID || len(stored.SecretEnc) == 0:
 		// A kept secret belongs to the old key ID, so a new ID needs its own secret.
-		return invalidS3("enter the secret access key for this access key ID")
+		return s3Row{}, invalidS3("enter the secret access key for this access key ID")
 	default:
 		r.SecretEnc = stored.SecretEnc
 	}
 
-	return writeS3Row(s.db, r)
+	if err := writeS3Row(db, r); err != nil {
+		return s3Row{}, err
+	}
+	return r, nil
+}
+
+// settingsAuditPayload is the backup_s3_settings_updated payload for r.
+func settingsAuditPayload(r s3Row) map[string]any {
+	return map[string]any{
+		"enabled":            r.Enabled,
+		"bucket":             r.Bucket,
+		"region":             r.Region,
+		"key_prefix":         r.KeyPrefix,
+		"endpoint":           r.Endpoint,
+		"interval":           r.Interval,
+		"retention_max":      r.RetentionMax,
+		"retention_days":     r.RetentionDays,
+		"static_credentials": r.AccessKeyID != "",
+	}
 }
 
 // LoadConfig returns the saved settings as scheduler config, with the secret decrypted.
@@ -264,21 +326,7 @@ func (s *S3SettingsStore) LoadConfig() (S3SchedulerConfig, error) {
 	if err != nil || r == nil {
 		return S3SchedulerConfig{}, err
 	}
-	cfg := S3SchedulerConfig{
-		Enabled:       r.Enabled,
-		Bucket:        r.Bucket,
-		Region:        r.Region,
-		RootPrefix:    r.KeyPrefix,
-		Endpoint:      r.Endpoint,
-		UsePathStyle:  r.UsePathStyle,
-		StaticKey:     r.AccessKeyID,
-		RetentionMax:  r.RetentionMax,
-		RetentionDays: r.RetentionDays,
-	}
-	cfg.Interval, err = time.ParseDuration(r.Interval)
-	if err != nil || cfg.Interval < MinS3Interval {
-		cfg.Interval = DefaultS3Interval
-	}
+	cfg := configFromRow(*r)
 	if len(r.SecretEnc) > 0 {
 		if !s.KeyConfigured() {
 			return S3SchedulerConfig{}, fmt.Errorf("decrypt s3 secret access key: %w", ErrS3KeyMissing)
@@ -290,6 +338,50 @@ func (s *S3SettingsStore) LoadConfig() (S3SchedulerConfig, error) {
 		cfg.StaticSecret = string(raw)
 	}
 	return cfg, nil
+}
+
+// configFromRow is r as scheduler config, without the secret.
+func configFromRow(r s3Row) S3SchedulerConfig {
+	cfg := S3SchedulerConfig{
+		Enabled:       r.Enabled,
+		Bucket:        r.Bucket,
+		Region:        r.Region,
+		RootPrefix:    r.KeyPrefix,
+		Endpoint:      r.Endpoint,
+		UsePathStyle:  r.UsePathStyle,
+		StaticKey:     r.AccessKeyID,
+		RetentionMax:  r.RetentionMax,
+		RetentionDays: r.RetentionDays,
+	}
+	d, err := time.ParseDuration(r.Interval)
+	if err != nil || d < MinS3Interval {
+		d = DefaultS3Interval
+	}
+	cfg.Interval = d
+	return cfg
+}
+
+// OpenObjectStore opens the bucket saved under Settings → Backup, whether or
+// not scheduled backups are on. It is the objectstore.Opener both background
+// jobs use. It answers ErrS3NotConfigured when no bucket is saved, and an
+// error matching ErrS3SettingsUnreadable when the settings can't be read.
+func (s *S3SettingsStore) OpenObjectStore(ctx context.Context) (objectstore.Store, error) {
+	cfg, err := s.LoadConfig()
+	if err != nil {
+		return nil, unreadableError{err}
+	}
+	if strings.TrimSpace(cfg.Bucket) == "" {
+		return nil, ErrS3NotConfigured
+	}
+	return objectstore.NewS3(ctx, objectstore.S3Config{
+		Bucket:       cfg.Bucket,
+		Region:       cfg.Region,
+		RootPrefix:   cfg.RootPrefix,
+		Endpoint:     cfg.Endpoint,
+		UsePathStyle: cfg.UsePathStyle,
+		StaticKey:    cfg.StaticKey,
+		StaticSecret: cfg.StaticSecret,
+	})
 }
 
 // A restore replaces app.db, which holds these settings. The running instance's

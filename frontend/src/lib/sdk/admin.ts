@@ -489,11 +489,11 @@ export const admin = (client: Client) => ({
         return await res.json();
     },
 
-    /** Throws the server's message for validation (400) and apply (502) failures. */
+    /** Throws the server's message for validation failures (400). Saving does not contact S3. */
     updateBackupS3Settings: async (payload: BackupS3SettingsInput): Promise<void> => {
         const res = await client.fetch('/admin/settings/backup-s3', { method: 'PUT', body: payload });
         if (res.status === 412) throw new Error('SECRET_ENCRYPTION_KEY_MISSING');
-        if (res.status === 400 || res.status === 502) {
+        if (res.status === 400) {
             throw new Error((await res.text()).trim() || 'BACKUP_S3_SETTINGS_INVALID');
         }
         if (!res.ok) throw new Error('BACKUP_S3_SETTINGS_SAVE_FAILED');

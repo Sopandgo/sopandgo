@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
@@ -110,8 +111,59 @@ func TestAPI_AdminBackupS3Settings(t *testing.T) {
 		if err := json.Unmarshal(rec.Body.Bytes(), &status); err != nil {
 			t.Fatal(err)
 		}
-		if !status.S3.Enabled || status.S3.Bucket != "lab-backups" || status.S3.NextRunUTC == "" {
+		if !status.S3.Enabled || status.S3.Bucket != "lab-backups" || status.S3.Interval != "12h0m0s" || status.S3.NextRunUTC == "" {
 			t.Fatalf("scheduler did not pick up the settings: %+v", status.S3)
+		}
+
+		var audited int
+		var actor string
+		env.Store.DB.QueryRow(`SELECT COUNT(*), COALESCE(MAX(actor_user_id), '') FROM audit_events WHERE event_type = 'backup_s3_settings_updated'`).Scan(&audited, &actor)
+		if audited != 1 || actor != adminID {
+			t.Fatalf("settings audit events = %d by %q", audited, actor)
+		}
+	})
+
+	t.Run("test connection uses the saved settings", func(t *testing.T) {
+		rec := doRequest(http.MethodPost, "/api/admin/settings/backup-s3/test", adminToken, nil)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d %s", rec.Code, rec.Body.String())
+		}
+		if keys := env.ObjectStore.Keys(""); len(keys) != 0 {
+			t.Fatalf("probe object left behind: %v", keys)
+		}
+	})
+
+	t.Run("run now uploads to the bucket", func(t *testing.T) {
+		rec := doRequest(http.MethodPost, "/api/admin/backups/s3/run", adminToken, nil)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d %s", rec.Code, rec.Body.String())
+		}
+		var out struct {
+			ObjectKey string `json:"object_key"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.HasPrefix(out.ObjectKey, "lab/automated/sopandgo-automated-") {
+			t.Fatalf("object key = %q", out.ObjectKey)
+		}
+		if keys := env.ObjectStore.Keys(""); len(keys) != 1 || keys[0] != out.ObjectKey {
+			t.Fatalf("objects = %v", keys)
+		}
+	})
+
+	t.Run("run now after switching off", func(t *testing.T) {
+		off := map[string]any{}
+		for k, v := range settings {
+			off[k] = v
+		}
+		off["enabled"] = false
+		off["secret_access_key"] = ""
+		if rec := doRequest(http.MethodPut, "/api/admin/settings/backup-s3", adminToken, off); rec.Code != http.StatusNoContent {
+			t.Fatalf("PUT: %d %s", rec.Code, rec.Body.String())
+		}
+		if rec := doRequest(http.MethodPost, "/api/admin/backups/s3/run", adminToken, nil); rec.Code != http.StatusPreconditionFailed {
+			t.Fatalf("expected 412, got %d %s", rec.Code, rec.Body.String())
 		}
 	})
 }

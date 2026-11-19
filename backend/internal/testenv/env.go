@@ -14,6 +14,7 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/branding"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
+	"github.com/sopandgo/sopandgo/backend/internal/objectstore"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
 	"github.com/sopandgo/sopandgo/backend/internal/storage"
 )
@@ -29,8 +30,10 @@ type Env struct {
 	Branding       *branding.Service
 	API            *api.Server
 	MockMailSender *MockMailSender
-	DataDir        string
-	Ctx            context.Context
+	// ObjectStore is the bucket "Back up now" and the connection test reach.
+	ObjectStore *objectstore.Memory
+	DataDir     string
+	Ctx         context.Context
 }
 
 func New(t *testing.T) *Env {
@@ -87,8 +90,9 @@ func New(t *testing.T) *Env {
 	backupService := backup.NewService(store.DB, dataDir, "test", storage.LatestSchemaVersion())
 
 	s3Settings := backup.NewS3SettingsStore(store.DB, testEncKey)
-	// Never started: API tests read status and settings but do not upload.
-	s3Scheduler := backup.NewS3Scheduler(backupService, auditLogger)
+	// Never started: API tests run "Back up now" against the in-memory bucket.
+	objectStore := objectstore.NewMemory("lab")
+	s3Scheduler := backup.NewS3Scheduler(backupService, s3Settings, objectStore.Opener(), auditLogger)
 
 	brandingService := branding.NewService(store.DB, auditLogger)
 
@@ -104,6 +108,7 @@ func New(t *testing.T) *Env {
 		Branding:       brandingService,
 		API:            apiServer,
 		MockMailSender: mockSender,
+		ObjectStore:    objectStore,
 		DataDir:        dataDir,
 		Ctx:            ctx,
 	}

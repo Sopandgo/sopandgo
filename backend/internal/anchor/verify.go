@@ -14,6 +14,7 @@ import (
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
+	"github.com/sopandgo/sopandgo/backend/internal/objectstore"
 )
 
 // Status is a snapshot for the admin UI. It holds no secrets.
@@ -38,6 +39,7 @@ type Status struct {
 
 // Status returns the current state.
 func (s *Service) Status() (Status, error) {
+	job := s.job.Status()
 	s.mu.Lock()
 	st := s.settings
 	out := Status{
@@ -47,7 +49,7 @@ func (s *Service) Status() (Status, error) {
 		Username:  st.Username,
 		SecretSet: st.Secret != "",
 		Interval:  st.Interval.String(),
-		LastError: s.lastError,
+		LastError: job.LastError,
 	}
 	if st.InstanceID != "" && st.Enabled {
 		out.InstanceID = st.InstanceID
@@ -56,13 +58,13 @@ func (s *Service) Status() (Status, error) {
 		v := *s.objectLock
 		out.ObjectLock = &v
 	}
-	if !s.lastAttempt.IsZero() {
-		out.LastAttemptUTC = s.lastAttempt.Format(time.RFC3339)
-	}
-	if !s.nextRun.IsZero() {
-		out.NextRunUTC = s.nextRun.UTC().Format(time.RFC3339)
-	}
 	s.mu.Unlock()
+	if !job.LastAttempt.IsZero() {
+		out.LastAttemptUTC = job.LastAttempt.Format(time.RFC3339)
+	}
+	if !job.NextRun.IsZero() {
+		out.NextRunUTC = job.NextRun.Format(time.RFC3339)
+	}
 
 	if certs, err := ParsePEMCerts(st.PinnedCAPEM); err == nil {
 		out.Fingerprint = Fingerprint(certs)
@@ -79,10 +81,10 @@ func (s *Service) Status() (Status, error) {
 
 // RefreshObjectLock re-reads the bucket's Object Lock setting for Status.
 func (s *Service) RefreshObjectLock(ctx context.Context) {
-	if s.openStore == nil || !s.snapshot().Enabled {
+	if !s.snapshot().Enabled {
 		return
 	}
-	objs, err := s.openStore(ctx)
+	objs, err := s.open(ctx)
 	if err != nil {
 		return
 	}
@@ -290,12 +292,7 @@ func (s *Service) Check(ctx context.Context, chain audit.ChainIntegrityReport) (
 
 	// (c): every receipt in S3, which an attacker on this server cannot
 	// remove from the bucket if Object Lock is on.
-	if s.openStore == nil {
-		rep.S3Error = ErrS3NotConfigured.Error()
-		rep.Warnings++
-		return rep, nil
-	}
-	objs, err := s.openStore(ctx)
+	objs, err := s.open(ctx)
 	if err == nil {
 		var lock bool
 		if lock, err = objs.ObjectLockEnabled(ctx); err == nil {
@@ -303,9 +300,9 @@ func (s *Service) Check(ctx context.Context, chain audit.ChainIntegrityReport) (
 			s.setObjectLock(lock)
 		}
 	}
-	var keys []string
+	var listed []objectstore.Object
 	if err == nil {
-		keys, err = objs.List(ctx, objs.Prefix(st.InstanceID))
+		listed, err = objs.List(ctx, receiptPrefix(objs, st.InstanceID))
 	}
 	if err != nil {
 		rep.S3Error = err.Error()
@@ -313,7 +310,8 @@ func (s *Service) Check(ctx context.Context, chain audit.ChainIntegrityReport) (
 		return rep, nil
 	}
 
-	for _, k := range keys {
+	for _, o := range listed {
+		k := o.Key
 		if !strings.HasSuffix(k, ".json") {
 			continue
 		}
