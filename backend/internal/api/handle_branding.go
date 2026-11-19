@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/sopandgo/sopandgo/backend/internal/branding"
+	"github.com/sopandgo/sopandgo/backend/internal/imageutil"
 )
 
 // handleGetBranding: GET /api/branding (public: the sign-in page needs it)
@@ -120,14 +121,11 @@ func (s *Server) handleAdminUploadBrandingLogo(w http.ResponseWriter, r *http.Re
 
 	b, err := s.brandingService.SetLogo(content, GetUserID(r.Context()))
 	if err != nil {
-		msg := err.Error()
 		switch {
-		case strings.Contains(msg, "unsupported image type"),
-			strings.Contains(msg, "invalid image"),
-			strings.Contains(msg, "empty image"):
-			writeJSONError(w, http.StatusBadRequest, "invalid_image", "Use a PNG, JPEG, or WebP image.")
-		case strings.Contains(msg, "image too large"):
-			writeJSONError(w, http.StatusBadRequest, "image_too_large",
+		case errors.Is(err, imageutil.ErrInvalidImage):
+			writeKindJSON(w, err, "invalid_image", "Use a PNG, JPEG, or WebP image.")
+		case errors.Is(err, imageutil.ErrImageTooLarge):
+			writeKindJSON(w, err, "image_too_large",
 				"That image is too large. Use one under 4096 pixels on each side.")
 		default:
 			writeJSONError(w, http.StatusInternalServerError, "upload_failed", "Could not save the logo. Please try again.")

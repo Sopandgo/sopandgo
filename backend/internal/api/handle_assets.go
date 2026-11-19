@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
 )
@@ -43,16 +42,14 @@ func (s *Server) handleAddAsset(w http.ResponseWriter, r *http.Request) {
 
 	assetID, err := s.sopService.AddAsset(sopID, header.Filename, content, &actorID)
 	if err != nil {
-		msg := err.Error()
 		switch {
 		case errors.Is(err, sop.ErrSOPArchived):
 			writeSOPArchived(w)
-		case strings.HasPrefix(msg, "asset already exists:"):
-			fn := strings.TrimSpace(strings.TrimPrefix(msg, "asset already exists:"))
-			writeJSONError(w, http.StatusConflict, "asset_exists",
-				`A file named "`+fn+`" already exists for this SOP. Rename the file or remove the existing asset first.`)
-		case strings.Contains(msg, "invalid path construction"):
-			writeJSONError(w, http.StatusBadRequest, "invalid_asset_filename",
+		case errors.Is(err, sop.ErrAssetExists):
+			writeKindJSON(w, err, "asset_exists",
+				`A file named "`+header.Filename+`" already exists for this SOP. Rename the file or remove the existing asset first.`)
+		case errors.Is(err, sop.ErrInvalidAssetFilename):
+			writeKindJSON(w, err, "invalid_asset_filename",
 				"That file name is not allowed. Use a simple file name without folders or \"..\" (e.g. diagram.png).")
 		default:
 			writeJSONError(w, http.StatusInternalServerError, "upload_failed", "Could not save the file. Please try again.")

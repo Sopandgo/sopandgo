@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
 // --- User ---
@@ -66,7 +67,7 @@ func getUserByIDRecord(db audit.DBTX, id string) (*User, error) {
 		&avatarPath, &avatarHash, &tf.enabled, &tf.required, &createdAt,
 	)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("user not found: %s", id)
+		return nil, errkind.New(errkind.NotFound, "user not found: %s", id)
 	}
 	if err != nil {
 		return nil, err

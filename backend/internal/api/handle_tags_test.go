@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
@@ -88,6 +89,9 @@ func TestAPI_Tags(t *testing.T) {
 
 		if rec.Code != http.StatusConflict {
 			t.Errorf("Expected 409 Conflict for duplicate tag, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if body := strings.TrimSpace(rec.Body.String()); body != "a tag with this name already exists" {
+			t.Errorf("duplicate tag body = %q, want the message without a conflict: prefix", body)
 		}
 	})
 

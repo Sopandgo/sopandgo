@@ -11,6 +11,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/markdown"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
@@ -64,24 +65,21 @@ func (s *Server) handleRegisterSOPVersion(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		msg := err.Error()
 		switch {
 		case errors.Is(err, sop.ErrSOPArchived):
 			writeSOPArchived(w)
 			return
-		case strings.Contains(msg, "referenced asset not found:"),
-			strings.Contains(msg, "invalid asset URL encoding:"):
-			writeJSONError(w, http.StatusBadRequest, "invalid_asset_reference", msg)
+		case errors.Is(err, sop.ErrInvalidAssetReference):
+			writeKindJSON(w, err, "invalid_asset_reference", err.Error())
 			return
 		case errors.Is(err, sop.ErrChangeSummaryRequired), errors.Is(err, sop.ErrChangeSummaryTooLong):
-			writeJSONError(w, http.StatusBadRequest, "invalid_change_summary", err.Error())
+			writeKindJSON(w, err, "invalid_change_summary", err.Error())
 			return
-		case strings.HasPrefix(msg, "conflict:"):
-			d := strings.TrimSpace(strings.TrimPrefix(msg, "conflict:"))
-			writeJSONError(w, http.StatusConflict, "conflict", d)
+		case errors.Is(err, errkind.Conflict):
+			writeKindJSON(w, err, "conflict", err.Error())
 			return
-		case strings.Contains(msg, "not found"):
-			http.Error(w, "SOP not found", http.StatusNotFound)
+		case errors.Is(err, errkind.NotFound):
+			writeKindText(w, err, "SOP not found")
 			return
 		}
 
@@ -279,18 +277,18 @@ func (s *Server) handleDownloadSOPVersionPDF(w http.ResponseWriter, r *http.Requ
 }
 
 // writeLifecycleError answers a failed promote, approve or reject. The SOP service
-// owns the lifecycle rules; the handler only maps its errors to status codes.
+// owns the lifecycle rules and marks its errors with a kind; the handler only
+// picks the response body.
 func writeLifecycleError(w http.ResponseWriter, err error, action, versionID, failMsg string) {
-	msg := err.Error()
 	switch {
 	case errors.Is(err, sop.ErrSOPArchived):
 		writeSOPArchived(w)
 	case errors.Is(err, sop.ErrRejectReasonRequired), errors.Is(err, sop.ErrRejectReasonTooLong):
-		http.Error(w, msg, http.StatusBadRequest)
-	case strings.HasPrefix(msg, "conflict:"):
-		http.Error(w, sentence(strings.TrimSpace(strings.TrimPrefix(msg, "conflict:"))), http.StatusConflict)
-	case strings.Contains(msg, "not found"):
-		http.Error(w, "Version not found", http.StatusNotFound)
+		writeKindText(w, err, err.Error())
+	case errors.Is(err, errkind.Conflict):
+		writeKindText(w, err, sentence(err.Error()))
+	case errors.Is(err, errkind.NotFound):
+		writeKindText(w, err, "Version not found")
 	default:
 		log.Printf("ERROR: %s version %s failed: %v", action, versionID, err)
 		http.Error(w, failMsg, http.StatusInternalServerError)

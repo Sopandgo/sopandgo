@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
@@ -43,17 +44,17 @@ func TestService_ArchiveSOP_ReasonAndConflicts(t *testing.T) {
 	if err := env.SOPService.ArchiveSOP(sopID, approverID, strings.Repeat("x", sop.MaxArchiveReasonRunes+1)); !errors.Is(err, sop.ErrArchiveReasonTooLong) {
 		t.Fatalf("long reason: got %v", err)
 	}
-	if err := env.SOPService.ArchiveSOP("missing-sop", approverID, "Gone"); err == nil || !strings.Contains(err.Error(), "not found") {
+	if err := env.SOPService.ArchiveSOP("missing-sop", approverID, "Gone"); !errors.Is(err, errkind.NotFound) {
 		t.Fatalf("missing SOP: got %v", err)
 	}
-	if err := env.SOPService.UnarchiveSOP(sopID, approverID); err == nil || !strings.HasPrefix(err.Error(), "conflict:") {
+	if err := env.SOPService.UnarchiveSOP(sopID, approverID); !errors.Is(err, errkind.Conflict) {
 		t.Fatalf("unarchive active SOP: got %v", err)
 	}
 
 	if err := env.SOPService.ArchiveSOP(sopID, approverID, "  Centrifuge replaced  "); err != nil {
 		t.Fatalf("ArchiveSOP: %v", err)
 	}
-	if err := env.SOPService.ArchiveSOP(sopID, approverID, "Again"); err == nil || !strings.HasPrefix(err.Error(), "conflict:") {
+	if err := env.SOPService.ArchiveSOP(sopID, approverID, "Again"); !errors.Is(err, errkind.Conflict) {
 		t.Fatalf("archive twice: got %v", err)
 	}
 
@@ -109,7 +110,7 @@ func TestService_ArchiveSOP_BlockedByReleaseCandidate(t *testing.T) {
 		t.Fatalf("promote v2: %v", err)
 	}
 
-	if err := env.SOPService.ArchiveSOP(sopID, approverID, "Retired"); err == nil || !strings.HasPrefix(err.Error(), "conflict:") {
+	if err := env.SOPService.ArchiveSOP(sopID, approverID, "Retired"); !errors.Is(err, errkind.Conflict) {
 		t.Fatalf("expected conflict with a pending RC, got %v", err)
 	}
 

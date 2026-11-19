@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
 func createTagRecord(db audit.DBTX, id, title, createdAt string) error {
@@ -106,7 +107,7 @@ func setTagActiveStatusRecord(db audit.DBTX, tagID string, isActive bool) error 
 	// Defensive check
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
-		return fmt.Errorf("tag not found: %s", tagID)
+		return errkind.New(errkind.NotFound, "tag not found: %s", tagID)
 	}
 
 	return nil

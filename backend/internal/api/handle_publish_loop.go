@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 )
 
@@ -22,9 +24,8 @@ func (s *Server) handleDiffSOPVersion(w http.ResponseWriter, r *http.Request) {
 
 	diff, err := s.sopService.DiffSOPVersion(sopID, versionID, r.URL.Query().Get("against"))
 	if err != nil {
-		msg := err.Error()
-		if strings.Contains(msg, "not found") || strings.Contains(msg, "not part of this SOP") {
-			http.Error(w, "Version not found", http.StatusNotFound)
+		if errors.Is(err, errkind.NotFound) {
+			writeKindText(w, err, "Version not found")
 			return
 		}
 		http.Error(w, "Failed to compare versions", http.StatusInternalServerError)
@@ -77,8 +78,8 @@ func (s *Server) writeTrainingCoverage(w http.ResponseWriter, sopID string) {
 	}
 	rows, err := s.sopService.TrainingCoverage(sopID, users)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, "SOP not found", http.StatusNotFound)
+		if errors.Is(err, errkind.NotFound) {
+			writeKindText(w, err, "SOP not found")
 			return
 		}
 		http.Error(w, "Failed to load signature coverage", http.StatusInternalServerError)

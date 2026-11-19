@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
 // CreateTag creates a new global tag that can be attached to any SOP.
@@ -27,8 +28,7 @@ func (s *Service) CreateTag(title string, actorUserID *string) (string, error) {
 		return "", fmt.Errorf("failed to check tag uniqueness: %w", err)
 	}
 	if exists {
-		// Return a clear error so the API handler can send a 409 Conflict
-		return "", fmt.Errorf("conflict: a tag with this name already exists")
+		return "", errkind.New(errkind.Conflict, "a tag with this name already exists")
 	}
 
 	id := uuid.NewString()

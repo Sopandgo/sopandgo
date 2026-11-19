@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 	"github.com/sopandgo/sopandgo/backend/internal/integrity"
 	"github.com/sopandgo/sopandgo/backend/internal/pdfgen"
@@ -155,7 +156,7 @@ func (s *Service) ensureVersionPDFArtifact(versionID, stage, actorUserID string)
 		now,
 	); err != nil {
 		_ = os.Remove(absPath)
-		if strings.Contains(strings.ToLower(err.Error()), "unique") {
+		if storage.IsUniqueViolation(err) {
 			return nil
 		}
 		return fmt.Errorf("failed to persist pdf artifact: %w", err)
@@ -197,7 +198,7 @@ func (s *Service) GetVersionPDFArtifactPath(versionID string, stage string) (str
 	artifact, err := getSOPVersionPDFArtifactByKeyRecord(s.db, versionID, stage, s.pdfGeneratorVersion)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", "", fmt.Errorf("pdf artifact not found")
+			return "", "", errkind.New(errkind.NotFound, "pdf artifact not found")
 		}
 		return "", "", err
 	}

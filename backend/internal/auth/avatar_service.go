@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/integrity"
 	"github.com/sopandgo/sopandgo/backend/internal/storage"
 )
@@ -121,13 +122,13 @@ func (s *Service) RemoveAvatar(userID string, actorUserID *string) error {
 
 	path, _, err := getUserAvatarMetaRecord(tx, userID)
 	if err == sql.ErrNoRows {
-		return fmt.Errorf("user not found: %s", userID)
+		return errkind.New(errkind.NotFound, "user not found: %s", userID)
 	}
 	if err != nil {
 		return err
 	}
 	if path == "" {
-		return fmt.Errorf("no avatar")
+		return ErrNoAvatar
 	}
 
 	if err := clearUserAvatarRecord(tx, userID); err != nil {
@@ -164,11 +165,12 @@ func (s *Service) RemoveAvatar(userID string, actorUserID *string) error {
 }
 
 // AvatarAbsolutePath returns the absolute path for a size (sm|md|lg|xl) and the
-// content hash used for ETag. Returns sql.ErrNoRows-style "no avatar" when unset.
+// content hash used for ETag. It returns ErrInvalidAvatarSize for an unknown
+// size and ErrNoAvatar when the user has no avatar.
 func (s *Service) AvatarAbsolutePath(userID, sizeName string) (absPath, contentHash string, err error) {
 	px, ok := AvatarSizeName[sizeName]
 	if !ok {
-		return "", "", fmt.Errorf("invalid size")
+		return "", "", ErrInvalidAvatarSize
 	}
 
 	path, hash, err := getUserAvatarMetaRecord(s.db, userID)
@@ -176,7 +178,7 @@ func (s *Service) AvatarAbsolutePath(userID, sizeName string) (absPath, contentH
 		return "", "", err
 	}
 	if path == "" {
-		return "", "", fmt.Errorf("no avatar")
+		return "", "", ErrNoAvatar
 	}
 
 	relFile := filepath.ToSlash(filepath.Join(path, avatarFileName(px)))

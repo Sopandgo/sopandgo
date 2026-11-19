@@ -1,6 +1,10 @@
 package notify
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
+)
 
 var (
 	// ErrKeyMissing is returned when saving or sending requires SECRET_ENCRYPTION_KEY but it is unset.
@@ -20,4 +24,8 @@ var (
 
 	// ErrInvalidEvent is returned when an unknown notification event type is provided.
 	ErrInvalidEvent = errors.New("invalid notification event type")
+
+	// ErrInvalidURL refuses a Slack, Gotify or webhook URL that is malformed or
+	// uses the wrong scheme. The message says which form is required.
+	ErrInvalidURL = errkind.New(errkind.Invalid, "invalid integration URL")
 )

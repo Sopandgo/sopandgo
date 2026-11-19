@@ -3,10 +3,19 @@ package auth
 import (
 	"errors"
 	"time"
+
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
 var ErrSelfDisable = errors.New("cannot change own active status")
 var ErrSessionNotFound = errors.New("session not found")
+
+// ErrNoAvatar answers a request for, or the removal of, a profile picture the
+// user doesn't have.
+var ErrNoAvatar = errkind.New(errkind.NotFound, "no avatar")
+
+// ErrInvalidAvatarSize refuses an avatar size other than sm, md, lg or xl.
+var ErrInvalidAvatarSize = errkind.New(errkind.Invalid, "invalid size")
 
 type User struct {
 	ID                 string `json:"id"`

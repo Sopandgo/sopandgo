@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
 // ArchiveSOP retires an SOP: it leaves the default list, signature status and team
@@ -30,7 +31,7 @@ func (s *Service) ArchiveSOP(sopID string, actorUserID string, reason string) er
 
 	if err := requireSOPActiveRecord(tx, sopID); err != nil {
 		if err == ErrSOPArchived {
-			return fmt.Errorf("conflict: this SOP is already archived")
+			return errkind.New(errkind.Conflict, "this SOP is already archived")
 		}
 		return err
 	}
@@ -40,7 +41,7 @@ func (s *Service) ArchiveSOP(sopID string, actorUserID string, reason string) er
 		return fmt.Errorf("failed to check release candidates: %w", err)
 	}
 	if hasRC {
-		return fmt.Errorf("conflict: approve or reject the pending release candidate before archiving this SOP")
+		return errkind.New(errkind.Conflict, "approve or reject the pending release candidate before archiving this SOP")
 	}
 
 	archivedAt := time.Now().UTC().Format(time.RFC3339Nano)
@@ -75,7 +76,7 @@ func (s *Service) UnarchiveSOP(sopID string, actorUserID string) error {
 
 	err = requireSOPActiveRecord(tx, sopID)
 	if err == nil {
-		return fmt.Errorf("conflict: this SOP is not archived")
+		return errkind.New(errkind.Conflict, "this SOP is not archived")
 	}
 	if err != ErrSOPArchived {
 		return err

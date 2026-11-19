@@ -22,7 +22,7 @@ It follows a **Service Layer Pattern** (`sop.Service`) for data consistency, ato
    * **Disk:** Absolute paths under `DATA_DIR`, resolved via `SafeJoin`.
    * **Network:** Streams files with `http.ServeFile` from the API layer.
 
-4. **Version lifecycle:** Content is append-only. Status moves `draft` → `rc` → `published`, or `rc` → `rejected`; prior published versions become `superseded`. The rules live in one table in `lifecycle.go`; a wrong state is a `conflict:` error and an unknown version a "not found" error. A whole SOP can be archived, which freezes all of this until it is unarchived. See `docs/concepts/versioning-and-signatures.md`.
+4. **Version lifecycle:** Content is append-only. Status moves `draft` → `rc` → `published`, or `rc` → `rejected`; prior published versions become `superseded`. The rules live in one table in `lifecycle.go`. A wrong state is an `errkind.Conflict` error and an unknown version an `errkind.NotFound` error (see `backend/internal/errkind`). A whole SOP can be archived, which freezes all of this until it is unarchived. See `docs/concepts/versioning-and-signatures.md`.
 
 ## File Structure
 

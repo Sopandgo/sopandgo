@@ -60,6 +60,12 @@ The backend guarantees data consistency through a strict **Concurrency Model**:
 * **Startup check:** After migrations, the backend runs `PRAGMA foreign_key_check` and logs one `WARNING` per table with orphan rows left by older releases. It keeps starting.
 * **Rule:** If the Audit Log fails to write, the Data change is rolled back.
 
+## Errors & Status Codes
+
+* **Error kinds:** Domain modules mark the failures a client can cause with one of three kinds from `internal/errkind`: `Conflict`, `NotFound`, or `Invalid`. The message stays free text for people and never decides the status. A named error that a handler answers with its own JSON code (for example `sop.ErrSOPArchived` or `imageutil.ErrImageTooLarge`) also carries a kind.
+* **One mapping:** For errors that carry a kind, the HTTP module maps kind to status in one place (`kindStatus`): conflict → 409, not found → 404, invalid → 400. Handlers still choose the response body, and no handler picks a status from error text. Named errors without a kind (backup, mail, two-factor and a few others) keep their explicit statuses in their handlers.
+* **Duplicates:** `storage.IsUniqueViolation` reads SQLite's extended result code to detect a UNIQUE or PRIMARY KEY violation, never the message.
+
 
 ## Identity & Security Model
 

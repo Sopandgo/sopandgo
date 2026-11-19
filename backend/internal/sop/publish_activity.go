@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/storage"
 )
 
@@ -27,7 +28,7 @@ func (s *Service) DiffSOPVersion(sopID, versionID, againstVersionID string) (*Ve
 		return nil, err
 	}
 	if current.SOPID != sopID {
-		return nil, fmt.Errorf("sop version not found: %s", versionID)
+		return nil, errkind.New(errkind.NotFound, "sop version not found: %s", versionID)
 	}
 
 	baseID := againstVersionID
@@ -51,7 +52,7 @@ func (s *Service) DiffSOPVersion(sopID, versionID, againstVersionID string) (*Ve
 		return nil, err
 	}
 	if base.SOPID != sopID {
-		return nil, fmt.Errorf("comparison version is not part of this SOP")
+		return nil, errkind.New(errkind.NotFound, "comparison version is not part of this SOP")
 	}
 
 	oldContent, err := s.readVersionContent(base)

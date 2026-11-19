@@ -20,7 +20,7 @@ Titles and sentences use the organization language (`app_settings.default_locale
 
 ## Core pieces
 
-1. **`SettingsStore`** — encrypted CRUD + public DTO (no secrets returned).
+1. **`SettingsStore`** — encrypted CRUD + public DTO (no secrets returned). A malformed or wrong-scheme URL is refused with `ErrInvalidURL`, an invalid-kind error whose message says which form is required.
 2. **`Service.Dispatch`** — fan-out after domain commit; failures are audited (`notification_sent` / `notification_failed`) and never roll back the domain action.
 3. **`Service.SendTest`** — pings one channel using stored credentials (even if currently disabled).
 

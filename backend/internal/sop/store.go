@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
 // currentVersionStateSQL is a version's current state: its newest state row, with
@@ -38,7 +39,7 @@ func getSOPByIDRecord(db audit.DBTX, id string) (*SOP, error) {
 		&s.ID, &s.Title, &createdAt, &archivedAt,
 	)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("sop not found: %s", id)
+		return nil, errkind.New(errkind.NotFound, "sop not found: %s", id)
 	}
 	if err != nil {
 		return nil, err
@@ -97,7 +98,7 @@ func requireSOPActiveRecord(db audit.DBTX, sopID string) error {
 	var archived int
 	err := db.QueryRow(`SELECT archived_at IS NOT NULL FROM sops WHERE id = ?`, sopID).Scan(&archived)
 	if err == sql.ErrNoRows {
-		return fmt.Errorf("sop not found: %s", sopID)
+		return errkind.New(errkind.NotFound, "sop not found: %s", sopID)
 	}
 	if err != nil {
 		return err
@@ -419,7 +420,7 @@ func getSOPVersionByIDRecord(db audit.DBTX, id string) (*SOPVersion, error) {
 		&s.ID, &s.SOPID, &s.Version, &s.ContentPath, &s.ContentHash, &s.ChangeSummary, &createdAt, &s.Status,
 	)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("sop version not found: %s", id)
+		return nil, errkind.New(errkind.NotFound, "sop version not found: %s", id)
 	}
 	if err != nil {
 		return nil, err
@@ -648,7 +649,7 @@ func getSOPAssetByIDRecord(db audit.DBTX, id string) (*SOPAsset, error) {
 		&s.ID, &s.SOPID, &s.Filename, &s.ContentPath, &s.ContentHash, &createdAt,
 	)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("sop not found: %s", id)
+		return nil, errkind.New(errkind.NotFound, "sop not found: %s", id)
 	}
 	if err != nil {
 		return nil, err
@@ -721,7 +722,7 @@ func getSOPAcknowledgmentByIDRecord(db audit.DBTX, id string) (*SOPAcknowledgmen
 		&s.ID, &s.SOPVersionID, &s.UserID, &s.AcknowledgmentType, &createdAt,
 	)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("sop acknowledgment not found: %s", id)
+		return nil, errkind.New(errkind.NotFound, "sop acknowledgment not found: %s", id)
 	}
 	if err != nil {
 		return nil, err
@@ -978,7 +979,7 @@ func getSignatureStatusByUserIDRecord(db audit.DBTX, userID string) ([]UserSigna
 	for rows.Next() {
 		var s UserSignatureStatus
 		var lastSignDate sql.NullString
-		
+
 		err := rows.Scan(
 			&s.SOPID,
 			&s.Title,

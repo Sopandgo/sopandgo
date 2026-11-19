@@ -3,6 +3,7 @@ package notify
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/secrets"
 	"github.com/sopandgo/sopandgo/backend/internal/storage"
 )
@@ -190,5 +192,31 @@ func TestService_Dispatch_RespectsSubscription(t *testing.T) {
 	svc.Dispatch(context.Background(), Event{Type: EventSOPPublished, Title: "Pub"})
 	if hits != 1 {
 		t.Fatalf("expected 1 send, hits=%d", hits)
+	}
+}
+
+func TestSettingsStore_MalformedURLsAreInvalid(t *testing.T) {
+	store, err := storage.OpenInMemory()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.DB.Close()
+	ss := NewSettingsStore(store.DB, testKey())
+
+	for name, save := range map[string]func() error{
+		"slack over http": func() error {
+			return ss.SaveSlack(SaveSlackInput{Enabled: true, WebhookURL: "http://hooks.slack.com/x"})
+		},
+		"gotify without scheme": func() error {
+			return ss.SaveGotify(SaveGotifyInput{Enabled: true, URL: "gotify.local", Token: "tok"})
+		},
+		"webhook without host": func() error {
+			return ss.SaveWebhook(SaveWebhookInput{Enabled: true, URL: "https://"})
+		},
+	} {
+		err := save()
+		if !errors.Is(err, ErrInvalidURL) || !errors.Is(err, errkind.Invalid) {
+			t.Errorf("%s: want an invalid URL, got %v", name, err)
+		}
 	}
 }

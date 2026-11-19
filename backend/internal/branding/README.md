@@ -18,7 +18,7 @@ The images are BLOBs in `app.db`, so backups and restores include them without e
 
 ## Rules
 
-- **Logo:** PNG, JPEG, or WebP, at most `MaxUploadBytes` (2 MB) and 4096 px per side, checked before the pixels are decoded (`backend/internal/imageutil`). The upload is decoded and re-encoded as PNG, so only pixels survive. SVG is refused.
+- **Logo:** PNG, JPEG, or WebP, at most `MaxUploadBytes` (2 MB) and 4096 px per side, checked before the pixels are decoded (`backend/internal/imageutil`, which refuses with `ErrInvalidImage` or `ErrImageTooLarge`). The upload is decoded and re-encoded as PNG, so only pixels survive. SVG is refused.
 - **Colour:** must reach `MinContrast` (4.5:1) against the theme's `base-100` (`LightBase100`, `DarkBase100`). The content colour (text on a primary button) is that `base-100`, which passes by symmetry.
 - **Name:** trimmed; control characters are refused, so it cannot inject mail headers. Any spelling of the product name, split or in any case, counts as no custom name, so the product always reads "SOPandGO".
 
