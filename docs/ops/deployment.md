@@ -46,11 +46,11 @@ Initial Credentials:
 - Password: `admin`
 - **Forced change:** the bootstrap admin must set a new password on first login before other routes unlock. The form asks for the current password, which is `admin`.
 
-Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left on (default `true`). They use weak passwords such as `12345` for exploration only. Set `SEED_DEMO_DATA=false` before the first start to skip them. Changing the flag later does not remove data that was already seeded.
+A fresh install has no demo accounts. Demo users and sample SOPs are inserted on first boot only when `SEED_DEMO_DATA=true` is set, for a local trial (see [Evaluating](./evaluating.md)). They use weak passwords such as `12345`. Changing the flag later does not remove data that was already seeded.
 
 ### First-week checklist
 
-1. Set `ORIGIN` and `SECRET_ENCRYPTION_KEY` in `.env`. For a real deployment, set `SEED_DEMO_DATA=false` before the first boot so demo users and the sample SOPs are not inserted. Restart if you changed `ORIGIN` or the encryption key after first boot. The seed flag has no effect once `app.db` exists.
+1. Set `ORIGIN` and `SECRET_ENCRYPTION_KEY` in `.env`. Leave `SEED_DEMO_DATA` unset or `false` so no demo users or sample SOPs are inserted. Restart if you changed `ORIGIN` or the encryption key after first boot.
 2. Sign in as `admin` / `admin` and set a strong password. The form asks for the current password, which is `admin`.
 3. Optionally save SMTP or Resend under **Settings → Email**, switch it on, and send a test email. Without a transport switched on, invites use manual links.
 4. Turn on two-factor authentication for the admin account in **Account settings**, store the recovery codes, and choose the organization's required second factor under **Settings** (General → Security). If an admin is locked out later, see [Locked-out admin](#locked-out-admin-break-glass).
@@ -65,7 +65,7 @@ Demo seed users appear on Docker first boot only when `SEED_DEMO_DATA` is left o
 | Variable | Default | Description |
 | --- | --- | --- |
 | `DATA_DIR` | `/app/data` | The internal path for SQLite and assets. |
-| `SEED_DEMO_DATA` | `true` | When not `false`, the first start with no `app.db` inserts demo users and sample SOPs. Set `false` before first boot for a real deployment. Has no effect once `app.db` exists. |
+| `SEED_DEMO_DATA` | `false` | When `true` (any case), the first start with no `app.db` inserts demo users and sample SOPs for a local trial. Any other value inserts nothing. Has no effect once `app.db` exists. |
 | `ORIGIN` | `http://localhost:8087` | **CRITICAL for the Go API.** The full public URL of your instance (invite/reset links, CORS-facing URLs). If it does not match the browser URL, login/invites will fail. SvelteKit 3 / adapter-node no longer reads `ORIGIN`; CSRF and request origin use `HOST_HEADER` / `PROTOCOL_HEADER` instead (see below). On a non-default port with no outer proxy, Caddy forwards the browser `Host` value, port included. An outer proxy's `X-Forwarded-Host` is forwarded as sent. |
 | `HOST_WEB_PORT` | `8087` | Host port mapped to Caddy `:80` inside the `sopandgo` container (compose). |
 | `BACKEND_URL` | `http://127.0.0.1:8080` | Internal URL the SvelteKit Node server uses to reach the Go API (loopback inside the container). |

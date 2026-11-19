@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,20 +17,44 @@ func TestSeedDemoEnabled(t *testing.T) {
 		value string
 		want  bool
 	}{
-		{value: "", want: true},
+		{value: "", want: false},
 		{value: "true", want: true},
 		{value: "TRUE", want: true},
+		{value: " True ", want: true},
 		{value: "false", want: false},
 		{value: "FALSE", want: false},
-		{value: " false ", want: false},
-		{value: "0", want: true},
-		{value: "no", want: true},
+		{value: "0", want: false},
+		{value: "1", want: false},
+		{value: "yes", want: false},
 	}
 
 	for _, tc := range cases {
 		if got := seedDemoEnabled(tc.value); got != tc.want {
 			t.Errorf("seedDemoEnabled(%q) = %v, want %v", tc.value, got, tc.want)
 		}
+	}
+}
+
+// TestRunSeedsOnlyWhenAsked: the seeder binary decides on its own whether to
+// seed. Only SEED_DEMO_DATA=true creates the database.
+func TestRunSeedsOnlyWhenAsked(t *testing.T) {
+	sopsRoot := filepath.Join("..", "..", "demo", "sops")
+	for _, value := range []string{"", "false", "no"} {
+		dataDir := t.TempDir()
+		if err := run(settings{SeedDemoData: value}, dataDir, sopsRoot); err != nil {
+			t.Fatalf("run(SEED_DEMO_DATA=%q): %v", value, err)
+		}
+		if _, err := os.Stat(filepath.Join(dataDir, "app.db")); !os.IsNotExist(err) {
+			t.Errorf("SEED_DEMO_DATA=%q created app.db (stat err %v)", value, err)
+		}
+	}
+
+	dataDir := t.TempDir()
+	if err := run(settings{SeedDemoData: " TRUE "}, dataDir, sopsRoot); err != nil {
+		t.Fatalf("run(SEED_DEMO_DATA=TRUE): %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dataDir, "app.db")); err != nil {
+		t.Errorf("SEED_DEMO_DATA=TRUE did not create app.db: %v", err)
 	}
 }
 

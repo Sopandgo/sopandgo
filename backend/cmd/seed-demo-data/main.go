@@ -19,11 +19,27 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// seedDemoEnabled reports whether demo users and the sample SOP should be
-// inserted. Only the value "false" (case-insensitive, surrounding space
-// ignored) turns seeding off. Empty or unset means seed.
+// seedDemoEnabled reports whether demo users and the sample SOPs should be
+// inserted. Only the value "true" (case-insensitive, surrounding space
+// ignored) turns seeding on. Empty, unset or any other value means no seed.
 func seedDemoEnabled(value string) bool {
-	return !strings.EqualFold(strings.TrimSpace(value), "false")
+	return strings.EqualFold(strings.TrimSpace(value), "true")
+}
+
+// settings holds the environment values the seeder decides on.
+type settings struct {
+	// SeedDemoData is SEED_DEMO_DATA as set, possibly empty.
+	SeedDemoData string
+}
+
+// run decides whether to seed and seeds dataDir from sopsRoot. The container
+// entrypoint always runs the seeder; this is the only place the decision is made.
+func run(cfg settings, dataDir, sopsRoot string) error {
+	if !seedDemoEnabled(cfg.SeedDemoData) {
+		log.Println("SEED_DEMO_DATA is not true, skipping demo data")
+		return nil
+	}
+	return seed(dataDir, sopsRoot)
 }
 
 // Demo user keys, as used in sop.json ("read_by", "favorited_by").
@@ -78,17 +94,13 @@ type demoManifest struct {
 }
 
 func main() {
-	if !seedDemoEnabled(os.Getenv("SEED_DEMO_DATA")) {
-		log.Println("SEED_DEMO_DATA=false, skipping demo data")
-		return
-	}
-
 	dataDir := os.Getenv("DATA_DIR")
 	if dataDir == "" {
 		dataDir = "./data"
 	}
 
-	if err := seed(dataDir, filepath.Join("demo", "sops")); err != nil {
+	cfg := settings{SeedDemoData: os.Getenv("SEED_DEMO_DATA")}
+	if err := run(cfg, dataDir, filepath.Join("demo", "sops")); err != nil {
 		log.Fatal(err)
 	}
 }
