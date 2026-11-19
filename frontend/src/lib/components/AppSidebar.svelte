@@ -34,6 +34,8 @@
     const pathname = $derived(page.url.pathname);
     const dashboardCurrent = $derived(pathname === '/dashboard');
     const sopsCurrent = $derived(pathname === '/sops' || pathname.startsWith('/sops/'));
+    // Admins and auditors read the audit log; the rest of administration stays admin-only.
+    const canReadAuditLog = $derived(user.role === 'admin' || user.role === 'auditor');
 
     function sectionCurrent(href: string) {
         return pathname === href || pathname.startsWith(`${href}/`);
@@ -57,6 +59,9 @@
     <ul class="menu w-full">
         {@render item('dashboard', m.page_dashboard(), dashboardCurrent, HouseIcon)}
         {@render item('sops', m.page_sops(), sopsCurrent, NotebookIcon)}
+        {#if canReadAuditLog}
+            {@render item('audit-logs', m.nav_audit_logs(), sectionCurrent('/audit-logs'), LogsIcon)}
+        {/if}
     </ul>
     <div class="mt-auto w-full">
         {#if user.role === 'admin'}
@@ -68,12 +73,6 @@
                     m.nav_sessions(),
                     sectionCurrent('/admin/sessions'),
                     ShieldUserIcon
-                )}
-                {@render item(
-                    'admin/audit-logs',
-                    m.nav_audit_logs(),
-                    sectionCurrent('/admin/audit-logs'),
-                    LogsIcon
                 )}
                 {@render item(
                     'admin/integrity',
@@ -126,9 +125,9 @@
     href:
         | 'dashboard'
         | 'sops'
+        | 'audit-logs'
         | 'admin/users'
         | 'admin/sessions'
-        | 'admin/audit-logs'
         | 'admin/integrity'
         | 'admin/settings',
     label: string,

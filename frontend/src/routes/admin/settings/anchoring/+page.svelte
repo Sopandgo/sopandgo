@@ -279,7 +279,7 @@
                             <ul class="list-disc pl-6 text-sm">
                                 {#each probe.broken_rows as row (row.event_id)}
                                     <li>
-                                        <a class="link font-mono text-xs" href={resolve('admin/audit-logs')}>{m.integrity_admin_audit_event({ id: String(row.event_id) })}</a>
+                                        <a class="link font-mono text-xs" href={resolve('audit-logs')}>{m.integrity_admin_audit_event({ id: String(row.event_id) })}</a>
                                         <span class="font-mono text-xs text-error">{row.error}</span>
                                         <input type="hidden" name="accept_broken" value={row.event_id} />
                                     </li>

@@ -61,6 +61,11 @@ const handleAuth: Handle = async ({ event, resolve }) => {
         throw redirect(303, '/login');
     }
 
+    // The audit log needs audit:read in the API, which admins and auditors hold.
+    if (routeId.startsWith('/(app)/audit-logs') && user && !canReadAuditLog(user.role)) {
+        throw redirect(303, '/dashboard');
+    }
+
     // A forced password change comes first; then, while the organization
     // requires 2FA, setting up an authenticator. Both happen in account settings.
     const mustVisitSettings = !!user && (user.must_change_password || user.must_enroll_two_factor);
@@ -101,6 +106,10 @@ const handleParaglide: Handle = ({ event, resolve }) =>
     );
 
 export const handle = sequence(handleAuth, handleParaglide);
+
+function canReadAuditLog(role: string): boolean {
+    return role === 'admin' || role === 'auditor';
+}
 
 function requestWithLocaleCookie(request: Request, name: string, locale: string): Request {
     const headers = new Headers(request.headers);

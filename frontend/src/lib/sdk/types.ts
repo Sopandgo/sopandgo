@@ -389,6 +389,8 @@ export interface AuditLogResponse {
 export interface AuditFilterOptionsResponse {
     event_types: string[];
     entity_types: string[];
+    /** Users who appear as actors in the log, by id and display name only */
+    actors: { id: string; display_name: string }[];
 }
 
 /** Admin GET /admin/settings/email (no secrets); same shape as legacy /admin/settings/smtp */

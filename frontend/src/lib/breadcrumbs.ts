@@ -53,7 +53,7 @@ export function breadcrumbsFor(routeId: string | null, data: CrumbData): Crumb[]
 			return [{ label: m.nav_users() }];
 		case '/admin/sessions':
 			return [{ label: m.nav_sessions() }];
-		case '/admin/audit-logs':
+		case '/(app)/audit-logs':
 			return [{ label: m.nav_audit_logs() }];
 		case '/admin/integrity':
 			return [{ label: m.nav_integrity() }];

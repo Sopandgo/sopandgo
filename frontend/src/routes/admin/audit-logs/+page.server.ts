@@ -1,38 +1,8 @@
-import { error } from "@sveltejs/kit";
-import type { PageServerLoad } from "./$types";
+import { redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals, url }) => {
-    const page = Number(url.searchParams.get('page')) || 0;
-    const logsPerPage = 10;
-    const offset = page * logsPerPage;
-    const filters = {
-        type: url.searchParams.get('type') || undefined,
-        entity_type: url.searchParams.get('entity_type') || undefined,
-        actor_user_id: url.searchParams.get('actor_user_id') || undefined,
-        sop_id: url.searchParams.get('sop_id') || undefined
-    };
-
-    try {
-        const [auditRes, users, sopList, auditFilterOptions] = await Promise.all([
-            locals.api.admin.getAuditLogs(logsPerPage, offset, filters),
-            locals.api.admin.listUsers(),
-            // Archived SOPs keep their audit history, so the filter lists them too
-            locals.api.sops.list({ limit: 500, offset: 0, archived: 'all' }),
-            locals.api.admin.getAuditFilterOptions()
-        ]);
-        
-        return { 
-            auditEvents: auditRes.events,
-            total: auditRes.total,
-            page,
-            logsPerPage,
-            filters,
-            users,
-            sops: sopList.sops,
-            auditFilterOptions
-        };
-    } catch (err) {
-        console.error('Failed to load audit logs:', err);
-        throw error(500, 'Failed to load audit logs');
-    }
-}
+// The audit log moved out of the admin area so auditors can read it.
+// Old links and bookmarks keep working, filters included.
+export const load: PageServerLoad = ({ url }) => {
+    throw redirect(308, `/audit-logs${url.search}`);
+};

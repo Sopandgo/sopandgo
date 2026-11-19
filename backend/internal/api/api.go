@@ -38,10 +38,25 @@ type Server struct {
 	// spread over many addresses still hit a ceiling.
 	twoFactorLimiter *IPRateLimiter
 	mux              *http.ServeMux
+	// routes lists every registered pattern ("METHOD /path"), in order.
+	routes []string
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
+}
+
+// handle registers h on the mux and records the pattern in the route table.
+func (s *Server) handle(pattern string, h http.HandlerFunc) {
+	s.routes = append(s.routes, pattern)
+	s.mux.HandleFunc(pattern, h)
+}
+
+// Routes returns every registered route pattern, such as
+// "GET /api/sops/{sopID}". Tests drive route-wide guarantees from it, so new
+// routes are covered without editing a hand-written list.
+func (s *Server) Routes() []string {
+	return append([]string(nil), s.routes...)
 }
 
 func (s *Server) writeAudit(eventType, entityType, entityID string, actorUserID *string, payload any) {
@@ -93,20 +108,20 @@ func (s *Server) registerRoutes() {
 	generalLimiter := NewIPRateLimiter(20, 10)
 
 	// health
-	s.mux.HandleFunc("GET /api/health", generalLimiter.Middleware(s.handleHealth))
+	s.handle("GET /api/health", generalLimiter.Middleware(s.handleHealth))
 
 	// branding (public: the sign-in page shows the organization's name and logo)
-	s.mux.HandleFunc("GET /api/branding", generalLimiter.Middleware(s.handleGetBranding))
-	s.mux.HandleFunc("GET /api/branding/logo", generalLimiter.Middleware(s.handleGetBrandingLogo))
+	s.handle("GET /api/branding", generalLimiter.Middleware(s.handleGetBranding))
+	s.handle("GET /api/branding/logo", generalLimiter.Middleware(s.handleGetBrandingLogo))
 
 	// auth
-	s.mux.HandleFunc("POST /api/auth/login", loginLimiter.Middleware(s.handleLogin))
-	s.mux.HandleFunc("POST /api/auth/refresh", generalLimiter.Middleware(s.handleRefresh))
-	s.mux.HandleFunc("POST /api/auth/logout", s.handleLogout)
-	s.mux.HandleFunc("PATCH /api/auth/reset-password", loginLimiter.Middleware(s.handleResetPassword))
+	s.handle("POST /api/auth/login", loginLimiter.Middleware(s.handleLogin))
+	s.handle("POST /api/auth/refresh", generalLimiter.Middleware(s.handleRefresh))
+	s.handle("POST /api/auth/logout", s.handleLogout)
+	s.handle("PATCH /api/auth/reset-password", loginLimiter.Middleware(s.handleResetPassword))
 	// Second sign-in step, after a correct password on an account with 2FA.
-	s.mux.HandleFunc("POST /api/auth/login/two-factor", loginLimiter.Middleware(s.handleLoginTwoFactor))
-	s.mux.HandleFunc("POST /api/auth/login/two-factor/email", loginLimiter.Middleware(s.handleLoginTwoFactorEmail))
+	s.handle("POST /api/auth/login/two-factor", loginLimiter.Middleware(s.handleLoginTwoFactor))
+	s.handle("POST /api/auth/login/two-factor/email", loginLimiter.Middleware(s.handleLoginTwoFactorEmail))
 
 	// protected routes
 	protected := func(h http.HandlerFunc) http.HandlerFunc {
@@ -116,246 +131,247 @@ func (s *Server) registerRoutes() {
 
 	// user
 	// Checks the current password, so it shares the login limiter.
-	s.mux.HandleFunc("PATCH /api/auth/me/update-password", loginLimiter.Middleware(protected(s.handleUpdatePassword)))
-	s.mux.HandleFunc("POST /api/auth/me/sessions/sign-out-others", protected(s.handleSignOutOtherSessions))
-	s.mux.HandleFunc("PATCH /api/auth/me/locale", protected(s.handleUpdateMyLocale))
-	s.mux.HandleFunc("PATCH /api/auth/me/theme", protected(s.handleUpdateMyTheme))
-	s.mux.HandleFunc("POST /api/auth/me/avatar", protected(s.handleUploadMyAvatar))
-	s.mux.HandleFunc("DELETE /api/auth/me/avatar", protected(s.handleDeleteMyAvatar))
-	s.mux.HandleFunc("GET /api/auth/me", protected(s.handleGetMe))
-	s.mux.HandleFunc("GET /api/auth/me/signature-status", protected(s.handleGetMySignatureStatus))
+	s.handle("PATCH /api/auth/me/update-password", loginLimiter.Middleware(protected(s.handleUpdatePassword)))
+	s.handle("POST /api/auth/me/sessions/sign-out-others", protected(s.handleSignOutOtherSessions))
+	s.handle("PATCH /api/auth/me/locale", protected(s.handleUpdateMyLocale))
+	s.handle("PATCH /api/auth/me/theme", protected(s.handleUpdateMyTheme))
+	s.handle("POST /api/auth/me/avatar", protected(s.handleUploadMyAvatar))
+	s.handle("DELETE /api/auth/me/avatar", protected(s.handleDeleteMyAvatar))
+	s.handle("GET /api/auth/me", protected(s.handleGetMe))
+	s.handle("GET /api/auth/me/signature-status", protected(s.handleGetMySignatureStatus))
 	// two-factor (self-service). Endpoints that check the password share the login limiter.
-	s.mux.HandleFunc("GET /api/auth/me/two-factor", protected(s.handleGetMyTwoFactor))
-	s.mux.HandleFunc("POST /api/auth/me/two-factor/setup", loginLimiter.Middleware(protected(s.handleBeginTwoFactorSetup)))
-	s.mux.HandleFunc("POST /api/auth/me/two-factor/confirm", loginLimiter.Middleware(protected(s.handleConfirmTwoFactorSetup)))
-	s.mux.HandleFunc("DELETE /api/auth/me/two-factor", loginLimiter.Middleware(protected(s.handleDisableTwoFactor)))
-	s.mux.HandleFunc("POST /api/auth/me/two-factor/recovery-codes", loginLimiter.Middleware(protected(s.handleRegenerateRecoveryCodes)))
-	s.mux.HandleFunc("GET /api/users/{userID}/avatar", protected(s.handleGetUserAvatar))
+	s.handle("GET /api/auth/me/two-factor", protected(s.handleGetMyTwoFactor))
+	s.handle("POST /api/auth/me/two-factor/setup", loginLimiter.Middleware(protected(s.handleBeginTwoFactorSetup)))
+	s.handle("POST /api/auth/me/two-factor/confirm", loginLimiter.Middleware(protected(s.handleConfirmTwoFactorSetup)))
+	s.handle("DELETE /api/auth/me/two-factor", loginLimiter.Middleware(protected(s.handleDisableTwoFactor)))
+	s.handle("POST /api/auth/me/two-factor/recovery-codes", loginLimiter.Middleware(protected(s.handleRegenerateRecoveryCodes)))
+	s.handle("GET /api/users/{userID}/avatar", protected(s.handleGetUserAvatar))
 
 	// sops
-	s.mux.HandleFunc("POST /api/sops", protected(
+	s.handle("POST /api/sops", protected(
 		s.requireScope(auth.ScopeSOPWrite, s.handleRegisterSOP)),
 	)
-	s.mux.HandleFunc("GET /api/sops", protected(s.handleListSOPs))
-	s.mux.HandleFunc("GET /api/sops/{sopID}", protected(s.handleGetSOPByID))
-	s.mux.HandleFunc("POST /api/sops/{sopID}/favorite", protected(s.handleFavoriteSOP))
-	s.mux.HandleFunc("DELETE /api/sops/{sopID}/favorite", protected(s.handleUnfavoriteSOP))
+	s.handle("GET /api/sops", protected(s.handleListSOPs))
+	s.handle("GET /api/sops/{sopID}", protected(s.handleGetSOPByID))
+	s.handle("POST /api/sops/{sopID}/favorite", protected(s.handleFavoriteSOP))
+	s.handle("DELETE /api/sops/{sopID}/favorite", protected(s.handleUnfavoriteSOP))
 	// Approvers decide what readers use, so they also retire SOPs and bring them back
-	s.mux.HandleFunc("POST /api/sops/{sopID}/archive", protected(
+	s.handle("POST /api/sops/{sopID}/archive", protected(
 		s.requireScope(auth.ScopeSOPSignApprover, s.handleArchiveSOP)),
 	)
-	s.mux.HandleFunc("DELETE /api/sops/{sopID}/archive", protected(
+	s.handle("DELETE /api/sops/{sopID}/archive", protected(
 		s.requireScope(auth.ScopeSOPSignApprover, s.handleUnarchiveSOP)),
 	)
 
 	// tags (Global)
-	s.mux.HandleFunc("POST /api/tags", protected(
+	s.handle("POST /api/tags", protected(
 		s.requireScope(auth.ScopeSOPWrite, s.handleCreateTag)),
 	)
-	s.mux.HandleFunc("GET /api/tags", protected(s.handleListTags))
-	s.mux.HandleFunc("PATCH /api/tags/{tagID}/status", protected(
+	s.handle("GET /api/tags", protected(s.handleListTags))
+	s.handle("PATCH /api/tags/{tagID}/status", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleSetTagStatus)), // Admin only to hide global tags
 	)
 
 	// sop tags (Attachment)
-	s.mux.HandleFunc("POST /api/sops/{sopID}/tags/{tagID}", protected(
+	s.handle("POST /api/sops/{sopID}/tags/{tagID}", protected(
 		s.requireScope(auth.ScopeSOPWrite, s.handleAttachTagToSOP)),
 	)
-	s.mux.HandleFunc("DELETE /api/sops/{sopID}/tags/{tagID}", protected(
+	s.handle("DELETE /api/sops/{sopID}/tags/{tagID}", protected(
 		s.requireScope(auth.ScopeSOPWrite, s.handleDetachTagFromSOP)),
 	)
 
 	// sop versions
-	s.mux.HandleFunc("POST /api/sops/{sopID}", protected(
+	s.handle("POST /api/sops/{sopID}", protected(
 		s.requireScope(auth.ScopeSOPWrite, s.handleRegisterSOPVersion)),
 	) // POST {sop_ID, content}
-	s.mux.HandleFunc("GET /api/sops/{sopID}/version-latest", protected(s.handleGetSOPVersionSummaryLatest))
+	s.handle("GET /api/sops/{sopID}/version-latest", protected(s.handleGetSOPVersionSummaryLatest))
 
-	s.mux.HandleFunc("GET /api/sops/{sopID}/versions", protected(s.handleListSOPVersions))
-	s.mux.HandleFunc("GET /api/sops/{sopID}/versions/{sopVersionID}", protected(s.handleGetSOPVersionByID))
-	s.mux.HandleFunc("GET /api/sops/{sopID}/versions/{sopVersionID}/summary", protected(s.handleGetSOPVersionSummaryByID))
-	s.mux.HandleFunc("GET /api/sops/{sopID}/versions/{sopVersionID}/download", protected(s.handleDownloadSOPVersion))
-	s.mux.HandleFunc("GET /api/sops/{sopID}/versions/{sopVersionID}/download-pdf", protected(s.handleDownloadSOPVersionPDF))
-	s.mux.HandleFunc("GET /api/sops/{sopID}/versions/{sopVersionID}/integrity", protected(s.handleCheckVersionIntegrity))
-	s.mux.HandleFunc("GET /api/sops/{sopID}/versions/{sopVersionID}/diff", protected(s.handleDiffSOPVersion))
-	s.mux.HandleFunc("GET /api/activity/publishes", protected(s.handleListRecentPublishes))
-	s.mux.HandleFunc("GET /api/training/coverage", protected(
+	s.handle("GET /api/sops/{sopID}/versions", protected(s.handleListSOPVersions))
+	s.handle("GET /api/sops/{sopID}/versions/{sopVersionID}", protected(s.handleGetSOPVersionByID))
+	s.handle("GET /api/sops/{sopID}/versions/{sopVersionID}/summary", protected(s.handleGetSOPVersionSummaryByID))
+	s.handle("GET /api/sops/{sopID}/versions/{sopVersionID}/download", protected(s.handleDownloadSOPVersion))
+	s.handle("GET /api/sops/{sopID}/versions/{sopVersionID}/download-pdf", protected(s.handleDownloadSOPVersionPDF))
+	s.handle("GET /api/sops/{sopID}/versions/{sopVersionID}/integrity", protected(s.handleCheckVersionIntegrity))
+	s.handle("GET /api/sops/{sopID}/versions/{sopVersionID}/diff", protected(s.handleDiffSOPVersion))
+	s.handle("GET /api/activity/publishes", protected(s.handleListRecentPublishes))
+	s.handle("GET /api/training/coverage", protected(
 		s.requireScope(auth.ScopeTrainingRead, s.handleTrainingCoverage),
 	))
-	s.mux.HandleFunc("GET /api/sops/{sopID}/training", protected(
+	s.handle("GET /api/sops/{sopID}/training", protected(
 		s.requireScope(auth.ScopeTrainingRead, s.handleSOPTrainingCoverage),
 	))
 
 	// sop version lifecycle
 	// sop version states (Lifecycle)
-	s.mux.HandleFunc("POST /api/sops/{sopID}/versions/{sopVersionID}/promote", protected(
+	s.handle("POST /api/sops/{sopID}/versions/{sopVersionID}/promote", protected(
 		s.requireScope(auth.ScopeSOPWrite, s.handlePromoteSOPVersion)),
 	)
-	s.mux.HandleFunc("POST /api/sops/{sopID}/versions/{sopVersionID}/approve", protected(
+	s.handle("POST /api/sops/{sopID}/versions/{sopVersionID}/approve", protected(
 		s.requireScope(auth.ScopeSOPSignApprover, s.handleApproveSOPVersion)),
 	)
-	s.mux.HandleFunc("POST /api/sops/{sopID}/versions/{sopVersionID}/reject", protected(
+	s.handle("POST /api/sops/{sopID}/versions/{sopVersionID}/reject", protected(
 		s.requireScope(auth.ScopeSOPSignApprover, s.handleRejectSOPVersion)),
 	)
 
 	//assets
-	s.mux.HandleFunc("POST /api/sops/{sopID}/assets", protected(
+	s.handle("POST /api/sops/{sopID}/assets", protected(
 		s.requireScope(auth.ScopeSOPWrite, s.handleAddAsset)),
 	) // Multipart Form
-	s.mux.HandleFunc("GET /api/sops/{sopID}/assets", protected(s.handleListAssets))
-	s.mux.HandleFunc("GET /api/sops/{sopID}/assets/{assetID}", protected(s.handleGetAsset))
-	s.mux.HandleFunc("GET /api/sops/{sopID}/assets/{assetID}/download", protected(s.handleDownloadAsset))
-	s.mux.HandleFunc("GET /api/sops/{sopID}/assets/{assetID}/integrity", protected(s.handleCheckAssetIntegrity))
+	s.handle("GET /api/sops/{sopID}/assets", protected(s.handleListAssets))
+	s.handle("GET /api/sops/{sopID}/assets/{assetID}", protected(s.handleGetAsset))
+	s.handle("GET /api/sops/{sopID}/assets/{assetID}/download", protected(s.handleDownloadAsset))
+	s.handle("GET /api/sops/{sopID}/assets/{assetID}/integrity", protected(s.handleCheckAssetIntegrity))
 
 	// acknowledgments
 	// Author acks are created with the version. Approver acks are created by approve.
-	s.mux.HandleFunc("POST /api/sops/{sopID}/versions/{sopVersionID}/add-reader", protected(
+	s.handle("POST /api/sops/{sopID}/versions/{sopVersionID}/add-reader", protected(
 		s.requireScope(auth.ScopeSOPSignReader, s.handleAddAcknowledgmentReader)),
 	)
-	s.mux.HandleFunc("GET /api/sops/{sopID}/versions/{sopVersionID}/acks", protected(s.handleListVersionAcknowledgments))
+	s.handle("GET /api/sops/{sopID}/versions/{sopVersionID}/acks", protected(s.handleListVersionAcknowledgments))
 
 	// admin/users
-	s.mux.HandleFunc("GET /api/admin/users", protected(
+	s.handle("GET /api/admin/users", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminListUsers)),
 	)
-	s.mux.HandleFunc("POST /api/admin/users/register", protected(
+	s.handle("POST /api/admin/users/register", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminRegisterUser)),
 	)
-	s.mux.HandleFunc("POST /api/admin/users/{userID}/reset-password", protected(
+	s.handle("POST /api/admin/users/{userID}/reset-password", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminTriggerPasswordReset),
 	))
-	s.mux.HandleFunc("PATCH /api/admin/users/{userID}/update-role", protected(
+	s.handle("PATCH /api/admin/users/{userID}/update-role", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminUpdateRole)),
 	)
-	s.mux.HandleFunc("PATCH /api/admin/users/{userID}/update-status", protected(
+	s.handle("PATCH /api/admin/users/{userID}/update-status", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminUpdateStatus)),
 	)
-	s.mux.HandleFunc("DELETE /api/admin/users/{userID}/two-factor", protected(
+	s.handle("DELETE /api/admin/users/{userID}/two-factor", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminResetUserTwoFactor)),
 	)
-	s.mux.HandleFunc("GET /api/admin/sessions", protected(
+	s.handle("GET /api/admin/sessions", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminListSessions)),
 	)
-	s.mux.HandleFunc("DELETE /api/admin/users/{userID}/sessions", protected(
+	s.handle("DELETE /api/admin/users/{userID}/sessions", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminRevokeUserSessions)),
 	)
-	s.mux.HandleFunc("DELETE /api/admin/sessions", protected(
+	s.handle("DELETE /api/admin/sessions", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminRevokeAllSessions)),
 	)
-	// admin/autit-logs
-	s.mux.HandleFunc("GET /api/admin/audit-logs", protected(
-		s.requireScope(auth.ScopeAdminTools, s.handleAdminListAuditLogs)),
+	// admin/audit-logs: the only admin routes the auditor reads (audit:read).
+	// Every other /api/admin route needs admin tools.
+	s.handle("GET /api/admin/audit-logs", protected(
+		s.requireScope(auth.ScopeAuditRead, s.handleAdminListAuditLogs)),
 	)
-	s.mux.HandleFunc("GET /api/admin/audit-logs/options", protected(
-		s.requireScope(auth.ScopeAdminTools, s.handleAdminAuditFilterOptions)),
+	s.handle("GET /api/admin/audit-logs/options", protected(
+		s.requireScope(auth.ScopeAuditRead, s.handleAdminAuditFilterOptions)),
 	)
 	//admin/integrity
-	s.mux.HandleFunc("GET /api/admin/integrity", protected(
+	s.handle("GET /api/admin/integrity", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminIntegrity)),
 	)
 
 	// admin/audit-anchoring (external anchoring of the audit chain)
-	s.mux.HandleFunc("GET /api/admin/audit-anchoring", protected(
+	s.handle("GET /api/admin/audit-anchoring", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminGetAuditAnchoring)),
 	)
-	s.mux.HandleFunc("PUT /api/admin/audit-anchoring", protected(
+	s.handle("PUT /api/admin/audit-anchoring", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutAuditAnchoring)),
 	)
-	s.mux.HandleFunc("POST /api/admin/audit-anchoring/probe", protected(
+	s.handle("POST /api/admin/audit-anchoring/probe", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminProbeAuditAnchoring)),
 	)
-	s.mux.HandleFunc("POST /api/admin/audit-anchoring/run", protected(
+	s.handle("POST /api/admin/audit-anchoring/run", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminRunAuditAnchoring)),
 	)
-	s.mux.HandleFunc("GET /api/admin/audit-anchoring/bundle", protected(
+	s.handle("GET /api/admin/audit-anchoring/bundle", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminAuditEvidenceBundle)),
 	)
 
 	// admin / email (SMTP + optional Resend)
-	s.mux.HandleFunc("GET /api/admin/settings/email", protected(
+	s.handle("GET /api/admin/settings/email", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminGetSMTPSettings)),
 	)
-	s.mux.HandleFunc("GET /api/admin/settings/smtp", protected(
+	s.handle("GET /api/admin/settings/smtp", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminGetSMTPSettings)),
 	)
-	s.mux.HandleFunc("PUT /api/admin/settings/smtp", protected(
+	s.handle("PUT /api/admin/settings/smtp", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutSMTPSettings)),
 	)
-	s.mux.HandleFunc("POST /api/admin/settings/smtp/test", protected(
+	s.handle("POST /api/admin/settings/smtp/test", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPostSMTPTest)),
 	)
-	s.mux.HandleFunc("PATCH /api/admin/settings/mail-transport", protected(
+	s.handle("PATCH /api/admin/settings/mail-transport", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPatchMailTransport)),
 	)
-	s.mux.HandleFunc("PUT /api/admin/settings/resend", protected(
+	s.handle("PUT /api/admin/settings/resend", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutResendSettings)),
 	)
-	s.mux.HandleFunc("PATCH /api/admin/settings/mail-mode", protected(
+	s.handle("PATCH /api/admin/settings/mail-mode", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPatchMailMode)),
 	)
-	s.mux.HandleFunc("PATCH /api/admin/settings/default-locale", protected(
+	s.handle("PATCH /api/admin/settings/default-locale", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPatchDefaultLocale)),
 	)
 	// admin / security (organization-wide 2FA requirement)
-	s.mux.HandleFunc("GET /api/admin/settings/security", protected(
+	s.handle("GET /api/admin/settings/security", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminGetSecuritySettings)),
 	)
-	s.mux.HandleFunc("PATCH /api/admin/settings/security", protected(
+	s.handle("PATCH /api/admin/settings/security", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPatchSecuritySettings)),
 	)
 	// admin / branding (name, logo, primary colour)
-	s.mux.HandleFunc("PUT /api/admin/settings/branding", protected(
+	s.handle("PUT /api/admin/settings/branding", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutBranding)),
 	)
-	s.mux.HandleFunc("DELETE /api/admin/settings/branding", protected(
+	s.handle("DELETE /api/admin/settings/branding", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminResetBranding)),
 	)
-	s.mux.HandleFunc("POST /api/admin/settings/branding/logo", protected(
+	s.handle("POST /api/admin/settings/branding/logo", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminUploadBrandingLogo)),
 	)
-	s.mux.HandleFunc("DELETE /api/admin/settings/branding/logo", protected(
+	s.handle("DELETE /api/admin/settings/branding/logo", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminDeleteBrandingLogo)),
 	)
 	// admin / integrations (Slack, Gotify, generic webhook)
-	s.mux.HandleFunc("GET /api/admin/settings/integrations", protected(
+	s.handle("GET /api/admin/settings/integrations", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminGetIntegrations)),
 	)
-	s.mux.HandleFunc("PUT /api/admin/settings/integrations/slack", protected(
+	s.handle("PUT /api/admin/settings/integrations/slack", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutSlackIntegration)),
 	)
-	s.mux.HandleFunc("PUT /api/admin/settings/integrations/gotify", protected(
+	s.handle("PUT /api/admin/settings/integrations/gotify", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutGotifyIntegration)),
 	)
-	s.mux.HandleFunc("PUT /api/admin/settings/integrations/webhook", protected(
+	s.handle("PUT /api/admin/settings/integrations/webhook", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutWebhookIntegration)),
 	)
-	s.mux.HandleFunc("POST /api/admin/settings/integrations/{channel}/test", protected(
+	s.handle("POST /api/admin/settings/integrations/{channel}/test", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPostIntegrationTest)),
 	)
 	// admin / backups
-	s.mux.HandleFunc("GET /api/admin/backups/status", protected(
+	s.handle("GET /api/admin/backups/status", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminBackupStatus)),
 	)
-	s.mux.HandleFunc("GET /api/admin/backups/export", protected(
+	s.handle("GET /api/admin/backups/export", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminBackupExport)),
 	)
-	s.mux.HandleFunc("POST /api/admin/backups/import", protected(
+	s.handle("POST /api/admin/backups/import", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminBackupImport)),
 	)
-	s.mux.HandleFunc("POST /api/admin/backups/apply", protected(
+	s.handle("POST /api/admin/backups/apply", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminBackupApply)),
 	)
-	s.mux.HandleFunc("POST /api/admin/backups/s3/run", protected(
+	s.handle("POST /api/admin/backups/s3/run", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminBackupS3Run)),
 	)
 	// admin / scheduled S3 backup settings
-	s.mux.HandleFunc("GET /api/admin/settings/backup-s3", protected(
+	s.handle("GET /api/admin/settings/backup-s3", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminGetBackupS3Settings)),
 	)
-	s.mux.HandleFunc("PUT /api/admin/settings/backup-s3", protected(
+	s.handle("PUT /api/admin/settings/backup-s3", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutBackupS3Settings)),
 	)
-	s.mux.HandleFunc("POST /api/admin/settings/backup-s3/test", protected(
+	s.handle("POST /api/admin/settings/backup-s3/test", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPostBackupS3Test)),
 	)
 }
