@@ -2,10 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
-	"os"
 	"strings"
+
+	"github.com/sopandgo/sopandgo/backend/internal/auth"
+	"github.com/sopandgo/sopandgo/backend/internal/imageutil"
 )
 
 const maxAvatarUploadBytes = 5 << 20
@@ -38,16 +41,12 @@ func (s *Server) handleUploadMyAvatar(w http.ResponseWriter, r *http.Request) {
 
 	userID := GetUserID(r.Context())
 	if err := s.authService.SetAvatar(userID, content, &userID); err != nil {
-		msg := err.Error()
 		switch {
-		case strings.Contains(msg, "unsupported image type"),
-			strings.Contains(msg, "invalid image"),
-			strings.Contains(msg, "empty image"):
-			writeJSONError(w, http.StatusBadRequest, "invalid_image",
+		case errors.Is(err, imageutil.ErrInvalidImage):
+			writeKindJSON(w, err, "invalid_image",
 				"Use a JPEG, PNG, or WebP image.")
-		case strings.Contains(msg, "image too large"),
-			strings.Contains(msg, "invalid image dimensions"):
-			writeJSONError(w, http.StatusBadRequest, "image_too_large",
+		case errors.Is(err, imageutil.ErrImageTooLarge):
+			writeKindJSON(w, err, "image_too_large",
 				"That image is too large. Use a photo under 8192 pixels on each side.")
 		default:
 			writeJSONError(w, http.StatusInternalServerError, "upload_failed", "Could not save the picture. Please try again.")
@@ -70,8 +69,8 @@ func (s *Server) handleUploadMyAvatar(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleDeleteMyAvatar(w http.ResponseWriter, r *http.Request) {
 	userID := GetUserID(r.Context())
 	if err := s.authService.RemoveAvatar(userID, &userID); err != nil {
-		if strings.Contains(err.Error(), "no avatar") {
-			writeJSONError(w, http.StatusNotFound, "no_avatar", "No profile picture to remove.")
+		if errors.Is(err, auth.ErrNoAvatar) {
+			writeKindJSON(w, err, "no_avatar", "No profile picture to remove.")
 			return
 		}
 		writeJSONError(w, http.StatusInternalServerError, "remove_failed", "Could not remove the picture. Please try again.")
@@ -103,13 +102,9 @@ func (s *Server) handleGetUserAvatar(w http.ResponseWriter, r *http.Request) {
 
 	absPath, hash, err := s.authService.AvatarAbsolutePath(userID, size)
 	if err != nil {
-		if strings.Contains(err.Error(), "invalid size") {
-			writeJSONError(w, http.StatusBadRequest, "invalid_size",
+		if errors.Is(err, auth.ErrInvalidAvatarSize) {
+			writeKindJSON(w, err, "invalid_size",
 				"size must be sm, md, lg, or xl.")
-			return
-		}
-		if os.IsNotExist(err) || strings.Contains(err.Error(), "no avatar") {
-			http.Error(w, "Avatar not found", http.StatusNotFound)
 			return
 		}
 		http.Error(w, "Avatar not found", http.StatusNotFound)

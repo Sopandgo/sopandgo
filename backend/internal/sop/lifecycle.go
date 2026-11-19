@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
+	"github.com/sopandgo/sopandgo/backend/internal/storage"
 )
 
 // The lifecycle module owns every transition of a version and its side effects.
@@ -177,7 +179,7 @@ func (s *Service) runTransition(req transitionRequest) (transitionResult, error)
 
 	// 3. Check the transition against the table.
 	if current != nil && !slices.Contains(rule.from, current.Status) {
-		return transitionResult{}, fmt.Errorf("conflict: %s, current state is '%s'", rule.refusal, current.Status)
+		return transitionResult{}, errkind.New(errkind.Conflict, "%s, current state is '%s'", rule.refusal, current.Status)
 	}
 	if rule.pendingRCRefusal != "" {
 		hasRC, err := hasReleaseCandidateForSOPRecord(tx, sopID)
@@ -185,7 +187,7 @@ func (s *Service) runTransition(req transitionRequest) (transitionResult, error)
 			return transitionResult{}, fmt.Errorf("failed to check release candidates: %w", err)
 		}
 		if hasRC {
-			return transitionResult{}, fmt.Errorf("conflict: %s", rule.pendingRCRefusal)
+			return transitionResult{}, errkind.New(errkind.Conflict, "%s", rule.pendingRCRefusal)
 		}
 	}
 
@@ -286,8 +288,8 @@ func (s *Service) supersedePublished(tx *sql.Tx, sopID, publishingVersionID stri
 func (s *Service) writeAcknowledgment(tx *sql.Tx, versionID, contentHash, actor, ackType, now string) (string, error) {
 	ackID := uuid.NewString()
 	if err := createSOPAcknowledgmentRecord(tx, ackID, versionID, actor, ackType, now); err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "unique") {
-			return "", fmt.Errorf("conflict: already acknowledged")
+		if storage.IsUniqueViolation(err) {
+			return "", errkind.New(errkind.Conflict, "already acknowledged")
 		}
 		return "", fmt.Errorf("failed to record %s acknowledgment: %w", ackType, err)
 	}

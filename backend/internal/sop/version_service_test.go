@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
@@ -118,7 +119,7 @@ func TestService_RegisterSOPVersion_RCBlocksParallelCreate(t *testing.T) {
 	}
 
 	_, _, err = env.SOPService.RegisterSOPVersion(sopID, "V2 while V1 is RC", "Updated procedure", actorID)
-	if err == nil || !strings.Contains(err.Error(), "release candidate") {
+	if !errors.Is(err, errkind.Conflict) {
 		t.Fatalf("Expected conflict while RC exists, got: %v", err)
 	}
 }
@@ -145,7 +146,7 @@ func TestService_PromoteSOPVersion_SecondRCBlocked(t *testing.T) {
 		t.Fatalf("first RC promotion failed: %v", err)
 	}
 	err = env.SOPService.PromoteSOPVersion(v2ID, actorID)
-	if err == nil || !strings.Contains(err.Error(), "release candidate already exists") {
+	if !errors.Is(err, errkind.Conflict) {
 		t.Fatalf("Expected conflict on second RC, got: %v", err)
 	}
 }
@@ -273,6 +274,9 @@ func TestService_RegisterSOPVersion_MissingAssetValidation(t *testing.T) {
 
 	if err == nil {
 		t.Fatal("Expected asset validation to fail, but it succeeded")
+	}
+	if !errors.Is(err, sop.ErrInvalidAssetReference) || !errors.Is(err, errkind.Invalid) {
+		t.Errorf("Expected an invalid asset reference, got: %v", err)
 	}
 	if !strings.Contains(err.Error(), "referenced asset not found: assets/missing-diagram.png") {
 		t.Errorf("Expected specific missing asset error, got: %v", err)

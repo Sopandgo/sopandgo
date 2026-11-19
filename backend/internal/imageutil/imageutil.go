@@ -5,12 +5,20 @@ package imageutil
 
 import (
 	"bytes"
-	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
 
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	_ "golang.org/x/image/webp"
+)
+
+var (
+	// ErrInvalidImage refuses data that is empty, not a JPEG, PNG or WebP
+	// file, can't be decoded, or has no pixels.
+	ErrInvalidImage = errkind.New(errkind.Invalid, "invalid image")
+	// ErrImageTooLarge refuses an image with a side longer than the limit.
+	ErrImageTooLarge = errkind.New(errkind.Invalid, "image too large")
 )
 
 // Sniff reports whether raw starts like a JPEG, PNG, or WebP file.
@@ -37,30 +45,27 @@ func Sniff(raw []byte) bool {
 
 // Decode checks the type and dimensions, then decodes the image. Images with a
 // side longer than maxEdge are refused before their pixels are allocated.
-//
-// Error texts are matched by the HTTP handlers: "empty image",
-// "unsupported image type", "invalid image", "invalid image dimensions",
-// "image too large".
+// It refuses with ErrImageTooLarge or ErrInvalidImage.
 func Decode(raw []byte, maxEdge int) (image.Image, error) {
 	if len(raw) == 0 {
-		return nil, fmt.Errorf("empty image")
+		return nil, errkind.Detail(ErrInvalidImage, "empty image")
 	}
 	if !Sniff(raw) {
-		return nil, fmt.Errorf("unsupported image type")
+		return nil, errkind.Detail(ErrInvalidImage, "unsupported image type")
 	}
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(raw))
 	if err != nil {
-		return nil, fmt.Errorf("invalid image: %w", err)
+		return nil, errkind.Detail(ErrInvalidImage, "invalid image: %w", err)
 	}
 	if cfg.Width < 1 || cfg.Height < 1 {
-		return nil, fmt.Errorf("invalid image dimensions")
+		return nil, errkind.Detail(ErrInvalidImage, "invalid image dimensions")
 	}
 	if cfg.Width > maxEdge || cfg.Height > maxEdge {
-		return nil, fmt.Errorf("image too large")
+		return nil, errkind.Detail(ErrImageTooLarge, "image too large")
 	}
 	img, _, err := image.Decode(bytes.NewReader(raw))
 	if err != nil {
-		return nil, fmt.Errorf("invalid image: %w", err)
+		return nil, errkind.Detail(ErrInvalidImage, "invalid image: %w", err)
 	}
 	return img, nil
 }

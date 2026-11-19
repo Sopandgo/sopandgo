@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
 // Regex to capture markdown image links like ![alt](assets/image.png)
@@ -49,7 +51,7 @@ func (s *Service) validateSOPContentAssets(
 
 		decodedRef, err := url.QueryUnescape(rawRef)
 		if err != nil {
-			return fmt.Errorf("invalid asset URL encoding: %s", rawRef)
+			return errkind.Detail(ErrInvalidAssetReference, "invalid asset URL encoding: %s", rawRef)
 		}
 
 		fullRelPath := filepath.Join("sops", sopID, decodedRef)
@@ -57,7 +59,7 @@ func (s *Service) validateSOPContentAssets(
 		lookupPath := filepath.ToSlash(fullRelPath)
 
 		if _, exists := validPaths[lookupPath]; !exists {
-			return fmt.Errorf("referenced asset not found: %s", decodedRef)
+			return errkind.Detail(ErrInvalidAssetReference, "referenced asset not found: %s", decodedRef)
 		}
 	}
 

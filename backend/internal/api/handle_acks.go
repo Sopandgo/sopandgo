@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
 )
 
@@ -34,15 +34,13 @@ func (s *Server) processHandleAddAcknowledgment(w http.ResponseWriter, r *http.R
 		ackType,
 	)
 	if err != nil {
-		msg := err.Error()
 		switch {
 		case errors.Is(err, sop.ErrSOPArchived):
 			writeSOPArchived(w)
-		case strings.HasPrefix(msg, "conflict:"):
-			detail := strings.TrimSpace(strings.TrimPrefix(msg, "conflict:"))
-			http.Error(w, detail, http.StatusConflict)
-		case strings.Contains(msg, "not found"):
-			http.Error(w, "sop version not found", http.StatusNotFound)
+		case errors.Is(err, errkind.Conflict):
+			writeKindText(w, err, err.Error())
+		case errors.Is(err, errkind.NotFound):
+			writeKindText(w, err, "sop version not found")
 		default:
 			http.Error(w, "Failed to record acknowledgment", http.StatusInternalServerError)
 		}

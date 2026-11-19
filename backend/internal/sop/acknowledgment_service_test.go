@@ -1,10 +1,11 @@
 package sop_test
 
 import (
-	"strings"
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
@@ -28,7 +29,7 @@ func TestService_AddAcknowledgment(t *testing.T) {
 	// Reader sign-off is allowed only after the version is published.
 
 	_, err = env.SOPService.AddAcknowledgment(v1ID, readerID, sop.AckTypeRead)
-	if err == nil || !strings.Contains(err.Error(), "conflict:") {
+	if !errors.Is(err, errkind.Conflict) {
 		t.Fatalf("Expected unpublished reader ack to be rejected, got: %v", err)
 	}
 
@@ -40,7 +41,7 @@ func TestService_AddAcknowledgment(t *testing.T) {
 	}
 
 	_, err = env.SOPService.AddAcknowledgment(v1ID, readerID, sop.AckTypeApproved)
-	if err == nil || !strings.Contains(err.Error(), "conflict:") {
+	if !errors.Is(err, errkind.Conflict) {
 		t.Fatalf("Expected direct approver ack to be rejected, got: %v", err)
 	}
 
@@ -59,8 +60,8 @@ func TestService_AddAcknowledgment(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected AddAcknowledgment to fail on duplicate user/type/version combination")
 	}
-	if !strings.Contains(err.Error(), "conflict: already acknowledged") {
-		t.Errorf("Expected conflict: already acknowledged, got: %v", err)
+	if !errors.Is(err, errkind.Conflict) {
+		t.Errorf("Expected a conflict for a duplicate acknowledgment, got: %v", err)
 	}
 }
 

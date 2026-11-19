@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
 )
 
@@ -122,8 +123,8 @@ func (s *Server) handleFavoriteSOP(w http.ResponseWriter, r *http.Request) {
 	}
 	actorID := GetUserID(r.Context())
 	if err := s.sopService.FavoriteSOP(sopID, actorID); err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, "SOP not found", http.StatusNotFound)
+		if errors.Is(err, errkind.NotFound) {
+			writeKindText(w, err, "SOP not found")
 			return
 		}
 		http.Error(w, "failed to favorite sop", http.StatusInternalServerError)
@@ -148,7 +149,7 @@ func (s *Server) handleUnfavoriteSOP(w http.ResponseWriter, r *http.Request) {
 
 // writeSOPArchived answers a change to an archived SOP.
 func writeSOPArchived(w http.ResponseWriter) {
-	writeJSONError(w, http.StatusConflict, "sop_archived", "This SOP is archived. Unarchive it to make changes.")
+	writeKindJSON(w, sop.ErrSOPArchived, "sop_archived", "This SOP is archived. Unarchive it to make changes.")
 }
 
 func (s *Server) handleArchiveSOP(w http.ResponseWriter, r *http.Request) {
@@ -172,11 +173,11 @@ func (s *Server) handleArchiveSOP(w http.ResponseWriter, r *http.Request) {
 	case err == nil:
 		w.WriteHeader(http.StatusNoContent)
 	case errors.Is(err, sop.ErrArchiveReasonRequired), errors.Is(err, sop.ErrArchiveReasonTooLong):
-		writeJSONError(w, http.StatusBadRequest, "invalid_archive_reason", err.Error())
-	case strings.HasPrefix(err.Error(), "conflict:"):
-		writeJSONError(w, http.StatusConflict, "conflict", strings.TrimSpace(strings.TrimPrefix(err.Error(), "conflict:")))
-	case strings.Contains(err.Error(), "not found"):
-		writeJSONError(w, http.StatusNotFound, "sop_not_found", "SOP not found")
+		writeKindJSON(w, err, "invalid_archive_reason", err.Error())
+	case errors.Is(err, errkind.Conflict):
+		writeKindJSON(w, err, "conflict", err.Error())
+	case errors.Is(err, errkind.NotFound):
+		writeKindJSON(w, err, "sop_not_found", "SOP not found")
 	default:
 		log.Printf("ERROR: archive SOP %s failed: %v", sopID, err)
 		http.Error(w, "failed to archive sop", http.StatusInternalServerError)
@@ -195,10 +196,10 @@ func (s *Server) handleUnarchiveSOP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		w.WriteHeader(http.StatusNoContent)
-	case strings.HasPrefix(err.Error(), "conflict:"):
-		writeJSONError(w, http.StatusConflict, "conflict", strings.TrimSpace(strings.TrimPrefix(err.Error(), "conflict:")))
-	case strings.Contains(err.Error(), "not found"):
-		writeJSONError(w, http.StatusNotFound, "sop_not_found", "SOP not found")
+	case errors.Is(err, errkind.Conflict):
+		writeKindJSON(w, err, "conflict", err.Error())
+	case errors.Is(err, errkind.NotFound):
+		writeKindJSON(w, err, "sop_not_found", "SOP not found")
 	default:
 		log.Printf("ERROR: unarchive SOP %s failed: %v", sopID, err)
 		http.Error(w, "failed to unarchive sop", http.StatusInternalServerError)

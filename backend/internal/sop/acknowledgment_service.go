@@ -1,7 +1,7 @@
 package sop
 
 import (
-	"fmt"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
 // AddAcknowledgment records a reader's sign-off on a published version and returns
@@ -13,7 +13,7 @@ func (s *Service) AddAcknowledgment(
 	ackType string,
 ) (string, error) {
 	if ackType != AckTypeRead {
-		return "", fmt.Errorf("conflict: only reader acknowledgments can be recorded directly")
+		return "", errkind.New(errkind.Conflict, "only reader acknowledgments can be recorded directly")
 	}
 	result, err := s.runTransition(transitionRequest{
 		transition:  transitionReaderAck,

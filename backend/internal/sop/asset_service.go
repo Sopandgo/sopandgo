@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/integrity"
 	"github.com/sopandgo/sopandgo/backend/internal/storage"
 )
@@ -37,12 +38,12 @@ func (s *Service) AddAsset(
 	// DISK PATH: Absolute (Secure) -> "/data/sops/<id>/assets/<filename>"
 	absPath, err := storage.SafeJoin(s.dataDir, relPath)
 	if err != nil {
-		return "", fmt.Errorf("invalid path construction: %w", err)
+		return "", errkind.Detail(ErrInvalidAssetFilename, "invalid path construction: %w", err)
 	}
 
 	// 2. Prevent overwrite (Check if file exists on disk)
 	if _, err := os.Stat(absPath); err == nil {
-		return "", fmt.Errorf("asset already exists: %s", filename)
+		return "", errkind.Detail(ErrAssetExists, "asset already exists: %s", filename)
 	} else if !os.IsNotExist(err) {
 		return "", err
 	}

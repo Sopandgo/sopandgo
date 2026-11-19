@@ -2,10 +2,12 @@ package sop_test
 
 import (
 	"bytes"
+	"errors"
 	"os"
-	"strings"
 	"testing"
 
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
+	"github.com/sopandgo/sopandgo/backend/internal/sop"
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
 
@@ -37,8 +39,17 @@ func TestService_AssetLifecycle(t *testing.T) {
 	// 3. Prevent Overwrites (Idempotency / Conflict logic)
 	// Trying to upload another asset with the same filename to the same SOP must fail.
 	_, err = env.SOPService.AddAsset(sopID, filename, []byte("different content"), &actorID)
-	if err == nil || !strings.Contains(err.Error(), "asset already exists") {
+	if !errors.Is(err, sop.ErrAssetExists) || !errors.Is(err, errkind.Conflict) {
 		t.Fatalf("Expected AddAsset to fail on duplicate filename, got: %v", err)
+	}
+	if err.Error() != "asset already exists: "+filename {
+		t.Fatalf("duplicate asset text = %q", err.Error())
+	}
+
+	// A file name that escapes the SOP's folder is refused as invalid.
+	_, err = env.SOPService.AddAsset(sopID, "../../../../escape.png", []byte("x"), &actorID)
+	if !errors.Is(err, sop.ErrInvalidAssetFilename) || !errors.Is(err, errkind.Invalid) {
+		t.Fatalf("Expected an invalid asset file name, got: %v", err)
 	}
 
 	// 4. Fetch Asset Metadata

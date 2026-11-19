@@ -12,6 +12,7 @@ import (
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
@@ -106,7 +107,7 @@ func takeSnapshot(t *testing.T, env *testenv.Env, sopID, versionID string) snaps
 
 func requireConflict(t *testing.T, err error) {
 	t.Helper()
-	if err == nil || !strings.HasPrefix(err.Error(), "conflict:") {
+	if !errors.Is(err, errkind.Conflict) {
 		t.Fatalf("want a conflict error, got %v", err)
 	}
 }
@@ -420,8 +421,8 @@ func TestLifecycle_DuplicateReaderAcknowledgmentIsAConflict(t *testing.T) {
 
 	_, err = env.SOPService.AddAcknowledgment(vID, lifecycleReader, sop.AckTypeRead)
 
-	if err == nil || err.Error() != "conflict: already acknowledged" {
-		t.Fatalf("want conflict: already acknowledged, got %v", err)
+	if !errors.Is(err, errkind.Conflict) {
+		t.Fatalf("want a conflict for a duplicate acknowledgment, got %v", err)
 	}
 	if after := takeSnapshot(t, env, sopID, vID); after != before {
 		t.Fatalf("a duplicate acknowledgment changed the record: before %+v, after %+v", before, after)
@@ -434,7 +435,7 @@ func TestLifecycle_UnknownVersionIsNotFound(t *testing.T) {
 		if name == "create" {
 			continue
 		}
-		if _, err := op(env, "", "no-such-version"); err == nil || !strings.Contains(err.Error(), "not found") {
+		if _, err := op(env, "", "no-such-version"); !errors.Is(err, errkind.NotFound) {
 			t.Errorf("%s: want not found, got %v", name, err)
 		}
 	}

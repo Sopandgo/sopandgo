@@ -1,9 +1,12 @@
 package sop_test
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
+	"github.com/sopandgo/sopandgo/backend/internal/sop"
 	"github.com/sopandgo/sopandgo/backend/internal/testenv"
 )
 
@@ -69,6 +72,9 @@ func TestService_ValidateSOPContentAssets(t *testing.T) {
 			if tt.expectError {
 				if err == nil {
 					t.Fatalf("Expected an error, but got nil")
+				}
+				if !errors.Is(err, sop.ErrInvalidAssetReference) || !errors.Is(err, errkind.Invalid) {
+					t.Errorf("Expected an invalid asset reference, got: %v", err)
 				}
 				if !strings.Contains(err.Error(), tt.errContains) {
 					t.Errorf("Expected error to contain %q, got: %v", tt.errContains, err)

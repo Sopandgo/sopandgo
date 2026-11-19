@@ -3,7 +3,6 @@ package testenv
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
@@ -122,7 +121,7 @@ func (e *Env) SeedTestUser(t *testing.T, userID, email, role string) {
 		VALUES (?, 'Test User', ?, 'dummy-hash', ?, 1, '2026-01-01T00:00:00Z')
 	`
 	_, err := e.Store.DB.Exec(query, userID, email, role)
-	if err != nil && !strings.Contains(err.Error(), "UNIQUE constraint failed") {
+	if err != nil && !storage.IsUniqueViolation(err) {
 		t.Fatalf("Failed to seed test user: %v", err)
 	}
 }

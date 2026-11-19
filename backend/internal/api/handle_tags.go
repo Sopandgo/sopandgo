@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 )
 
 // handleCreateTag creates a new global tag.
@@ -22,9 +21,8 @@ func (s *Server) handleCreateTag(w http.ResponseWriter, r *http.Request) {
 
 	id, err := s.sopService.CreateTag(req.Title, &actorID)
 	if err != nil {
-		// If the service layer threw a conflict error, return a 409
-		if strings.Contains(err.Error(), "conflict") {
-			http.Error(w, err.Error(), http.StatusConflict)
+		if status, ok := kindStatus(err); ok {
+			http.Error(w, err.Error(), status)
 			return
 		}
 		http.Error(w, "failed to create tag", http.StatusInternalServerError)
@@ -71,8 +69,8 @@ func (s *Server) handleSetTagStatus(w http.ResponseWriter, r *http.Request) {
 	actorID := GetUserID(r.Context())
 
 	if err := s.sopService.SetTagStatus(tagID, req.IsActive, &actorID); err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			http.Error(w, "tag not found", http.StatusNotFound)
+		if status, ok := kindStatus(err); ok && status == http.StatusNotFound {
+			http.Error(w, "tag not found", status)
 			return
 		}
 		http.Error(w, "failed to update tag status", http.StatusInternalServerError)

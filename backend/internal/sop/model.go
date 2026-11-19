@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 )
 
 const (
@@ -14,17 +15,28 @@ const (
 )
 
 var (
-	ErrChangeSummaryRequired = errors.New("change summary is required")
-	ErrChangeSummaryTooLong  = errors.New("change summary must be 500 characters or fewer")
-	ErrRejectReasonRequired  = errors.New("a reason for rejecting is required")
-	ErrRejectReasonTooLong   = errors.New("the reason for rejecting must be 500 characters or fewer")
-	ErrArchiveReasonRequired = errors.New("a reason for archiving is required")
-	ErrArchiveReasonTooLong  = errors.New("the reason for archiving must be 500 characters or fewer")
+	ErrChangeSummaryRequired = errkind.New(errkind.Invalid, "change summary is required")
+	ErrChangeSummaryTooLong  = errkind.New(errkind.Invalid, "change summary must be 500 characters or fewer")
+	ErrRejectReasonRequired  = errkind.New(errkind.Invalid, "a reason for rejecting is required")
+	ErrRejectReasonTooLong   = errkind.New(errkind.Invalid, "the reason for rejecting must be 500 characters or fewer")
+	ErrArchiveReasonRequired = errkind.New(errkind.Invalid, "a reason for archiving is required")
+	ErrArchiveReasonTooLong  = errkind.New(errkind.Invalid, "the reason for archiving must be 500 characters or fewer")
 	// ErrActorRequired refuses a lifecycle change without a named actor, before anything is written.
 	ErrActorRequired = errors.New("an actor is required for a lifecycle change")
 	// ErrSOPArchived blocks every change to an archived SOP's content, lifecycle and
-	// signatures. The "conflict:" prefix makes the API answer 409.
-	ErrSOPArchived = errors.New("conflict: this SOP is archived; unarchive it first")
+	// signatures. It is a conflict.
+	ErrSOPArchived = errkind.New(errkind.Conflict, "this SOP is archived; unarchive it first")
+
+	// ErrInvalidAssetReference refuses version content that links an asset the
+	// SOP doesn't have, or an asset URL that can't be decoded. The message names
+	// the reference ("referenced asset not found: assets/x.png"); the frontend
+	// reads that text.
+	ErrInvalidAssetReference = errkind.New(errkind.Invalid, "invalid asset reference")
+	// ErrAssetExists refuses an upload whose file name the SOP already uses.
+	ErrAssetExists = errkind.New(errkind.Conflict, "asset already exists")
+	// ErrInvalidAssetFilename refuses an upload whose file name would leave the
+	// SOP's asset folder.
+	ErrInvalidAssetFilename = errkind.New(errkind.Invalid, "invalid asset file name")
 )
 
 // ArchiveFilter selects SOPs by archive state in ListSOPs.

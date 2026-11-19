@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sopandgo/sopandgo/backend/internal/errkind"
 	"github.com/sopandgo/sopandgo/backend/internal/secrets"
 )
 
@@ -29,11 +30,11 @@ func (s *SettingsStore) KeyConfigured() bool {
 
 // PublicChannelSettings is safe to return to clients (no secrets).
 type PublicChannelSettings struct {
-	Enabled             bool     `json:"enabled"`
-	Events              []string `json:"events"`
-	Configured          bool     `json:"configured"`
-	SecretConfigured    bool     `json:"secret_configured"`
-	URL                 string   `json:"url,omitempty"` // Gotify/webhook base URL (non-secret)
+	Enabled          bool     `json:"enabled"`
+	Events           []string `json:"events"`
+	Configured       bool     `json:"configured"`
+	SecretConfigured bool     `json:"secret_configured"`
+	URL              string   `json:"url,omitempty"` // Gotify/webhook base URL (non-secret)
 }
 
 // PublicSettings is the admin UI DTO for all channels.
@@ -155,10 +156,10 @@ type SaveGotifyInput struct {
 
 // SaveWebhookInput updates generic HTTP webhook settings.
 type SaveWebhookInput struct {
-	Enabled    bool
-	URL        string
+	Enabled     bool
+	URL         string
 	BearerToken string // empty on update keeps existing; "-" clears
-	Events     []string
+	Events      []string
 }
 
 func normalizeEvents(events []string, fallback string) (string, error) {
@@ -355,7 +356,7 @@ func (s *SettingsStore) SaveWebhook(in SaveWebhookInput) error {
 func validateHTTPSURL(raw string) error {
 	u, err := url.Parse(raw)
 	if err != nil || u.Scheme != "https" || u.Host == "" {
-		return fmt.Errorf("webhook URL must be a valid https URL")
+		return errkind.Detail(ErrInvalidURL, "webhook URL must be a valid https URL")
 	}
 	return nil
 }
@@ -363,7 +364,7 @@ func validateHTTPSURL(raw string) error {
 func validateHTTPURL(raw string) error {
 	u, err := url.Parse(raw)
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
-		return fmt.Errorf("URL must be a valid http(s) URL")
+		return errkind.Detail(ErrInvalidURL, "URL must be a valid http(s) URL")
 	}
 	return nil
 }

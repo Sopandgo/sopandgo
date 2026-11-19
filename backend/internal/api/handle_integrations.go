@@ -156,12 +156,9 @@ func writeIntegrationSaveError(w http.ResponseWriter, err error) {
 		errors.Is(err, notify.ErrWebhookURLRequired),
 		errors.Is(err, notify.ErrNotConfigured):
 		http.Error(w, err.Error(), http.StatusBadRequest)
+	case errors.Is(err, notify.ErrInvalidURL):
+		writeKindText(w, err, err.Error())
 	default:
-		msg := err.Error()
-		if strings.Contains(msg, "URL must be") || strings.Contains(msg, "https URL") {
-			http.Error(w, msg, http.StatusBadRequest)
-			return
-		}
 		http.Error(w, "failed to save integration settings", http.StatusInternalServerError)
 	}
 }
