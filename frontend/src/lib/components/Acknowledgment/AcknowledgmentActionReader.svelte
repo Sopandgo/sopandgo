@@ -20,10 +20,10 @@
     let {
         user,
         form
-    } = $props<{
+    }: {
         user: User;
         form?: SignFormResult | null; 
-    }>();
+    } = $props();
 
     let loading = $state(false);
     const error = $derived(form?.action === 'sign' ? form.error : undefined);

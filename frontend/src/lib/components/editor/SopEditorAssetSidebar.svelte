@@ -15,11 +15,11 @@
     import type { SOPAsset } from '#lib/sdk/types.js';
     import type { ActionData } from '../../../routes/(app)/sops/[sop_id]/new/$types';
 
-    let { assets = [], form, content = $bindable('') } = $props<{ 
+    let { assets = [], form, content = $bindable('') }: { 
         assets?: SOPAsset[] | null;
         form: ActionData;
         content?: string;
-    }>();
+    } = $props();
 
     let safeAssets = $derived(assets ?? []);
 

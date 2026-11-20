@@ -28,13 +28,13 @@
         form,
         status,
         archived = false
-    } = $props<{
+    }: {
         user: User;
         acks?: AcknowledgmentWithUser[] | null;
         form?: SignFormResult | null;
         status: string | null;
         archived?: boolean;
-    }>();
+    } = $props();
 
     // Only a reader signature counts as having read it, as in training coverage;
     // author and approver acknowledgments do not.

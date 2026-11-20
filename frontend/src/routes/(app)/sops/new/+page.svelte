@@ -7,7 +7,7 @@
   import CardPageHeading from '#lib/components/CardPageHeading.svelte';
   import * as m from '#lib/paraglide/messages.js';
 
-    let { form } = $props<{ form: ActionData }>();
+    let { form }: { form: ActionData } = $props();
     
     let loading = $state(false);
 </script>

@@ -14,12 +14,12 @@
         ok?: boolean;
     }
 
-    let { sopId, form, assets = [], content = $bindable('') } = $props<{ 
+    let { sopId, form, assets = [], content = $bindable('') }: { 
         sopId: string;
         form: FormResult | null;
         assets?: SOPAsset[];
         content?: string;
-    }>();
+    } = $props();
 
     let publishing = $state(false);
     let changeSummary = $derived(form?.change_summary ?? '');

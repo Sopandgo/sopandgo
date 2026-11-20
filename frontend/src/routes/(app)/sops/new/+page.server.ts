@@ -8,7 +8,7 @@ export const actions: Actions = {
         const title = formData.get('title')?.toString();
 
         if (!title) {
-            return fail(400, { message: m.error_title_required() });
+            return fail(400, { message: m.error_title_required(), title: '' });
         }
 
         try {

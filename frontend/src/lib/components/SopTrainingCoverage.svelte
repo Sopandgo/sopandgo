@@ -5,7 +5,7 @@
 	import ListRow from './ListRow.svelte';
 	import * as m from '#lib/paraglide/messages.js';
 
-	let { items = [] } = $props<{ items?: SOPTrainingCoverage[] }>();
+	let { items = [] }: { items?: SOPTrainingCoverage[] } = $props();
 
 	// Only published versions can be signed; most unsigned people first.
 	const rows = $derived(
