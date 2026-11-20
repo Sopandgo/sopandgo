@@ -8,7 +8,7 @@ It is designed to participate in transactions owned by other packages (`auth`, `
 
 1. **Service Layer (`audit.go`):**
    * **`Log`:** Accepts an `executor` (`DBTX`) so it can join an existing transaction. Marshals any payload to JSON. Normalizes `event_type` / `entity_type` to lowercase. Optional strict mode via `AUDIT_STRICT_TYPES=true`.
-   * **`List`:** Returns events with per-row `HashValid`, plus a total count. Filters via `ListFilters`.
+   * **`List`:** Returns events with per-row `HashValid`, plus a total count. Filters via `ListFilters`. Newest first; events with the same `created_at` (one action often writes several) are ordered by id, so they list in write order and pages are stable.
    * **`ListFilterOptions`:** Distinct event/entity types, and the users who appear as actors (id and display name only), for the audit log filters.
 
 2. **Store Layer (`store.go`):**

@@ -17,7 +17,7 @@ It follows a **struct-based service pattern** so all business logic goes through
    * Accepts `audit.DBTX` (`*sql.DB` or `*sql.Tx`).
 
 3. **Model (`model.go`):**
-   * Structs, roles (`admin`, `approver`, `editor`, `viewer`, `auditor`), and scopes (e.g. `sop:write`, `admin:integrity`). The `auditor` role includes `audit:read`, but audit-log HTTP APIs currently require `admin:integrity` — see `docs/dev/auth-architecture.md`.
+   * Structs, roles (`admin`, `approver`, `editor`, `viewer`, `auditor`), and scopes (e.g. `sop:write`, `admin:integrity`). The `auditor` role includes `audit:read`, which grants the two audit log endpoints; every other admin endpoint requires `admin:integrity`. See `docs/dev/auth-architecture.md`.
 
 Login (password verify + session create) is orchestrated in the **API** layer (`handle_auth.go`) using `GetUserByEmail`, bcrypt compare, and `CreateSession`. There is no `Login` method on `Service`.
 
