@@ -1,18 +1,34 @@
 import { redirect } from '@sveltejs/kit';
-import { DEMO_MODE } from '$app/env/private';
+import { DEMO_MODE, UMAMI_DOMAINS, UMAMI_SCRIPT_URL, UMAMI_WEBSITE_ID } from '$app/env/private';
+import { umamiConfig, umamiScriptTag } from '#lib/analytics.js';
 import { demoSessionToOpen, isDemoMode } from '#lib/demo.js';
 import { createSDK } from '#lib/sdk/index.js';
 import { visitorAddress } from '#lib/server/visitorAddress.js';
 import { paraglideMiddleware } from '#lib/paraglide/server.js';
 import { cookieName, getTextDirection, isLocale } from '#lib/paraglide/runtime.js';
 import { guestThemeFromCookie, themeAttribute, themeCookieName } from '#lib/theme.js';
-import { sequence, type Handle } from '@sveltejs/kit/hooks';
+import { sequence, type Handle, type ServerInit } from '@sveltejs/kit/hooks';
+
+// The Umami tag, decided once at startup: environment values do not change
+// while the process runs. Empty unless this is the public demo.
+let analyticsHead = '';
+
+export const init: ServerInit = () => {
+    const umami = umamiConfig(isDemoMode(DEMO_MODE), {
+        scriptUrl: UMAMI_SCRIPT_URL,
+        websiteId: UMAMI_WEBSITE_ID,
+        domains: UMAMI_DOMAINS
+    });
+    if (umami && 'skip' in umami) console.warn(`Umami analytics is off: ${umami.skip}`);
+    analyticsHead = umami && 'config' in umami ? umamiScriptTag(umami.config) : '';
+};
 
 const handleAuth: Handle = async ({ event, resolve }) => {
     const sdk = createSDK(event);
     event.locals.api = sdk;
     const demo = isDemoMode(DEMO_MODE);
     event.locals.demo = demo;
+    event.locals.extraHead = analyticsHead;
 
     let accessToken = event.cookies.get('access_token');
     const refreshToken = event.cookies.get('refresh_token');
@@ -118,6 +134,7 @@ const handleParaglide: Handle = ({ event, resolve }) =>
                     html
                         .replace('%paraglide.lang%', locale)
                         .replace('%paraglide.dir%', getTextDirection(locale))
+                        .replace('%sopandgo.head%', event.locals.extraHead ?? '')
                         .replace(
                             '%theme%',
                             themeAttribute(

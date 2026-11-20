@@ -11,6 +11,16 @@ export const variables = defineEnvVars({
 	DEMO_MODE: {
 		schema: (input) => input ?? ''
 	},
+	// Umami analytics for the public demo. Ignored unless DEMO_MODE is on; see $lib/analytics.
+	UMAMI_SCRIPT_URL: {
+		schema: (input) => input ?? ''
+	},
+	UMAMI_WEBSITE_ID: {
+		schema: (input) => input ?? ''
+	},
+	UMAMI_DOMAINS: {
+		schema: (input) => input ?? ''
+	},
 	// Runtime toggle; empty/unset means enabled (same as previous $env/dynamic/private default).
 	PDF_EXPORT_ENABLED: {
 		schema: (input) => (input === undefined || input === '' ? 'true' : input)

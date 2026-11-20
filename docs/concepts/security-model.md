@@ -170,7 +170,8 @@ What demo mode guarantees:
 - **Password sign-in is disabled.** Password login, both 2FA steps and password reset are refused, so the known demo passwords and `admin`/`admin` give no token. Visitors get a session only through the demo endpoint, which signs in one of two fixed accounts: the researcher (a viewer) or the auditor. It does not exist when demo mode is off.
 - **The admin area is closed** for every role, admin included, except the two audit log reads. Those still need `audit:read`. Admin reads with side effects, such as the integrity scan or the backup export, are refused too.
 - **Visitors do not see each other.** Audit log responses replace IP addresses, browsers (user agents) and email addresses with `redacted`. Stored rows are unchanged, so the hash chain still verifies.
-- **No outbound traffic.** Mail and Slack, Gotify and webhook notifications are no-ops, whatever the stored settings say.
+- **No outbound traffic from the server.** Mail and Slack, Gotify and webhook notifications are no-ops, whatever the stored settings say. If the operator configures Umami, visitors' browsers load its tracker and send it page views (paths without query strings or fragments) and two demo events.
+- **Analytics stays on the demo.** The Umami variables are ignored unless demo mode is on, so a lab instance never loads analytics, whatever its environment says.
 - **State lasts at most one reset cycle.** Every start wipes and reseeds the data directory. Demo sessions expire after 4 hours, so a leaked refresh token is short-lived even between resets.
 - **A real instance is not wiped by mistake.** The seeder wipes only a data directory carrying the `.demo-instance` marker it wrote itself, and refuses to start on any other directory that holds data.
 

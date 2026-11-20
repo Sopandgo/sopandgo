@@ -9,6 +9,11 @@ declare global {
             user: User | null;
             /** DEMO_MODE: a read-only public demo, read from the server environment. */
             demo: boolean;
+            /**
+             * Trusted, pre-escaped markup for the %sopandgo.head% placeholder:
+             * the demo's Umami tag and the browser error-reporting meta tag.
+             */
+            extraHead: string;
             // FIX: Use 'createSDK' here to match your SDK export
             api: ReturnType<typeof createSDK>; 
         }
