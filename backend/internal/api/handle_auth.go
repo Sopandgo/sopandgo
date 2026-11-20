@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/sopandgo/sopandgo/backend/internal/audit"
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
@@ -99,7 +100,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		payload := map[string]string{
 			"attempted_email": req.Email,
 			"failure_reason":  reason,
-			"ip_address":      r.RemoteAddr,
+			"ip_address":      getRealIP(r),
 			"user_agent":      r.UserAgent(),
 		}
 
@@ -111,9 +112,20 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		s.writeAudit(audit.EventLoginFailed, audit.EntityUser, entityID, nil, payload)
 	}
 
+	// 0. Per-account limit. The IP limiter alone does not stop guesses at one
+	// account spread over many addresses. Checked before the password, so a
+	// blocked attempt learns nothing; only failures below use up the bucket.
+	accountLimit := s.loginAccountLimiter.getLimiter(loginAccountKey(req.Email))
+	if accountLimit.Tokens() < 1 {
+		logFailure("too_many_attempts", nil)
+		http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+		return
+	}
+
 	// 1. Fetch user
 	user, hash, err := s.authService.GetUserByEmail(req.Email)
 	if err != nil {
+		accountLimit.Allow()
 		// Log the failure before returning
 		logFailure("user_not_found", nil)
 
@@ -124,6 +136,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	// 2. Check Active
 	if !user.IsActive {
+		accountLimit.Allow()
 		logFailure("account_inactive", &user.ID)
 		http.Error(w, "Account is inactive", http.StatusForbidden)
 		return
@@ -131,6 +144,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	// 3. Verify password
 	if err := auth.VerifyPassword(req.Password, hash); err != nil {
+		accountLimit.Allow()
 		logFailure("invalid_password", &user.ID)
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
@@ -145,6 +159,12 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.completeLogin(w, r, user, "")
+}
+
+// loginAccountKey is the per-account limiter key for the email a sign-in
+// names. Case and surrounding spaces do not make a new key.
+func loginAccountKey(email string) string {
+	return "login:" + strings.ToLower(strings.TrimSpace(email))
 }
 
 // respondTwoFactorChallenge answers a correct password when a second factor is
@@ -215,7 +235,7 @@ func (s *Server) completeLogin(w http.ResponseWriter, r *http.Request, user *aut
 	}
 
 	payload := map[string]string{
-		"ip_address": r.RemoteAddr,
+		"ip_address": getRealIP(r),
 	}
 	if secondFactor != "" {
 		payload["second_factor"] = secondFactor
@@ -313,7 +333,7 @@ func (s *Server) handleLoginTwoFactor(w http.ResponseWriter, r *http.Request) {
 			"attempted_email": user.Email,
 			"failure_reason":  "invalid_second_factor",
 			"second_factor":   method,
-			"ip_address":      r.RemoteAddr,
+			"ip_address":      getRealIP(r),
 			"user_agent":      r.UserAgent(),
 		})
 		writeJSONError(w, http.StatusUnauthorized, "invalid_code", "Invalid verification code")
@@ -327,7 +347,7 @@ func (s *Server) handleLoginTwoFactor(w http.ResponseWriter, r *http.Request) {
 			"attempted_email": user.Email,
 			"failure_reason":  "challenge_already_used",
 			"second_factor":   method,
-			"ip_address":      r.RemoteAddr,
+			"ip_address":      getRealIP(r),
 			"user_agent":      r.UserAgent(),
 		})
 		writeJSONError(w, http.StatusUnauthorized, "challenge_expired", "This sign-in was already completed. Enter your password again.")

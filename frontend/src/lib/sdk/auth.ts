@@ -161,14 +161,13 @@ export const auth = (client: Client, event: RequestEvent) => {
 
         /**
          * Demo mode only: signs the visitor in as the fixed demo account for
-         * role, for four hours. The API rate-limits per visitor address, so
-         * the visitor's address is forwarded, not the server's own.
+         * role, for four hours. The API rate-limits it per visitor address,
+         * which the client forwards on every call.
          */
-        openDemoSession: async (role: DemoRole, clientAddress: string): Promise<void> => {
+        openDemoSession: async (role: DemoRole): Promise<void> => {
             const res = await client.fetch('/demo/session', {
                 method: 'POST',
-                body: { role },
-                headers: clientAddress ? { 'X-Forwarded-For': clientAddress } : {}
+                body: { role }
             }, false);
             if (res.status === 429) throw new Error('TOO_MANY_ATTEMPTS');
             if (!res.ok) throw new Error('DEMO_SESSION_FAILED');

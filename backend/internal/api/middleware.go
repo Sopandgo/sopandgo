@@ -188,18 +188,25 @@ func (i *IPRateLimiter) getLimiter(ip string) *rate.Limiter {
 	return entry.limiter
 }
 
-// cleanupLoop removes IPs that haven't been seen for 3 minutes
+// cleanupLoop forgets idle keys every minute.
 func (i *IPRateLimiter) cleanupLoop() {
 	for {
 		time.Sleep(1 * time.Minute)
+		i.cleanup(time.Now())
+	}
+}
 
-		i.mu.Lock()
-		for ip, client := range i.ips {
-			if time.Since(client.lastSeen) > 3*time.Minute {
-				delete(i.ips, ip)
-			}
+// cleanup removes keys not seen for 3 minutes whose bucket has refilled.
+// Forgetting a key resets it to a full bucket, so a key that is still drained
+// stays: otherwise waiting 3 minutes would restore the whole burst, which for
+// the slow per-account limiters is far more than the refill.
+func (i *IPRateLimiter) cleanup(now time.Time) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	for key, client := range i.ips {
+		if now.Sub(client.lastSeen) > 3*time.Minute && client.limiter.TokensAt(now) >= float64(i.b) {
+			delete(i.ips, key)
 		}
-		i.mu.Unlock()
 	}
 }
 

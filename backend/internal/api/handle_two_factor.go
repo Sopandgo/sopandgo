@@ -19,7 +19,7 @@ func (s *Server) writeTwoFactorError(w http.ResponseWriter, r *http.Request, use
 	case errors.Is(err, auth.ErrWrongCurrentPassword):
 		s.writeAudit(audit.EventLoginFailed, audit.EntityUser, userID, &userID, map[string]string{
 			"failure_reason": "invalid_current_password",
-			"ip_address":     r.RemoteAddr,
+			"ip_address":     getRealIP(r),
 			"user_agent":     r.UserAgent(),
 		})
 		writeJSONError(w, http.StatusForbidden, "wrong_password", err.Error())

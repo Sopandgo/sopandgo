@@ -52,11 +52,12 @@ A fresh install has no demo accounts. Demo users and sample SOPs are inserted on
 
 1. Set `ORIGIN` and `SECRET_ENCRYPTION_KEY` in `.env`. Leave `SEED_DEMO_DATA` unset or `false` so no demo users or sample SOPs are inserted. Restart if you changed `ORIGIN` or the encryption key after first boot.
 2. Sign in as `admin` / `admin` and set a strong password. The form asks for the current password, which is `admin`.
-3. Optionally save SMTP or Resend under **Settings → Email**, switch it on, and send a test email. Without a transport switched on, invites use manual links.
-4. Turn on two-factor authentication for the admin account in **Account settings**, store the recovery codes, and choose the organization's required second factor under **Settings** (General → Security). If an admin is locked out later, see [Locked-out admin](#locked-out-admin-break-glass).
-5. Create a real user invite. Keep demo data only for a trial.
-6. Open **Settings → Backup**, export a `.zip`, and validate it.
-7. Practice restore once on a non-production copy: stage apply, restart the container, and confirm SOPs and acknowledgments. See [Backup and restore](./backup-and-restore.md).
+3. Behind a reverse proxy (Coolify, Traefik, nginx): open the **Audit log** and check that your sign-in shows your own IP address, not a private one such as `10.…` or `172.…`. If it shows a private address, set `TRUSTED_PROXIES`; see [Behind a reverse proxy](#behind-a-reverse-proxy).
+4. Optionally save SMTP or Resend under **Settings → Email**, switch it on, and send a test email. Without a transport switched on, invites use manual links.
+5. Turn on two-factor authentication for the admin account in **Account settings**, store the recovery codes, and choose the organization's required second factor under **Settings** (General → Security). If an admin is locked out later, see [Locked-out admin](#locked-out-admin-break-glass).
+6. Create a real user invite. Keep demo data only for a trial.
+7. Open **Settings → Backup**, export a `.zip`, and validate it.
+8. Practice restore once on a non-production copy: stage apply, restart the container, and confirm SOPs and acknowledgments. See [Backup and restore](./backup-and-restore.md).
 
 ## Advanced Configuration
 
@@ -75,6 +76,7 @@ A fresh install has no demo accounts. Demo users and sample SOPs are inserted on
 | `BACKEND_URL` | `http://127.0.0.1:8080` | Internal URL the SvelteKit Node server uses to reach the Go API (loopback inside the container). |
 | `HOST_HEADER` | `x-forwarded-host` | Forwarded host header name for SvelteKit behind Caddy. |
 | `PROTOCOL_HEADER` | `x-forwarded-proto` | Forwarded protocol header name for SvelteKit behind Caddy. |
+| `TRUSTED_PROXIES` | - | Addresses of the outer reverse proxy in front of the container, as CIDR ranges separated by spaces, or `private_ranges` (the private IPv4 and IPv6 ranges and loopback). Caddy then takes the visitor's address from that proxy's `X-Forwarded-For`, so the API's rate limits (sign-in, password reset, general and demo sessions) apply per visitor. Empty trusts no proxy: behind Coolify or Traefik, every visitor then shares the proxy's limits. Set it only to addresses that nothing but your proxy can connect from; any peer in these ranges can choose the address it is limited as. See [Behind a reverse proxy](#behind-a-reverse-proxy). |
 | `BODY_SIZE_LIMIT` | `52428800` | Max request size (bytes). Default is ~50MB. |
 | `AUDIT_STRICT_TYPES` | `false` | If `true`, audit writes reject unknown `event_type`/`entity_type` values (recommended once all extensions use canonical types). |
 | `DB_BUSY_TIMEOUT` | `5s` | How long any database write waits for another writer before failing, as a Go duration of at least `1ms` (for example `500ms`, `10s`). An invalid value stops startup with an error. A timed-out write returns an error and is reported in the application log; increase this only if legitimate write transactions regularly exceed five seconds. |
@@ -194,6 +196,56 @@ The application does not enforce network-level restrictions. Operators should:
 
 - **HTTPS/TLS:** If exposing to a network, terminate TLS at an external reverse proxy and forward **HTTP** to the **published app port** (compose default **`HOST_WEB_PORT` 8087** → Caddy **:80** inside the **`sopandgo`** container). Do **not** point the outer proxy at the Go process port **8080** unless you intentionally bypass Caddy (unsupported for normal deployments).
 
+#### Behind a reverse proxy
+
+Most labs that put SOPandGO on the internet run it behind a reverse proxy, such as Coolify's Traefik or an nginx that terminates HTTPS. If yours does, set `TRUSTED_PROXIES`. Without it, SOPandGO cannot tell your users apart.
+
+**Why it matters.** The API limits sign-in attempts, password resets, demo sessions and general requests per visitor address, and the audit log records that address for every sign-in. Each hop only sees the hop before it:
+
+```
+browser 203.0.113.7 ──► your proxy 10.0.1.5 ──► SOPandGO (Caddy)
+```
+
+SOPandGO sees `10.0.1.5` for everyone. Then every user shares one set of limits, so a few wrong passwords from anyone can block sign-in for the whole lab, and the audit log shows the proxy's address instead of the user's. The proxy writes the browser's address into an `X-Forwarded-For` header, but anyone can send that header, so SOPandGO only believes it from addresses you list in `TRUSTED_PROXIES`.
+
+**What it does.** For each request, Caddy checks who connected:
+
+- If the address is in `TRUSTED_PROXIES`, Caddy reads `X-Forwarded-For` from the right, skips addresses it trusts, and takes the first one it does not trust as the visitor. Entries further left came from outside and are ignored, so a visitor cannot pass a fake address.
+- Otherwise, Caddy ignores the header and the connecting address is the visitor.
+
+The value is a list of addresses or CIDR ranges separated by spaces, for example `10.0.1.5/32 192.0.2.0/24`. The keyword `private_ranges` stands for every private network address: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `127.0.0.1/8`, `fd00::/8` and `::1`. No public internet address is in it. Empty, the default, trusts nothing.
+
+**What to set:**
+
+| How browsers reach SOPandGO | `TRUSTED_PROXIES` |
+| --- | --- |
+| Directly, no proxy in front | Leave empty |
+| Coolify or Traefik on a server of its own (for example a VPS) | `private_ranges` |
+| A proxy on another machine, such as an institute's nginx | That proxy's address, for example `10.20.30.40/32` |
+| A proxy on a server inside a LAN, where the container's port is also open to that LAN | Only the Docker network's subnet (`docker network inspect <network>` shows it), for example `172.18.0.0/16` |
+| Cloudflare's proxy in front of Coolify | See [Cloudflare in front of Coolify](#cloudflare-in-front-of-coolify) |
+
+**Trust only your proxy.** Any machine connecting from a listed address can choose the address it is limited and logged as. `private_ranges` is exact on a VPS, where the proxy is the only machine with a private address. On a server inside a university or office network, colleagues' computers have private addresses too, so list only the proxy there. A list that is too narrow is safe: users share limits, as without the variable. A list that is too broad lets machines on it get around the sign-in limits.
+
+**Check it.** Sign in and open the **Audit log**. Your `login` entry shows the address SOPandGO used. It should be your own public address. A private address (`10.…`, `172.16.…` to `172.31.…`, `192.168.…`) means SOPandGO still sees the proxy. On Docker Desktop (Windows, macOS), every request arrives from Docker's own gateway address, whatever `TRUSTED_PROXIES` says; that is fine for a local trial.
+
+##### Cloudflare in front of Coolify
+
+With the DNS record set to **DNS only** (grey cloud), visitors connect to Traefik directly. Use `TRUSTED_PROXIES=private_ranges` and nothing else changes.
+
+With Cloudflare's proxy on (orange cloud), there is one more hop, and both Traefik and SOPandGO must trust Cloudflare. Otherwise Traefik replaces the visitor with a Cloudflare server, and everyone arriving through the same Cloudflare data centre shares one limit.
+
+1. Copy Cloudflare's IPv4 and IPv6 ranges from [cloudflare.com/ips](https://www.cloudflare.com/ips/).
+2. In Coolify, open **Servers →** your server **→ Proxy → Configuration**. Add the ranges to the Traefik command, comma-separated, for both entry points, then restart the proxy:
+   ```
+   - '--entrypoints.http.forwardedHeaders.trustedIPs=<Cloudflare ranges>'
+   - '--entrypoints.https.forwardedHeaders.trustedIPs=<Cloudflare ranges>'
+   ```
+3. Set `TRUSTED_PROXIES=private_ranges <Cloudflare ranges>`, separated by spaces.
+4. In Cloudflare, set **SSL/TLS** to **Full (strict)**. Coolify serves a valid certificate; **Flexible** causes redirect loops.
+
+Someone who bypasses Cloudflare and connects to the server's IP directly gains nothing: Traefik does not trust their address and replaces their `X-Forwarded-For`. Cloudflare changes its ranges rarely; when it does, update both places.
+
 ### Demo mode
 
 `DEMO_MODE=true` turns an instance into a read-only public demo, like the one at demo.sopandgo.com. It is meant only for that. Never set it on an instance that holds a lab's data.
@@ -220,7 +272,7 @@ The demo can count visits with [Umami](https://umami.is). Set `UMAMI_SCRIPT_URL`
 
 The variables work only in demo mode. On any other instance the tracker never loads, and the SvelteKit server logs `Umami analytics is off: demo mode is off` at startup. An invalid value is logged the same way, with the reason, and nothing loads.
 
-The rate limit uses the address Caddy sees. Behind an outer proxy (Coolify, Traefik), that is the proxy's address, so all visitors share one limit of about ten new sessions a minute. Returning visitors keep their session and do not count against it.
+Each visitor address can open about ten demo sessions a minute. Returning visitors keep their session and do not count against it. Behind Coolify or Traefik, set `TRUSTED_PROXIES` (see [Behind a reverse proxy](#behind-a-reverse-proxy)); without it, every visitor shares the proxy's address, and so one limit of about ten new sessions a minute for the whole demo, and one general API limit of 20 requests a second. The audit log check described there does not work on the demo, which shows addresses as `redacted`: check the setting on a deployment with `DEMO_MODE=false` and its own volume first, then switch to demo mode with a new, empty volume.
 
 ### Two-factor authentication
 

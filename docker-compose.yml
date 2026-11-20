@@ -22,6 +22,9 @@ services:
       - BACKEND_URL=${BACKEND_URL:-http://127.0.0.1:8080}
       - HOST_HEADER=${HOST_HEADER:-x-forwarded-host}
       - PROTOCOL_HEADER=${PROTOCOL_HEADER:-x-forwarded-proto}
+      # Addresses of an outer reverse proxy (Coolify, Traefik) whose X-Forwarded-For Caddy trusts,
+      # so rate limits apply per visitor. Empty = trust none. See docs/ops/deployment.md.
+      - TRUSTED_PROXIES=${TRUSTED_PROXIES:-}
       - BODY_SIZE_LIMIT=${BODY_SIZE_LIMIT:-52428800}
       - AUDIT_STRICT_TYPES=${AUDIT_STRICT_TYPES:-false}
       # Empty = the backend default (5s). AUDIT_BUSY_TIMEOUT is the deprecated name; DB_BUSY_TIMEOUT wins.

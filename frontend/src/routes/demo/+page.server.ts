@@ -1,6 +1,5 @@
 import { error, redirect } from '@sveltejs/kit';
 import { otherDemoRole, type DemoRole } from '#lib/demo.js';
-import { visitorAddress } from '#lib/server/visitorAddress.js';
 import type { Actions, PageServerLoad } from './$types';
 
 // Only the demo banner's form action lives here.
@@ -20,7 +19,7 @@ export const actions: Actions = {
 
         await locals.api.auth.logout();
         try {
-            await locals.api.auth.openDemoSession(role, visitorAddress(event));
+            await locals.api.auth.openDemoSession(role);
         } catch (err) {
             console.error('Demo role switch failed:', err);
             // Without a session, the next page opens a researcher session again,
