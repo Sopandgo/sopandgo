@@ -963,7 +963,7 @@
   "error_reporting_what_heading": "Gönderilenler",
   "error_reporting_sent": "Gönderilir: hata türü ve mesajı, yığın izi, rota kalıbı (ör. /sops/[id]), HTTP yöntemi ve durumu, SOPandGO sürümü ve ortam.",
   "error_reporting_not_sent": "Asla gönderilmez: adlar, e-posta adresleri, IP adresleri, SOP içeriği, istek gövdeleri, çerezler veya sorgu dizeleri. Yine de bir hata mesajı bir kimlik içerebilir.",
-  "error_reporting_dsn_public": "Raporlama açıkken DSN herkese açıktır: SOPandGO’yu açabilen herkes onu okuyabilir. Bir DSN yalnızca projenize olay göndermeye izin verir.",
+  "error_reporting_dsn_public": "Raporlama açıkken DSN herkese açıktır: bu siteyi açabilen herkes onu okuyabilir. Bir DSN yalnızca projenize olay göndermeye izin verir.",
   "error_reporting_settings_heading": "Ayarlar",
   "error_reporting_enable": "Hataları raporla",
   "error_reporting_dsn": "DSN",
@@ -982,5 +982,5 @@
   "error_reporting_environment_invalid": "1 ile 64 arası harf, rakam, nokta, tire veya alt çizgi kullanın.",
   "error_reporting_test_sent": "Test olayı gönderildi. Olay kimliği: {id}",
   "error_reporting_test_not_enabled": "Test olayı göndermeden önce hata raporlamayı açın ve kaydedin.",
-  "error_reporting_test_failed": "Test olayı teslim edilemedi. DSN’yi ve SOPandGO’nun sunucuya erişebildiğini kontrol edin."
+  "error_reporting_test_failed": "Test olayı teslim edilemedi. DSN’yi ve bu sunucunun ona erişebildiğini kontrol edin."
 }

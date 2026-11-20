@@ -110,25 +110,36 @@ func (s *Service) Save(in SaveInput) (Settings, error) {
 	if err := validate(st); err != nil {
 		return Settings{}, err
 	}
+	// Build the client first: a row is only stored once it can run.
+	client, err := s.newClient(st)
+	if err != nil {
+		return Settings{}, err
+	}
 	if err := writeRow(s.db, st); err != nil {
+		if client != nil {
+			client.Close()
+		}
 		return Settings{}, err
 	}
-	if err := s.apply(st); err != nil {
-		return Settings{}, err
-	}
+	s.install(st, client)
 	return st, nil
 }
 
-// apply makes st the running configuration and binds a client for it.
+// apply makes st the running configuration and binds a client for it. A
+// client that cannot be built leaves reporting off.
 func (s *Service) apply(st Settings) error {
 	client, err := s.newClient(st)
 	if err != nil {
 		st.Enabled = false
 		client = nil
 	}
+	s.install(st, client)
+	return err
+}
+
+func (s *Service) install(st Settings, client *sentry.Client) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.current = st
 	s.bind(client)
-	return err
 }

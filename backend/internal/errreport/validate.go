@@ -31,8 +31,6 @@ func validate(st Settings) error {
 	return nil
 }
 
-// parseDSN accepts http (self-hosted GlitchTip on a lab network) and https,
-// like the Gotify URL in notify.
 // DSNTarget returns the host and project ID a DSN sends to, or empty strings
 // for an empty or invalid DSN. The audit log records these instead of the DSN.
 func DSNTarget(dsn string) (host, project string) {
@@ -46,6 +44,8 @@ func DSNTarget(dsn string) (host, project string) {
 	return d.GetHost(), d.GetProjectID()
 }
 
+// parseDSN accepts http (self-hosted GlitchTip on a lab network) and https,
+// like the Gotify URL in notify.
 func parseDSN(raw string) (*sentry.Dsn, error) {
 	dsn, err := sentry.NewDsn(raw)
 	if err != nil {

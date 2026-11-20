@@ -966,7 +966,7 @@
   "error_reporting_what_heading": "Co se odesílá",
   "error_reporting_sent": "Odesílá se: typ a zpráva chyby, výpis zásobníku, vzor trasy (např. /sops/[id]), metoda a stav HTTP, verze SOPandGO a prostředí.",
   "error_reporting_not_sent": "Nikdy se neodesílá: jména, e-mailové adresy, IP adresy, obsah SOP, těla požadavků, cookies ani řetězce dotazů. Chybová zpráva přesto může obsahovat ID.",
-  "error_reporting_dsn_public": "Dokud je hlášení zapnuté, je DSN veřejné: přečte ho každý, kdo může otevřít SOPandGO. DSN umožňuje jen odesílat události do vašeho projektu.",
+  "error_reporting_dsn_public": "Dokud je hlášení zapnuté, je DSN veřejné: přečte ho každý, kdo může otevřít tento web. DSN umožňuje jen odesílat události do vašeho projektu.",
   "error_reporting_settings_heading": "Nastavení",
   "error_reporting_enable": "Hlásit chyby",
   "error_reporting_dsn": "DSN",
@@ -985,5 +985,5 @@
   "error_reporting_environment_invalid": "Použijte 1 až 64 písmen, číslic, teček, pomlček nebo podtržítek.",
   "error_reporting_test_sent": "Testovací událost byla odeslána. ID události: {id}",
   "error_reporting_test_not_enabled": "Před odesláním testovací události hlášení chyb zapněte a uložte.",
-  "error_reporting_test_failed": "Testovací událost nebyla doručena. Zkontrolujte DSN a zda se SOPandGO dostane k serveru."
+  "error_reporting_test_failed": "Testovací událost nebyla doručena. Zkontrolujte DSN a zda se k němu tento server dostane."
 }

@@ -963,7 +963,7 @@
   "error_reporting_what_heading": "送信される内容",
   "error_reporting_sent": "送信されるもの：エラーの種類とメッセージ、スタックトレース、ルートパターン（/sops/[id] など）、HTTP メソッドとステータス、SOPandGO のバージョン、環境。",
   "error_reporting_not_sent": "送信されないもの：氏名、メールアドレス、IP アドレス、SOP の内容、リクエスト本文、Cookie、クエリ文字列。ただし、エラーメッセージに ID が含まれる場合があります。",
-  "error_reporting_dsn_public": "レポートがオンの間、DSN は公開されます。SOPandGO を開ける人なら誰でも読み取れます。DSN でできるのは、プロジェクトへのイベント送信だけです。",
+  "error_reporting_dsn_public": "レポートがオンの間、DSN は公開されます。このサイトを開ける人なら誰でも読み取れます。DSN でできるのは、プロジェクトへのイベント送信だけです。",
   "error_reporting_settings_heading": "設定",
   "error_reporting_enable": "エラーを報告する",
   "error_reporting_dsn": "DSN",
@@ -982,5 +982,5 @@
   "error_reporting_environment_invalid": "1～64 文字の英字、数字、ピリオド、ハイフン、アンダースコアを使用してください。",
   "error_reporting_test_sent": "テストイベントを送信しました。イベント ID：{id}",
   "error_reporting_test_not_enabled": "テストイベントを送信する前に、エラーレポートをオンにして保存してください。",
-  "error_reporting_test_failed": "テストイベントは配信されませんでした。DSN と、SOPandGO からサーバーに接続できるかを確認してください。"
+  "error_reporting_test_failed": "テストイベントは配信されませんでした。DSN と、このサーバーから接続できるかを確認してください。"
 }

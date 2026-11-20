@@ -963,7 +963,7 @@
   "error_reporting_what_heading": "Wat er wordt verstuurd",
   "error_reporting_sent": "Verstuurd: het fouttype en de melding, de stacktrace, het routepatroon (zoals /sops/[id]), de HTTP-methode en -status, de SOPandGO-versie en de omgeving.",
   "error_reporting_not_sent": "Nooit verstuurd: namen, e-mailadressen, IP-adressen, SOP-inhoud, request bodies, cookies of querystrings. Een foutmelding kan nog wel een ID bevatten.",
-  "error_reporting_dsn_public": "Zolang foutrapportage aan staat, is de DSN openbaar: iedereen die SOPandGO kan openen, kan hem lezen. Met een DSN kun je alleen events naar je project sturen.",
+  "error_reporting_dsn_public": "Zolang foutrapportage aan staat, is de DSN openbaar: iedereen die deze site kan openen, kan hem lezen. Met een DSN kun je alleen events naar je project sturen.",
   "error_reporting_settings_heading": "Instellingen",
   "error_reporting_enable": "Fouten rapporteren",
   "error_reporting_dsn": "DSN",
@@ -982,5 +982,5 @@
   "error_reporting_environment_invalid": "Gebruik 1 tot 64 letters, cijfers, punten, streepjes of underscores.",
   "error_reporting_test_sent": "Testevent verstuurd. Event-ID: {id}",
   "error_reporting_test_not_enabled": "Zet foutrapportage aan en sla op voordat je een testevent verstuurt.",
-  "error_reporting_test_failed": "Het testevent is niet afgeleverd. Controleer de DSN en of SOPandGO de server kan bereiken."
+  "error_reporting_test_failed": "Het testevent is niet afgeleverd. Controleer de DSN en of deze server hem kan bereiken."
 }

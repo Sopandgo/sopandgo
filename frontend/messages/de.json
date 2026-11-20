@@ -963,7 +963,7 @@
   "error_reporting_what_heading": "Was gesendet wird",
   "error_reporting_sent": "Gesendet werden: Fehlertyp und Meldung, Stacktrace, das Routenmuster (etwa /sops/[id]), HTTP-Methode und Status, die SOPandGO-Version und die Umgebung.",
   "error_reporting_not_sent": "Nie gesendet werden: Namen, E-Mail-Adressen, IP-Adressen, SOP-Inhalte, Anfrageinhalte, Cookies oder Query-Strings. Fehlermeldungen können trotzdem eine ID enthalten.",
-  "error_reporting_dsn_public": "Solange Fehlerberichte an sind, ist der DSN öffentlich: Jeder, der SOPandGO öffnen kann, kann ihn lesen. Ein DSN erlaubt nur, Ereignisse an dein Projekt zu senden.",
+  "error_reporting_dsn_public": "Solange Fehlerberichte an sind, ist der DSN öffentlich: Jeder, der diese Seite öffnen kann, kann ihn lesen. Ein DSN erlaubt nur, Ereignisse an dein Projekt zu senden.",
   "error_reporting_settings_heading": "Einstellungen",
   "error_reporting_enable": "Fehler melden",
   "error_reporting_dsn": "DSN",
@@ -982,5 +982,5 @@
   "error_reporting_environment_invalid": "Verwende 1 bis 64 Buchstaben, Ziffern, Punkte, Bindestriche oder Unterstriche.",
   "error_reporting_test_sent": "Testereignis gesendet. Ereignis-ID: {id}",
   "error_reporting_test_not_enabled": "Schalte Fehlerberichte ein und speichere, bevor du ein Testereignis sendest.",
-  "error_reporting_test_failed": "Das Testereignis wurde nicht zugestellt. Prüfe den DSN und ob SOPandGO den Server erreicht."
+  "error_reporting_test_failed": "Das Testereignis wurde nicht zugestellt. Prüfe den DSN und ob dieser Server ihn erreicht."
 }

@@ -963,7 +963,7 @@
   "error_reporting_what_heading": "Qué se envía",
   "error_reporting_sent": "Se envía: el tipo y el mensaje del error, la traza de pila, el patrón de ruta (como /sops/[id]), el método y el estado HTTP, la versión de SOPandGO y el entorno.",
   "error_reporting_not_sent": "Nunca se envía: nombres, direcciones de correo, direcciones IP, contenido de los SOP, cuerpos de solicitud, cookies ni cadenas de consulta. Un mensaje de error aún puede contener un ID.",
-  "error_reporting_dsn_public": "Mientras los informes están activados, el DSN es público: cualquiera que pueda abrir SOPandGO puede leerlo. Un DSN solo permite enviar eventos a tu proyecto.",
+  "error_reporting_dsn_public": "Mientras los informes están activados, el DSN es público: cualquiera que pueda abrir este sitio puede leerlo. Un DSN solo permite enviar eventos a tu proyecto.",
   "error_reporting_settings_heading": "Configuración",
   "error_reporting_enable": "Informar de errores",
   "error_reporting_dsn": "DSN",
@@ -982,5 +982,5 @@
   "error_reporting_environment_invalid": "Usa de 1 a 64 letras, dígitos, puntos, guiones o guiones bajos.",
   "error_reporting_test_sent": "Evento de prueba enviado. ID del evento: {id}",
   "error_reporting_test_not_enabled": "Activa los informes de errores y guarda antes de enviar un evento de prueba.",
-  "error_reporting_test_failed": "El evento de prueba no se entregó. Comprueba el DSN y que SOPandGO puede llegar al servidor."
+  "error_reporting_test_failed": "El evento de prueba no se entregó. Comprueba el DSN y que este servidor puede alcanzarlo."
 }

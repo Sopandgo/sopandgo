@@ -963,7 +963,7 @@
   "error_reporting_what_heading": "发送的内容",
   "error_reporting_sent": "发送：错误类型和消息、堆栈跟踪、路由模式（如 /sops/[id]）、HTTP 方法和状态、SOPandGO 版本和环境。",
   "error_reporting_not_sent": "从不发送：姓名、电子邮件地址、IP 地址、SOP 内容、请求正文、Cookie 或查询字符串。错误消息中仍可能包含 ID。",
-  "error_reporting_dsn_public": "开启报告后，DSN 是公开的：任何能打开 SOPandGO 的人都能读取它。DSN 只能用于向你的项目发送事件。",
+  "error_reporting_dsn_public": "开启报告后，DSN 是公开的：任何能打开本站点的人都能读取它。DSN 只能用于向你的项目发送事件。",
   "error_reporting_settings_heading": "设置",
   "error_reporting_enable": "报告错误",
   "error_reporting_dsn": "DSN",
@@ -982,5 +982,5 @@
   "error_reporting_environment_invalid": "请使用 1 到 64 个字母、数字、点、短横线或下划线。",
   "error_reporting_test_sent": "测试事件已发送。事件 ID：{id}",
   "error_reporting_test_not_enabled": "请先开启错误报告并保存，再发送测试事件。",
-  "error_reporting_test_failed": "测试事件未送达。请检查 DSN，以及 SOPandGO 能否访问该服务器。"
+  "error_reporting_test_failed": "测试事件未送达。请检查 DSN，以及本服务器能否访问它。"
 }

@@ -963,7 +963,7 @@
   "error_reporting_what_heading": "Co jest wysyłane",
   "error_reporting_sent": "Wysyłane: typ i komunikat błędu, ślad stosu, wzorzec trasy (np. /sops/[id]), metoda i status HTTP, wersja SOPandGO i środowisko.",
   "error_reporting_not_sent": "Nigdy niewysyłane: imiona i nazwiska, adresy e-mail, adresy IP, treść SOP, treść żądań, pliki cookie ani ciągi zapytań. Komunikat błędu może jednak zawierać identyfikator.",
-  "error_reporting_dsn_public": "Gdy raportowanie jest włączone, DSN jest publiczny: może go odczytać każdy, kto może otworzyć SOPandGO. DSN pozwala tylko wysyłać zdarzenia do Twojego projektu.",
+  "error_reporting_dsn_public": "Gdy raportowanie jest włączone, DSN jest publiczny: może go odczytać każdy, kto może otworzyć tę witrynę. DSN pozwala tylko wysyłać zdarzenia do Twojego projektu.",
   "error_reporting_settings_heading": "Ustawienia",
   "error_reporting_enable": "Raportuj błędy",
   "error_reporting_dsn": "DSN",
@@ -982,5 +982,5 @@
   "error_reporting_environment_invalid": "Użyj od 1 do 64 liter, cyfr, kropek, myślników lub podkreśleń.",
   "error_reporting_test_sent": "Wysłano zdarzenie testowe. ID zdarzenia: {id}",
   "error_reporting_test_not_enabled": "Włącz raportowanie błędów i zapisz, zanim wyślesz zdarzenie testowe.",
-  "error_reporting_test_failed": "Zdarzenie testowe nie zostało dostarczone. Sprawdź DSN i czy SOPandGO może połączyć się z serwerem."
+  "error_reporting_test_failed": "Zdarzenie testowe nie zostało dostarczone. Sprawdź DSN i czy ten serwer może się z nim połączyć."
 }

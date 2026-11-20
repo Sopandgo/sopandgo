@@ -963,7 +963,7 @@
   "error_reporting_what_heading": "Cosa viene inviato",
   "error_reporting_sent": "Inviato: tipo e messaggio dell’errore, stack trace, schema della route (come /sops/[id]), metodo e stato HTTP, versione di SOPandGO e ambiente.",
   "error_reporting_not_sent": "Mai inviato: nomi, indirizzi email, indirizzi IP, contenuto delle SOP, corpi delle richieste, cookie o query string. Un messaggio di errore può comunque contenere un ID.",
-  "error_reporting_dsn_public": "Finché la segnalazione è attiva, il DSN è pubblico: chiunque possa aprire SOPandGO può leggerlo. Un DSN permette solo di inviare eventi al tuo progetto.",
+  "error_reporting_dsn_public": "Finché la segnalazione è attiva, il DSN è pubblico: chiunque possa aprire questo sito può leggerlo. Un DSN permette solo di inviare eventi al tuo progetto.",
   "error_reporting_settings_heading": "Impostazioni",
   "error_reporting_enable": "Segnala gli errori",
   "error_reporting_dsn": "DSN",
@@ -982,5 +982,5 @@
   "error_reporting_environment_invalid": "Usa da 1 a 64 lettere, cifre, punti, trattini o trattini bassi.",
   "error_reporting_test_sent": "Evento di test inviato. ID evento: {id}",
   "error_reporting_test_not_enabled": "Attiva la segnalazione errori e salva prima di inviare un evento di test.",
-  "error_reporting_test_failed": "L’evento di test non è stato consegnato. Controlla il DSN e che SOPandGO raggiunga il server."
+  "error_reporting_test_failed": "L’evento di test non è stato consegnato. Controlla il DSN e che questo server lo raggiunga."
 }

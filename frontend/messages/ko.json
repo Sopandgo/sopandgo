@@ -963,7 +963,7 @@
   "error_reporting_what_heading": "전송되는 내용",
   "error_reporting_sent": "전송됨: 오류 유형과 메시지, 스택 추적, 경로 패턴(예: /sops/[id]), HTTP 메서드와 상태, SOPandGO 버전, 환경.",
   "error_reporting_not_sent": "전송되지 않음: 이름, 이메일 주소, IP 주소, SOP 내용, 요청 본문, 쿠키, 쿼리 문자열. 단, 오류 메시지에 ID가 포함될 수 있습니다.",
-  "error_reporting_dsn_public": "보고가 켜져 있는 동안 DSN은 공개됩니다. SOPandGO를 열 수 있는 사람은 누구나 읽을 수 있습니다. DSN으로는 프로젝트에 이벤트를 보내는 것만 가능합니다.",
+  "error_reporting_dsn_public": "보고가 켜져 있는 동안 DSN은 공개됩니다. 이 사이트를 열 수 있는 사람은 누구나 읽을 수 있습니다. DSN으로는 프로젝트에 이벤트를 보내는 것만 가능합니다.",
   "error_reporting_settings_heading": "설정",
   "error_reporting_enable": "오류 보고",
   "error_reporting_dsn": "DSN",
@@ -982,5 +982,5 @@
   "error_reporting_environment_invalid": "1~64자의 영문자, 숫자, 마침표, 하이픈 또는 밑줄을 사용하세요.",
   "error_reporting_test_sent": "테스트 이벤트를 보냈습니다. 이벤트 ID: {id}",
   "error_reporting_test_not_enabled": "테스트 이벤트를 보내기 전에 오류 보고를 켜고 저장하세요.",
-  "error_reporting_test_failed": "테스트 이벤트가 전달되지 않았습니다. DSN과 SOPandGO가 서버에 연결할 수 있는지 확인하세요."
+  "error_reporting_test_failed": "테스트 이벤트가 전달되지 않았습니다. DSN과 이 서버가 연결할 수 있는지 확인하세요."
 }

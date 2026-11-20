@@ -963,7 +963,7 @@
   "error_reporting_what_heading": "Vad som skickas",
   "error_reporting_sent": "Skickas: feltyp och meddelande, stackspårning, ruttmönstret (till exempel /sops/[id]), HTTP-metod och status, SOPandGO-versionen och miljön.",
   "error_reporting_not_sent": "Skickas aldrig: namn, e-postadresser, IP-adresser, SOP-innehåll, förfrågningsinnehåll, cookies eller frågesträngar. Ett felmeddelande kan ändå innehålla ett ID.",
-  "error_reporting_dsn_public": "Medan felrapportering är på är DSN:en offentlig: alla som kan öppna SOPandGO kan läsa den. En DSN låter bara någon skicka händelser till ditt projekt.",
+  "error_reporting_dsn_public": "Medan felrapportering är på är DSN:en offentlig: alla som kan öppna den här webbplatsen kan läsa den. En DSN låter bara någon skicka händelser till ditt projekt.",
   "error_reporting_settings_heading": "Inställningar",
   "error_reporting_enable": "Rapportera fel",
   "error_reporting_dsn": "DSN",
@@ -982,5 +982,5 @@
   "error_reporting_environment_invalid": "Använd 1 till 64 bokstäver, siffror, punkter, bindestreck eller understreck.",
   "error_reporting_test_sent": "Testhändelse skickad. Händelse-ID: {id}",
   "error_reporting_test_not_enabled": "Slå på felrapportering och spara innan du skickar en testhändelse.",
-  "error_reporting_test_failed": "Testhändelsen levererades inte. Kontrollera DSN:en och att SOPandGO når servern."
+  "error_reporting_test_failed": "Testhändelsen levererades inte. Kontrollera DSN:en och att den här servern når den."
 }

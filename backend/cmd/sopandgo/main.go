@@ -210,7 +210,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load error reporting settings: %v", err)
 	}
-	defer errorReporting.Close()
 	if cfg := errorReporting.PublicConfig(); cfg.Enabled {
 		host, _ := errreport.DSNTarget(cfg.DSN)
 		log.Printf("error reporting enabled: host=%s environment=%s browser=%t", host, cfg.Environment, cfg.Browser)
@@ -312,5 +311,7 @@ func main() {
 
 	// Optional: Give background tasks a moment to finish current work.
 	time.Sleep(500 * time.Millisecond)
+	// Send any queued error events (waits up to 2 seconds).
+	errorReporting.Close()
 	log.Println("Goodbye.")
 }

@@ -122,7 +122,7 @@ func (s *Server) handleAdminPostErrorReportingTest(w http.ResponseWriter, r *htt
 	if err != nil {
 		// 502, like the other test buttons: the admin's endpoint failed. The
 		// error reporting middleware does not report 502s.
-		writeJSONError(w, http.StatusBadGateway, "delivery_failed", "The test event was not delivered. Check the DSN and that SOPandGO can reach the server.")
+		writeJSONError(w, http.StatusBadGateway, "delivery_failed", "The test event was not delivered. Check the DSN and that this server can reach it.")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"event_id": id})
