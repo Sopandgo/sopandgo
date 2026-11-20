@@ -8,7 +8,7 @@
   import CardPageHeading from '#lib/components/CardPageHeading.svelte';
   import * as m from '#lib/paraglide/messages.js';
 
-    let { data, form } = $props<{ data: PageData, form: ActionData }>();
+    let { data, form }: { data: PageData, form: ActionData } = $props();
 
     /** Shared with editor and sidebar so Word import updates the draft textarea */
     let documentContent = $state('');

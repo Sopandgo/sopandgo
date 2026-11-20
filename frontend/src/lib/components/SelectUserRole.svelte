@@ -12,11 +12,11 @@
     }
 
     // FIX: Added 'form' to the props definition
-    let { user, currentUserId, form = null } = $props<{
+    let { user, currentUserId, form = null }: {
         user: User;
         currentUserId: string | null;
         form?: FormResult | null;
-    }>();
+    } = $props();
 
     let loading = $state(false);
     const isSelf = $derived(currentUserId && user.id === currentUserId);

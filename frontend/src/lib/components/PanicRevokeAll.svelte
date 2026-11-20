@@ -12,7 +12,7 @@
     };
   }
 
-  let { form } = $props<{ form: FormResult | null }>();
+  let { form }: { form: FormResult | null } = $props();
 
   let loading = $state(false);
   const result = $derived(form?.revokeAllSessions);

@@ -27,8 +27,10 @@ Run before opening a PR:
 
 ```bash
 cd backend && go test ./...
-cd frontend && npm test
+cd frontend && npm test && npm run check
 ```
+
+CI runs the same commands, so a pull request with a `svelte-check` error does not pass.
 
 ## Pull requests
 

@@ -36,6 +36,8 @@ jobs:
         run: npm ci
       - name: Test
         run: npm test
+      - name: Typecheck
+        run: npm run check
 
   image:
     runs-on: ubuntu-latest

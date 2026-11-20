@@ -3,10 +3,10 @@
     import * as m from '#lib/paraglide/messages.js';
     import type { User } from '#lib/sdk/types.js';
 
-    let { user, currentUserId } = $props<{
+    let { user, currentUserId }: {
         user: User;
         currentUserId: string | null;
-    }>();
+    } = $props();
 
     let loading = $state(false);
     const isSelf = $derived(currentUserId && user.id === currentUserId);
