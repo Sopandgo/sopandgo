@@ -112,6 +112,19 @@ Admins may configure instance-level destinations (Slack Incoming Webhooks, Gotif
 - **Best-effort delivery:** failed notification sends are audited (`notification_failed`) and do not undo publish/promote/reject.
 - **Not a bot platform:** Incoming Webhooks / HTTP push only — no OAuth Slack apps, slash commands, or interactive components.
 
+## Error reporting
+
+An admin can send unexpected errors to Sentry or GlitchTip under **Settings → Error reporting** (see [Deployment → Error reporting](../ops/deployment.md#error-reporting-sentry-glitchtip) and [ADR 0004](../adr/0004-error-reporting-configured-by-admins.md)). It is off by default and has no environment variable.
+
+- **Admin-controlled and audited:** only admins can turn it on, change it, or send a test event. Each change is audited as `error_reporting_settings_updated`, each test as `error_reporting_test_sent`. The audit log records the DSN's host and project, not the DSN.
+- **What is sent:** for the Go API, panics and 5xx responses (except 502, a failed service the admin configured, and 503); for the SvelteKit server, and for browsers when that separate switch is on, unexpected errors. An event holds the error type and message, the stack trace, the route pattern (`GET /api/sops/{sopID}`, `/(app)/sops/[id]`), the HTTP method and status, the SOPandGO version and the environment.
+- **What is never sent:** names, email addresses, IP addresses, cookies, tokens, headers, request bodies, query strings, SOP content or breadcrumbs. The SDKs are configured to collect none of it, and every event is scrubbed again before it leaves.
+- **What can still leak:** error messages and panic values are sent as they are. A message that includes an ID, a file name or a value the user typed sends it too. Treat the Sentry or GlitchTip project as holding operational data about the lab.
+- **The DSN is public while reporting is on.** `GET /api/error-reporting/config` returns it without a session, because the SvelteKit server reads it there and browsers need it. A DSN only allows sending events to one project; anyone who can reach the instance can send noise to it.
+- **Browser reporting** is a separate switch, off by default. When it is on, every page carries the DSN and browsers load the Sentry script and send their errors directly, so the Sentry or GlitchTip server sees each browser's IP address, as with any web request.
+- **Kept across a restore:** restoring a backup keeps the running instance's settings, so a lab's errors never go to the project named in another instance's backup.
+- **Not on the public demo:** the demo's admin area is closed and its database is wiped at every start, so it never reports errors.
+
 ## Branding
 
 Admins can set the organization's name, logo, and primary colour under **Settings → Branding**.

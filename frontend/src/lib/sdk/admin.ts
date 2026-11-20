@@ -22,7 +22,8 @@ import type {
     AuditAnchoringStatus,
     AuditAnchoringInput,
     AuditAnchoringProbe,
-    AuditAnchor
+    AuditAnchor,
+    ErrorReportingSettings
 } from './types';
 
 /** The result of saving audit anchoring settings. */
@@ -424,6 +425,41 @@ export const admin = (client: Client) => ({
             throw new Error(t || 'INTEGRATION_TEST_SEND_FAILED');
         }
         if (!res.ok) throw new Error('INTEGRATION_TEST_FAILED');
+    },
+
+    // --- Error reporting (Sentry / GlitchTip) ---
+
+    getErrorReporting: async (): Promise<ErrorReportingSettings> => {
+        const res = await client.fetch('/admin/settings/error-reporting', { method: 'GET' });
+        if (!res.ok) throw new Error('ERROR_REPORTING_FETCH_FAILED');
+        return await res.json();
+    },
+
+    /** Throws the API's code: dsn_required, dsn_invalid or environment_invalid. */
+    updateErrorReporting: async (payload: {
+        enabled: boolean;
+        dsn: string;
+        environment: string;
+        browser_enabled: boolean;
+    }): Promise<void> => {
+        const res = await client.fetch('/admin/settings/error-reporting', { method: 'PUT', body: payload });
+        if (res.status === 400) {
+            const body = await res.json().catch(() => null);
+            throw new Error(body?.error || 'ERROR_REPORTING_INVALID');
+        }
+        if (!res.ok) throw new Error('ERROR_REPORTING_SAVE_FAILED');
+    },
+
+    /** Returns the event ID. Throws not_enabled or delivery_failed. */
+    sendErrorReportingTest: async (): Promise<string> => {
+        const res = await client.fetch('/admin/settings/error-reporting/test', { method: 'POST', body: {} });
+        if (res.status === 409 || res.status === 502) {
+            const body = await res.json().catch(() => null);
+            throw new Error(body?.error || 'ERROR_REPORTING_TEST_FAILED');
+        }
+        if (!res.ok) throw new Error('ERROR_REPORTING_TEST_FAILED');
+        const body = (await res.json()) as { event_id: string };
+        return body.event_id;
     },
 
     getBackupStatus: async (): Promise<BackupStatus> => {

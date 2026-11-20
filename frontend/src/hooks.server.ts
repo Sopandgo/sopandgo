@@ -2,12 +2,14 @@ import { redirect } from '@sveltejs/kit';
 import { DEMO_MODE, UMAMI_DOMAINS, UMAMI_SCRIPT_URL, UMAMI_WEBSITE_ID } from '$app/env/private';
 import { umamiConfig, umamiScriptTag } from '#lib/analytics.js';
 import { demoSessionToOpen, isDemoMode } from '#lib/demo.js';
+import { shouldReport } from '#lib/errorReporting.js';
+import { browserReportingHead, reportServerError } from '#lib/server/errorReporting.js';
 import { createSDK } from '#lib/sdk/index.js';
 import { visitorAddress } from '#lib/server/visitorAddress.js';
 import { paraglideMiddleware } from '#lib/paraglide/server.js';
 import { cookieName, getTextDirection, isLocale } from '#lib/paraglide/runtime.js';
 import { guestThemeFromCookie, themeAttribute, themeCookieName } from '#lib/theme.js';
-import { sequence, type Handle, type ServerInit } from '@sveltejs/kit/hooks';
+import { sequence, type Handle, type HandleServerError, type ServerInit } from '@sveltejs/kit/hooks';
 
 // The Umami tag, decided once at startup: environment values do not change
 // while the process runs. Empty unless this is the public demo.
@@ -28,7 +30,8 @@ const handleAuth: Handle = async ({ event, resolve }) => {
     event.locals.api = sdk;
     const demo = isDemoMode(DEMO_MODE);
     event.locals.demo = demo;
-    event.locals.extraHead = analyticsHead;
+    // Browser error reporting, when an admin turned it on (cached for a minute).
+    event.locals.extraHead = analyticsHead + (await browserReportingHead());
 
     let accessToken = event.cookies.get('access_token');
     const refreshToken = event.cookies.get('refresh_token');
@@ -147,6 +150,18 @@ const handleParaglide: Handle = ({ event, resolve }) =>
     );
 
 export const handle = sequence(handleAuth, handleParaglide);
+
+// Unexpected errors go to Sentry or GlitchTip when an admin turned that on.
+// error() responses and 404s are not reported. Returning nothing keeps
+// SvelteKit's default message.
+export const handleError: HandleServerError = async ({ error, kind, event }) => {
+    if (!shouldReport(kind)) return;
+    console.error(error);
+    await reportServerError(error, {
+        route: event.route.id ?? '(unmatched)',
+        method: event.request.method
+    });
+};
 
 function canReadAuditLog(role: string): boolean {
     return role === 'admin' || role === 'auditor';

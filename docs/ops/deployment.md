@@ -121,6 +121,19 @@ Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTI
 
 If you **rotate** `SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save. Authenticator apps stop working too: admins sign in with a recovery code, users with an emailed code if the policy allows email, and then set up their app again; reset normal users from **Admin → Users** and admins with [`recover-admin`](#locked-out-admin-break-glass).
 
+### Error reporting (Sentry, GlitchTip)
+
+SOPandGO can send unexpected errors to [Sentry](https://sentry.io) or to a self-hosted [GlitchTip](https://glitchtip.com), which speaks the same protocol. It is off until an admin turns it on under **Settings → Error reporting** (`/admin/settings/error-reporting`). There are no environment variables for it, and it does not need `SECRET_ENCRYPTION_KEY`.
+
+1. In Sentry or GlitchTip, create a project and copy its DSN from **Client Keys (DSN)**. It looks like `https://<key>@<host>/<project>`. `http` works for a GlitchTip on the lab network; the page warns that events then travel unencrypted.
+2. Paste it, set an **Environment** (default `production`), switch **Report errors** on and save. The change applies at once in the Go API, and within a minute in the SvelteKit server.
+3. Click **Send test**. The page shows the event ID, or says the event was not delivered. The container must reach the DSN's host.
+4. Optionally tick **Also report errors in users' browsers**. Browsers then load a small Sentry script and report to the DSN themselves, so the DSN host must be reachable from users' machines too.
+
+What is and is not sent is listed in the [security model](../concepts/security-model.md#error-reporting). In short: error type and message, stack trace, route pattern, method and status, version and environment; never users, IP addresses, cookies, headers, bodies or query strings. Error messages are sent as they are.
+
+Panics in the Go API are always recovered and logged with a stack trace, whether reporting is on or off. The API reports 5xx responses except 502 (a service you configured failed, such as SMTP, S3, Slack or a test button) and 503 (maintenance lock). Restoring a backup keeps this instance's error reporting settings.
+
 ### Audit anchoring
 
 The audit log is a hash chain, but someone with direct access to the database can rewrite it and recompute every hash. Audit anchoring closes that gap. A Time Stamping Authority (TSA) regularly signs the newest audit hash, and each receipt is copied to your S3 bucket. An auditor can check the receipts without SOPandGO; see [Verifying audit anchors](verifying-anchors.md).

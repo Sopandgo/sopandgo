@@ -439,6 +439,17 @@ export interface PublicIntegrationSettings {
     known_events: IntegrationEvent[];
 }
 
+/** Error reporting to Sentry or GlitchTip (Settings → Error reporting). */
+export interface ErrorReportingSettings {
+    enabled: boolean;
+    /** Not a secret: it only allows sending events (docs/adr/0004). */
+    dsn: string;
+    environment: string;
+    browser_enabled: boolean;
+    /** Empty until first saved. */
+    updated_at: string;
+}
+
 export interface AdminCreateUserResponse {
     id: string;
     warning?: string;

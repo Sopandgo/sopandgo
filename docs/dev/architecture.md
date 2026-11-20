@@ -168,6 +168,8 @@ Authentication state is managed via **HTTP-only cookies** to prevent XSS-based t
 
 ### Usage Pattern
 
+**Extra head tags:** `app.html` has a `%sopandgo.head%` placeholder that `hooks.server.ts` fills, server-side, with the demo's Umami tag (`$lib/analytics`, only in demo mode) and, while an admin has browser error reporting on, a `sopandgo-error-reporting` meta tag (`$lib/errorReporting`). `hooks.client.ts` reads that tag and only then lazy-loads `$lib/browserErrorReporting`; without it no Sentry code is loaded. The server's own unexpected errors go through `handleError` to `$lib/server/errorReporting`, which reads the configuration from `GET /api/error-reporting/config` (cached for a minute) and sends with `@sentry/core`.
+
 The SDK is typically initialized in SvelteKit `hooks.server.ts` or `+page.server.ts` using the `createSDK` factory:
 
 ```typescript
