@@ -113,7 +113,10 @@ func listEventsRecord(db DBTX, limit, offset int, filters ListFilters) ([]AuditE
         FROM audit_events a
         LEFT JOIN users u ON a.actor_user_id = u.id` + whereSQL
 
-	query += " ORDER BY a.created_at DESC LIMIT ? OFFSET ?"
+	// Several events often share a timestamp (one lifecycle change writes a
+	// few). The id breaks the tie, so they list in the order they were written
+	// and pages do not shuffle rows between requests.
+	query += " ORDER BY a.created_at DESC, a.id DESC LIMIT ? OFFSET ?"
 	args := append(whereArgs, limit, offset)
 
 	rows, err := db.Query(query, args...)
