@@ -4,6 +4,7 @@
     import { page } from '$app/state';
     import { favoriteErrorFromForm } from '#lib/favorites.js';
     import * as m from '#lib/paraglide/messages.js';
+    import DemoLocked from '#lib/components/DemoLocked.svelte';
 
     /*
      * Star button that adds or removes an SOP from the reader's favorites
@@ -36,6 +37,14 @@
     {#if error}
         <span id={errorId} role="alert" class="text-xs text-error">{error}</span>
     {/if}
+    {#if page.data.demo}
+        <DemoLocked>{@render star()}</DemoLocked>
+    {:else}
+        {@render star()}
+    {/if}
+</form>
+
+{#snippet star()}
     <button
         type="submit"
         class="btn btn-square btn-ghost btn-sm"
@@ -46,4 +55,4 @@
     >
         <StarIcon class="size-4 {isFavorite ? 'fill-current' : ''}" aria-hidden="true" />
     </button>
-</form>
+{/snippet}

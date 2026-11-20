@@ -256,8 +256,16 @@ func main() {
 	}
 
 	// 2. Create Config Struct
+	// DEMO_MODE=true (any case) turns this instance into a read-only public demo.
+	// The seeder refuses to start it on a data directory that holds real data.
+	demoMode := strings.EqualFold(strings.TrimSpace(os.Getenv("DEMO_MODE")), "true")
+	if demoMode {
+		log.Println("DEMO_MODE is on: the API refuses writes, password sign-in and the admin area; mail and notifications are off")
+	}
+
 	config := api.Config{
-		Origin: origin,
+		Origin:   origin,
+		DemoMode: demoMode,
 	}
 
 	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler, brandingService)

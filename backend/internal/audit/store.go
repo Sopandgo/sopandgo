@@ -251,8 +251,38 @@ func listDistinctAuditTypesRecord(db DBTX) (FilterOptions, error) {
 		return FilterOptions{}, err
 	}
 
+	actors, err := listAuditActorsRecord(db)
+	if err != nil {
+		return FilterOptions{}, err
+	}
+
 	return FilterOptions{
 		EventTypes:  eventTypes,
 		EntityTypes: entityTypes,
+		Actors:      actors,
 	}, nil
+}
+
+// listAuditActorsRecord lists users who appear as an actor, ordered by name.
+func listAuditActorsRecord(db DBTX) ([]FilterActor, error) {
+	rows, err := db.Query(`
+		SELECT u.id, u.display_name
+		FROM users u
+		WHERE u.id IN (SELECT DISTINCT actor_user_id FROM audit_events WHERE actor_user_id IS NOT NULL)
+		ORDER BY u.display_name COLLATE NOCASE ASC, u.id ASC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []FilterActor{}
+	for rows.Next() {
+		var a FilterActor
+		if err := rows.Scan(&a.ID, &a.DisplayName); err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
 }

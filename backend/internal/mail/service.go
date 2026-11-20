@@ -16,3 +16,13 @@ func NewService(sender Sender, auditor Auditor) (*Service, error) {
 		auditor: auditor,
 	}, nil
 }
+
+// Silence makes every send a no-op that fails with ErrSilenced, whatever the
+// stored SMTP or Resend settings say. A public demo calls it before serving.
+func (s *Service) Silence() {
+	s.sender = silencedSender{}
+}
+
+type silencedSender struct{}
+
+func (silencedSender) Send([]string, string, string) error { return ErrSilenced }

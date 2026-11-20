@@ -19,11 +19,82 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// seedDemoEnabled reports whether demo users and the sample SOP should be
-// inserted. Only the value "false" (case-insensitive, surrounding space
-// ignored) turns seeding off. Empty or unset means seed.
+// seedDemoEnabled reports whether demo users and the sample SOPs should be
+// inserted. Only the value "true" (case-insensitive, surrounding space
+// ignored) turns seeding on. Empty, unset or any other value means no seed.
 func seedDemoEnabled(value string) bool {
-	return !strings.EqualFold(strings.TrimSpace(value), "false")
+	return strings.EqualFold(strings.TrimSpace(value), "true")
+}
+
+// demoMarker is the file a demo instance's data directory carries. Only a
+// directory with this marker is ever wiped.
+const demoMarker = ".demo-instance"
+
+// settings holds the environment values the seeder decides on.
+type settings struct {
+	// SeedDemoData is SEED_DEMO_DATA as set, possibly empty.
+	SeedDemoData string
+	// DemoMode is DEMO_MODE as set, possibly empty.
+	DemoMode string
+}
+
+// run decides whether to seed and seeds dataDir from sopsRoot. The container
+// entrypoint always runs the seeder; this is the only place the decision is made.
+//
+// With DEMO_MODE=true, every start resets the instance: an empty directory is
+// seeded, a directory with the demo marker is wiped and reseeded, and a
+// directory with data but no marker is refused, so a real lab is never wiped.
+func run(cfg settings, dataDir, sopsRoot string) error {
+	if !seedDemoEnabled(cfg.DemoMode) {
+		if !seedDemoEnabled(cfg.SeedDemoData) {
+			log.Println("SEED_DEMO_DATA is not true, skipping demo data")
+			return nil
+		}
+		return seed(dataDir, sopsRoot, false)
+	}
+
+	if strings.EqualFold(strings.TrimSpace(cfg.SeedDemoData), "false") {
+		return errors.New("DEMO_MODE=true always seeds demo data, but SEED_DEMO_DATA=false is set; remove one of them")
+	}
+	if err := resetDemoDataDir(dataDir); err != nil {
+		return err
+	}
+	// The marker goes first, so a seed that fails half-way is wiped at the next start.
+	if err := os.WriteFile(filepath.Join(dataDir, demoMarker), []byte("SOPandGO demo instance: wiped and reseeded at every start.\n"), 0o644); err != nil {
+		return fmt.Errorf("cannot write the demo marker: %w", err)
+	}
+	return seed(dataDir, sopsRoot, true)
+}
+
+// resetDemoDataDir leaves dataDir empty for a fresh demo seed. It wipes the
+// directory only when it carries the demo marker, and refuses any other
+// directory that holds something.
+func resetDemoDataDir(dataDir string) error {
+	if err := os.MkdirAll(dataDir, 0o755); err != nil {
+		return fmt.Errorf("cannot create data directory: %w", err)
+	}
+	entries, err := os.ReadDir(dataDir)
+	if err != nil {
+		return fmt.Errorf("cannot read data directory: %w", err)
+	}
+	if len(entries) == 0 {
+		log.Println("DEMO_MODE: empty data directory, seeding the demo")
+		return nil
+	}
+	if _, err := os.Stat(filepath.Join(dataDir, demoMarker)); err != nil {
+		return fmt.Errorf("DEMO_MODE refuses to start: %s holds data but no %s marker. "+
+			"Demo mode wipes its data directory at every start, so it only runs on an empty directory "+
+			"or one it created itself. Point DATA_DIR at an empty directory, or turn DEMO_MODE off", dataDir, demoMarker)
+	}
+
+	log.Println("DEMO_MODE: wiping the demo data directory and reseeding")
+	// Remove the contents, not the directory: in Docker it is a mount point.
+	for _, e := range entries {
+		if err := os.RemoveAll(filepath.Join(dataDir, e.Name())); err != nil {
+			return fmt.Errorf("cannot wipe the demo data directory: %w", err)
+		}
+	}
+	return nil
 }
 
 // Demo user keys, as used in sop.json ("read_by", "favorited_by").
@@ -61,6 +132,10 @@ var demoUsers = []demoUser{
 	{userResearcher, "Demo Research Assistant", "researcher@demo.local", auth.RoleViewer},
 }
 
+// demoAuditor is seeded only with DEMO_MODE, so public demo visitors can view
+// the audit log. It never signs or favorites, so sop.json cannot name it.
+var demoAuditor = demoUser{"auditor", "Demo Auditor", "auditor@demo.local", auth.RoleAuditor}
+
 // demoManifest is the optional sop.json next to an SOP's version-N.md files.
 // See backend/demo/README.md for the format.
 type demoManifest struct {
@@ -78,24 +153,20 @@ type demoManifest struct {
 }
 
 func main() {
-	if !seedDemoEnabled(os.Getenv("SEED_DEMO_DATA")) {
-		log.Println("SEED_DEMO_DATA=false, skipping demo data")
-		return
-	}
-
 	dataDir := os.Getenv("DATA_DIR")
 	if dataDir == "" {
 		dataDir = "./data"
 	}
 
-	if err := seed(dataDir, filepath.Join("demo", "sops")); err != nil {
+	cfg := settings{SeedDemoData: os.Getenv("SEED_DEMO_DATA"), DemoMode: os.Getenv("DEMO_MODE")}
+	if err := run(cfg, dataDir, filepath.Join("demo", "sops")); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // seed inserts demo users and every SOP under sopsRoot into dataDir. It does
-// nothing when dataDir already holds app.db.
-func seed(dataDir, sopsRoot string) error {
+// nothing when dataDir already holds app.db. withAuditor adds the demo auditor.
+func seed(dataDir, sopsRoot string, withAuditor bool) error {
 	log.Println("seeding demo data")
 
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
@@ -123,7 +194,11 @@ func seed(dataDir, sopsRoot string) error {
 	authService := auth.NewService(store.DB, auditLogger, dataDir, nil)
 
 	avatarsDir := filepath.Join(filepath.Dir(sopsRoot), "avatars")
-	userIDs, err := ensureDemoUsers(authService, avatarsDir)
+	users := demoUsers
+	if withAuditor {
+		users = append(slices.Clone(demoUsers), demoAuditor)
+	}
+	userIDs, err := ensureDemoUsers(authService, avatarsDir, users)
 	if err != nil {
 		return fmt.Errorf("failed to create demo users: %w", err)
 	}
@@ -156,10 +231,10 @@ func seed(dataDir, sopsRoot string) error {
 // When avatarsDir contains <key>.jpg (manager.jpg, qa.jpg, researcher.jpg),
 // that file is set as the user's profile picture. The bootstrap admin is never
 // given a picture here.
-func ensureDemoUsers(authService *auth.Service, avatarsDir string) (map[string]string, error) {
+func ensureDemoUsers(authService *auth.Service, avatarsDir string, users []demoUser) (map[string]string, error) {
 	ids := map[string]string{}
 
-	for _, d := range demoUsers {
+	for _, d := range users {
 		// Just create the user. No need to check "if exists".
 		id, err := authService.RegisterUser(
 			d.name,

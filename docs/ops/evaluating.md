@@ -26,7 +26,7 @@ Edit `.env` and set at least:
 
 - **`ORIGIN`** — must match the URL you open in the browser (default `http://localhost:8087`)
 - **`SECRET_ENCRYPTION_KEY`** — 32-byte AES key as base64 or hex (`openssl rand -base64 32`)
-- Leave **`SEED_DEMO_DATA=true`** (the default) so the first boot inserts demo users and sample SOPs
+- Set **`SEED_DEMO_DATA=true`** in `.env` before the first boot, so it inserts demo users and sample SOPs. The default is `false`.
 
 3. Start the stack. This pulls the published image. You do not set a version, check out a tag, or build from source.
 
@@ -46,7 +46,7 @@ docker compose up -d
 | Demo QA Officer | `qa@demo.local` / `12345` | Approver | Review / publish path |
 | Demo Research Assistant | `researcher@demo.local` / `12345` | Viewer | Reading and acknowledgments |
 
-The three demo accounts ship with profile pictures; the bootstrap admin does not. Demo accounts are for local exploration only. For a real lab, set **`SEED_DEMO_DATA=false`** in `.env` **before** the first boot so demo users and the sample SOPs are not inserted. Changing the flag later does not remove data already seeded.
+The three demo accounts ship with profile pictures; the bootstrap admin does not. Demo accounts are for local exploration only. A real lab leaves `SEED_DEMO_DATA` at its default, `false`. Changing the flag later does not remove data already seeded.
 
 ## What the demo data contains
 
@@ -82,7 +82,7 @@ Before sign-in, the top bar has a language menu and a light/dark toggle. Support
 ## After the trial
 
 - Tear down with `docker compose down` (add `-v` only if you also want to remove named volumes; the default bind mount `./backend/data` remains on disk until you delete it).
-- For a real deployment, start from a clean data directory with `SEED_DEMO_DATA=false`, set a strong admin password, and follow the [first-week checklist](./deployment.md#first-week-checklist) in [Deployment](./deployment.md).
+- For a real deployment, start from a clean data directory with `SEED_DEMO_DATA` unset or `false`, set a strong admin password, and follow the [first-week checklist](./deployment.md#first-week-checklist) in [Deployment](./deployment.md).
 
 ## Related docs
 

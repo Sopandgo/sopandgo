@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "Ce serveur",
   "notify_event_anchor_failed": "Échec de l’ancrage de l’audit",
   "notify_event_anchoring_changed": "Ancrage de l’audit activé, désactivé ou modifié",
-  "notify_event_backup_restored": "Sauvegarde restaurée"
+  "notify_event_backup_restored": "Sauvegarde restaurée",
+  "demo_region": "Avis de démo",
+  "demo_banner": "Démo en lecture seule · données réinitialisées chaque nuit",
+  "demo_install": "Installer SOPandGO",
+  "demo_view_as": "Voir en tant que",
+  "demo_role_researcher": "Chercheur",
+  "demo_role_auditor": "Auditeur",
+  "demo_disabled": "Désactivé dans la démo – installez SOPandGO pour essayer de modifier",
+  "demo_switch_failed": "La démo n’a pas pu changer de rôle. Réessayez dans une minute."
 }

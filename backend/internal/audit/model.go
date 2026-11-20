@@ -53,6 +53,15 @@ type ListFilters struct {
 type FilterOptions struct {
 	EventTypes  []string `json:"event_types"`
 	EntityTypes []string `json:"entity_types"`
+	// Actors are the users who appear as actors in the log, by id and display
+	// name only, so the actor filter works without access to user administration.
+	Actors []FilterActor `json:"actors"`
+}
+
+// FilterActor is one user who acted in the audit log.
+type FilterActor struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"display_name"`
 }
 
 // The API response type

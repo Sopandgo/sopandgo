@@ -38,6 +38,17 @@ type User struct {
 	CreatedAt       time.Time `json:"created_at"`
 }
 
+// PublicUser is how other users appear in responses outside user
+// administration: who they are and their picture, nothing else. Email, role,
+// 2FA status and creation date stay in user administration and in each user's
+// own profile. Field names match User, so clients read both the same way.
+type PublicUser struct {
+	ID                string `json:"id"`
+	DisplayName       string `json:"display_name"`
+	HasAvatar         bool   `json:"has_avatar"`
+	AvatarContentHash string `json:"avatar_content_hash,omitempty"`
+}
+
 type Session struct {
 	// ID is the refresh-token secret. List responses leave it empty so the
 	// admin session API never returns a usable credential.

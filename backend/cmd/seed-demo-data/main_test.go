@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,20 +17,44 @@ func TestSeedDemoEnabled(t *testing.T) {
 		value string
 		want  bool
 	}{
-		{value: "", want: true},
+		{value: "", want: false},
 		{value: "true", want: true},
 		{value: "TRUE", want: true},
+		{value: " True ", want: true},
 		{value: "false", want: false},
 		{value: "FALSE", want: false},
-		{value: " false ", want: false},
-		{value: "0", want: true},
-		{value: "no", want: true},
+		{value: "0", want: false},
+		{value: "1", want: false},
+		{value: "yes", want: false},
 	}
 
 	for _, tc := range cases {
 		if got := seedDemoEnabled(tc.value); got != tc.want {
 			t.Errorf("seedDemoEnabled(%q) = %v, want %v", tc.value, got, tc.want)
 		}
+	}
+}
+
+// TestRunSeedsOnlyWhenAsked: the seeder binary decides on its own whether to
+// seed. Only SEED_DEMO_DATA=true creates the database.
+func TestRunSeedsOnlyWhenAsked(t *testing.T) {
+	sopsRoot := filepath.Join("..", "..", "demo", "sops")
+	for _, value := range []string{"", "false", "no"} {
+		dataDir := t.TempDir()
+		if err := run(settings{SeedDemoData: value}, dataDir, sopsRoot); err != nil {
+			t.Fatalf("run(SEED_DEMO_DATA=%q): %v", value, err)
+		}
+		if _, err := os.Stat(filepath.Join(dataDir, "app.db")); !os.IsNotExist(err) {
+			t.Errorf("SEED_DEMO_DATA=%q created app.db (stat err %v)", value, err)
+		}
+	}
+
+	dataDir := t.TempDir()
+	if err := run(settings{SeedDemoData: " TRUE "}, dataDir, sopsRoot); err != nil {
+		t.Fatalf("run(SEED_DEMO_DATA=TRUE): %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dataDir, "app.db")); err != nil {
+		t.Errorf("SEED_DEMO_DATA=TRUE did not create app.db: %v", err)
 	}
 }
 
@@ -90,7 +115,7 @@ func TestSeedShippedDemoData(t *testing.T) {
 	dataDir := t.TempDir()
 	sopsRoot := filepath.Join("..", "..", "demo", "sops")
 
-	if err := seed(dataDir, sopsRoot); err != nil {
+	if err := seed(dataDir, sopsRoot, false); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
 
@@ -219,7 +244,7 @@ func TestSeedShippedDemoData(t *testing.T) {
 	}
 
 	// A second run must not touch an existing database.
-	if err := seed(dataDir, sopsRoot); err != nil {
+	if err := seed(dataDir, sopsRoot, false); err != nil {
 		t.Fatalf("second seed: %v", err)
 	}
 	_, total, err = sopService.ListSOPs(researcher.ID, 100, 0, "", "", false, false, sop.ArchiveFilterActive)
@@ -228,5 +253,147 @@ func TestSeedShippedDemoData(t *testing.T) {
 	}
 	if total != 6 {
 		t.Errorf("after second seed: %d SOPs, want 6", total)
+	}
+}
+
+const shippedSOPs = "../../demo/sops"
+
+func openSeeded(t *testing.T, dataDir string) (*auth.Service, *sop.Service) {
+	t.Helper()
+	store, err := storage.Open(dataDir)
+	if err != nil {
+		t.Fatalf("storage.Open: %v", err)
+	}
+	t.Cleanup(func() { store.DB.Close() })
+	auditLogger, err := audit.New(store.DB)
+	if err != nil {
+		t.Fatalf("audit.New: %v", err)
+	}
+	return auth.NewService(store.DB, auditLogger, dataDir, nil),
+		sop.NewService(store.DB, auditLogger, dataDir, "1", false, nil)
+}
+
+func countSOPs(t *testing.T, dataDir string) int {
+	t.Helper()
+	_, sopService := openSeeded(t, dataDir)
+	_, total, err := sopService.ListSOPs("", 100, 0, "", "", false, false, sop.ArchiveFilterActive)
+	if err != nil {
+		t.Fatalf("ListSOPs: %v", err)
+	}
+	return total
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func TestRunDemoModeSeedsEmptyDirectory(t *testing.T) {
+	dataDir := t.TempDir()
+	if err := run(settings{DemoMode: "true"}, dataDir, shippedSOPs); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if !exists(filepath.Join(dataDir, demoMarker)) {
+		t.Fatal("demo mode did not write the marker")
+	}
+	if got := countSOPs(t, dataDir); got != 6 {
+		t.Fatalf("seeded %d SOPs, want 6", got)
+	}
+}
+
+func TestRunDemoModeWipesMarkedDirectory(t *testing.T) {
+	dataDir := t.TempDir()
+	if err := run(settings{DemoMode: "TRUE"}, dataDir, shippedSOPs); err != nil {
+		t.Fatalf("first run: %v", err)
+	}
+
+	// A visitor day leaves rows and files behind. The database is closed
+	// again before the reset, as it is when the container restarts.
+	store, err := storage.Open(dataDir)
+	if err != nil {
+		t.Fatalf("storage.Open: %v", err)
+	}
+	auditLogger, err := audit.New(store.DB)
+	if err != nil {
+		t.Fatalf("audit.New: %v", err)
+	}
+	if _, err := sop.NewService(store.DB, auditLogger, dataDir, "1", false, nil).RegisterSOP("Left behind", nil); err != nil {
+		t.Fatalf("RegisterSOP: %v", err)
+	}
+	store.DB.Close()
+	if err := os.MkdirAll(filepath.Join(dataDir, "uploads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stray := filepath.Join(dataDir, "uploads", "stray.png")
+	if err := os.WriteFile(stray, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := run(settings{DemoMode: "true"}, dataDir, shippedSOPs); err != nil {
+		t.Fatalf("second run: %v", err)
+	}
+	if exists(stray) {
+		t.Error("reset kept a file from the previous cycle")
+	}
+	if !exists(filepath.Join(dataDir, demoMarker)) {
+		t.Error("reset did not write the marker again")
+	}
+	if got := countSOPs(t, dataDir); got != 6 {
+		t.Errorf("after reset: %d SOPs, want the 6 shipped ones", got)
+	}
+}
+
+func TestRunDemoModeRefusesRealData(t *testing.T) {
+	dataDir := t.TempDir()
+	if err := run(settings{SeedDemoData: "true"}, dataDir, shippedSOPs); err != nil {
+		t.Fatalf("normal seed: %v", err)
+	}
+	labFile := filepath.Join(dataDir, "lab-notes.txt")
+	if err := os.WriteFile(labFile, []byte("real"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := run(settings{DemoMode: "true"}, dataDir, shippedSOPs)
+	if err == nil || !strings.Contains(err.Error(), demoMarker) {
+		t.Fatalf("run on real data = %v, want a refusal naming %s", err, demoMarker)
+	}
+	if !exists(labFile) || !exists(filepath.Join(dataDir, "app.db")) {
+		t.Fatal("refused run still changed the data directory")
+	}
+	if exists(filepath.Join(dataDir, demoMarker)) {
+		t.Fatal("refused run wrote the marker")
+	}
+}
+
+func TestRunDemoModeRefusesExplicitNoSeed(t *testing.T) {
+	for _, value := range []string{"false", " FALSE "} {
+		dataDir := t.TempDir()
+		err := run(settings{DemoMode: "true", SeedDemoData: value}, dataDir, shippedSOPs)
+		if err == nil || !strings.Contains(err.Error(), "SEED_DEMO_DATA") {
+			t.Errorf("DEMO_MODE with SEED_DEMO_DATA=%q = %v, want a refusal", value, err)
+		}
+		if exists(filepath.Join(dataDir, "app.db")) {
+			t.Errorf("refused run created app.db")
+		}
+	}
+}
+
+func TestDemoAuditorOnlyInDemoMode(t *testing.T) {
+	demoDir, normalDir := t.TempDir(), t.TempDir()
+	if err := run(settings{DemoMode: "true"}, demoDir, shippedSOPs); err != nil {
+		t.Fatalf("demo run: %v", err)
+	}
+	if err := run(settings{SeedDemoData: "true"}, normalDir, shippedSOPs); err != nil {
+		t.Fatalf("normal run: %v", err)
+	}
+
+	demoAuth, _ := openSeeded(t, demoDir)
+	auditor, _, err := demoAuth.GetUserByEmail("auditor@demo.local")
+	if err != nil || auditor.Role != auth.RoleAuditor || auditor.DisplayName != "Demo Auditor" {
+		t.Fatalf("demo auditor = %+v, %v; want Demo Auditor with role auditor", auditor, err)
+	}
+	normalAuth, _ := openSeeded(t, normalDir)
+	if _, _, err := normalAuth.GetUserByEmail("auditor@demo.local"); err == nil {
+		t.Fatal("normal seed created the demo auditor")
 	}
 }

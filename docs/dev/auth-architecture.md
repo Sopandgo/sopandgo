@@ -15,7 +15,7 @@ SOPandGO uses a hybrid token model. This allows the backend to verify common req
 ### Refresh Tokens (Stateful)
 
 * **Type:** UUID v4 stored in the `refresh_tokens` table.
-* **Duration:** 7 days.
+* **Duration:** 7 days (4 hours for a demo session, see below).
 * **Storage:** Managed by the client (SvelteKit) and passed in the JSON body of `/api/auth/refresh`.
 * **Validation:** Every refresh request triggers a database join between `refresh_tokens` and `users` to verify that both the session and the user account are still active.
 
@@ -106,6 +106,8 @@ Revocation is handled at three levels of granularity. When a revocation event oc
 
 ## 4. Middleware & RBAC
 
+With `DEMO_MODE=true`, a **demo guard** wraps the whole router and runs before routing and before this chain. Reads pass, except under `/api/admin/*`, where only `GET` on the two audit log endpoints passes. Writes pass only for `POST /api/demo/session`, `POST /api/auth/refresh` and `POST /api/auth/logout`. Everything else gets `403` with the error code `demo_read_only` (error kind `DemoReadOnly`).
+
 The Go backend uses a "Chain of Responsibility" for API protection:
 
 1. **Rate limiting:**
@@ -115,8 +117,14 @@ The Go backend uses a "Chain of Responsibility" for API protection:
     * **Proxy awareness:** Client IP for rate limits is `RemoteAddr`, unless that peer is the loopback proxy (Caddy on `127.0.0.1`). In that case the last `X-Forwarded-For` hop is used, because Caddy appends the address it observed. Client-supplied prefixes and `X-Real-Ip` are ignored.
 2. **`withAuth`:** Extracts the PASETO from the `Authorization` header, verifies the signature, and injects the `user_id` and token `role` into the Request Context.
 3. **`withPasswordChangeGuard`:** Loads the user. Inactive accounts are rejected. The context role is replaced with the role stored in the database, so a demotion applies before `requireScope` runs. Accounts flagged to change their password may only call `GET /api/auth/me`, `PATCH /api/auth/me/update-password`, `PATCH /api/auth/me/locale`, and `PATCH /api/auth/me/theme`. Avatar upload/delete is **not** on that allow-list. While the policy requires an app for an account that has none (`must_enroll_two_factor`), it may additionally call `GET /api/auth/me/two-factor` and `POST /api/auth/me/two-factor/setup` and `…/confirm`; everything else returns `403`. The SvelteKit hook sends both kinds of account to `/profile/settings`.
-4. **`requireScope`:** Checks the context role against a map of required permissions (Scopes). If the role lacks the necessary scope (e.g., a `viewer` trying to access `admin:integrity`), it returns `403 Forbidden`.
+4. **`requireScope`:** Checks the context role against a map of required permissions (Scopes). If the role lacks the necessary scope (e.g., a `viewer` trying to access `admin:integrity`), it returns `403 Forbidden`. The audit log endpoints check `audit:read`; every other admin endpoint checks `admin:integrity`.
 
+
+## 4b. Demo sessions
+
+With `DEMO_MODE=true`, `POST /api/demo/session` with `{"role": "viewer" | "auditor"}` signs in `researcher@demo.local` or `auditor@demo.local` without a password. Any other role is `400`. It returns an access token, a refresh token and `refresh_expires_in` (4 hours, `DemoSessionLifetime`), and writes the normal `login` audit event. It has its own rate limiter of about ten sessions a minute per client address; SvelteKit forwards the visitor's address in `X-Forwarded-For`, which the API trusts only from loopback. The route is registered only in demo mode, so it is `404` otherwise.
+
+The SvelteKit hook opens a researcher session for a visitor without one and keeps an existing session, so a returning visitor keeps their role. The banner's role switch signs out and opens a session for the other role. Locale and theme stay in cookies, as for guests, and logout is hidden.
 
 ## 4a. Profile pictures
 
@@ -155,7 +163,7 @@ The `audit_events` table is the system's Tamper-Evident "Black Box."
 ### `users` table
 
 * `role_id`: String (default roles enforced via migration are: `"admin"`, `"approver"`, `"editor"`, `"viewer"`, and `"auditor"`).
-  * **Note on `auditor`:** The role exists and is granted `audit:read` in the RBAC map, but audit-log HTTP endpoints currently require `admin:integrity`. In practice auditors get signed-in SOP **read** access (and a UI badge); they do **not** get the admin Audit Logs screens. Prefer `viewer` unless you are intentionally reserving the role for a future audit UI.
+  * **Note on `auditor`:** The auditor holds `sop:read` and `audit:read`. It reads SOPs like a viewer but cannot sign them. `audit:read` grants the two audit log endpoints (`GET /api/admin/audit-logs` and `GET /api/admin/audit-logs/options`) and the **Audit log** page at `/audit-logs`. Every other `/api/admin/*` route needs `admin:integrity`, so auditors are refused sessions, users, settings, integrity and backups. Admins hold both scopes. The SvelteKit app gates `/audit-logs` by role (`admin` or `auditor`); the old `/admin/audit-logs` path redirects there.
 * `is_active`: Boolean (Integer 0/1). If 0, all authentication and refresh attempts fail.
 * `avatar_path`: Nullable relative directory under `DATA_DIR` (e.g. `users/<id>`). Empty means no picture.
 * `avatar_content_hash`: Nullable SHA-256 of the processed 1024×1024 JPEG (ETag / cache buster).

@@ -4,6 +4,7 @@
 	import favicon from '#lib/assets/favicon.svg';
 	import { brandingStyle, brandLogoUrl } from '#lib/branding.js';
 	import AppSidebar from '#lib/components/AppSidebar.svelte';
+	import DemoBanner from '#lib/components/DemoBanner.svelte';
 	import Navbar from '#lib/components/Navbar.svelte';
 	import Footer from '#lib/components/Footer.svelte';
 	import * as m from '#lib/paraglide/messages.js';
@@ -45,6 +46,12 @@
 {/if}
 
 {#snippet frame()}
+	{#if data.demo}
+		<DemoBanner
+			role={data.user?.role ?? null}
+			error={page.url.searchParams.get('demo_switch') === 'failed' ? m.demo_switch_failed() : null}
+		/>
+	{/if}
 	<Navbar user={data.user} rail={showRail} />
 
 	<main

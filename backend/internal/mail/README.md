@@ -27,7 +27,7 @@ Publish notices (`SendSOPPublishedEmail`) run only when the effective mail mode 
 
 | File | Purpose |
 | --- | --- |
-| **`service.go`** | `NewService`, `Service` + `Sender` / `Auditor` interfaces |
+| **`service.go`** | `NewService`, `Service` + `Sender` / `Auditor` interfaces, `Silence` (demo mode: every send fails with `ErrSilenced`) |
 | **`mail_service.go`** | `SendUserWelcomeEmail`, `SendPasswordResetEmail`, `SendSOPPublishedEmail`, … |
 | **`smtp_store.go`** | Encrypted settings CRUD and mail mode/transport |
 | **`smtp.go`** | SMTP `Sender` implementation |

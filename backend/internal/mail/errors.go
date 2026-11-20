@@ -23,4 +23,7 @@ var (
 
 	// ErrResendAPIKeyRequired is returned on first Resend save without an API key.
 	ErrResendAPIKeyRequired = errors.New("resend API key is required on first setup")
+
+	// ErrSilenced is returned for every message of a silenced service (demo mode).
+	ErrSilenced = errors.New("mail is switched off on this instance")
 )

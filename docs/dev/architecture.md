@@ -62,8 +62,8 @@ The backend guarantees data consistency through a strict **Concurrency Model**:
 
 ## Errors & Status Codes
 
-* **Error kinds:** Domain modules mark the failures a client can cause with one of three kinds from `internal/errkind`: `Conflict`, `NotFound`, or `Invalid`. The message stays free text for people and never decides the status. A named error that a handler answers with its own JSON code (for example `sop.ErrSOPArchived` or `imageutil.ErrImageTooLarge`) also carries a kind.
-* **One mapping:** For errors that carry a kind, the HTTP module maps kind to status in one place (`kindStatus`): conflict → 409, not found → 404, invalid → 400. Handlers still choose the response body, and no handler picks a status from error text. Named errors without a kind (backup, mail, two-factor and a few others) keep their explicit statuses in their handlers.
+* **Error kinds:** Domain modules mark the failures a client can cause with a kind from `internal/errkind`: `Conflict`, `NotFound`, or `Invalid`. The demo guard uses a fourth, `DemoReadOnly`. The message stays free text for people and never decides the status. A named error that a handler answers with its own JSON code (for example `sop.ErrSOPArchived` or `imageutil.ErrImageTooLarge`) also carries a kind.
+* **One mapping:** For errors that carry a kind, the HTTP module maps kind to status in one place (`kindStatus`): conflict → 409, not found → 404, invalid → 400, demo read-only → 403. Handlers still choose the response body, and no handler picks a status from error text. Named errors without a kind (backup, mail, two-factor and a few others) keep their explicit statuses in their handlers.
 * **Duplicates:** `storage.IsUniqueViolation` reads SQLite's extended result code to detect a UNIQUE or PRIMARY KEY violation, never the message.
 
 
@@ -153,7 +153,7 @@ All modules utilize a central `createClient` factory. This client automatically 
 * **Base URL Injection**: Prepends the backend API path to all requests.
 * **Authentication**: Automatically injects the `access_token` from cookies into the `Authorization` header for authenticated requests.
 * **Content-Type Management**: Automatically stringifies JSON bodies and manages `FormData` boundaries for file uploads.
-* **Error Guarding**: Catches connection failures and throws standardized `SERVICE_UNAVAILABLE` errors.
+* **Error Guarding**: Catches connection failures and throws standardized `SERVICE_UNAVAILABLE` errors. On a read-only demo, a `403 demo_read_only` answer is thrown as `DEMO_READ_ONLY`, so form actions can say the control is disabled in the demo.
 
 #### 2. Session Management (`auth.ts`)
 
@@ -183,7 +183,7 @@ export const load = async ({ locals, params }) => {
 
 ### Entry point (`/`)
 
-There is no public landing page. The root route **`/`** only redirects: signed-in users go to **`/dashboard`**, everyone else to the sign-in form at **`/login`**. Pages that need a session also send signed-out visitors to `/login`.
+There is no public landing page. The root route **`/`** only redirects: signed-in users go to **`/dashboard`**, everyone else to the sign-in form at **`/login`**. On a read-only demo (`DEMO_MODE`), visitors are already signed in and land on **`/sops`**. Pages that need a session also send signed-out visitors to `/login`.
 
 ### Home dashboard (signed-in landing)
 

@@ -1,4 +1,5 @@
 import { fail, type RequestEvent } from '@sveltejs/kit';
+import { isDemoReadOnlyError } from '#lib/demo.js';
 import * as m from '#lib/paraglide/messages.js';
 
 /*
@@ -22,6 +23,7 @@ async function setFavorite({ locals, request, params }: FavoriteEvent, on: boole
         else await locals.api.sops.unfavorite(sopId);
         return { favorite: { sopId } };
     } catch (err) {
+        if (isDemoReadOnlyError(err)) return fail(403, { favorite: { sopId, error: m.demo_disabled() } });
         console.error(on ? 'favorite' : 'unfavorite', err);
         const error = on ? m.error_favorite_failed() : m.error_unfavorite_failed();
         return fail(500, { favorite: { sopId, error } });

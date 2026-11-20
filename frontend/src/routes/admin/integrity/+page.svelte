@@ -60,7 +60,7 @@
                   })),
                   ...(report.audit.failed ?? []).map((f) => ({
                       kind: m.integrity_admin_audit(),
-                      href: '/admin/audit-logs',
+                      href: '/audit-logs',
                       item: m.integrity_admin_audit_event({ id: String(f.event_id) }),
                       error: f.error
                   }))

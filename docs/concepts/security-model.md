@@ -87,7 +87,8 @@ Access to SOPs and administrative actions is controlled by **roles** and **scope
 - **Enforcement:** Authorization decisions are made server-side. Client-side state is never treated as authoritative.
 - **Immediate account checks:** Deactivating a user or changing their role takes effect on the next API request. The server loads the account and rejects inactive users. It authorizes with the role stored in the database, not the role copied into the access token.
 - **Auditability:** Every change to a user's role or status is logged in the audit trail.
-- **Roles in practice:** `admin` has full tools (including audit log APIs). `approver` / `editor` / `viewer` cover the publish and read loop. `auditor` is a reserved role with SOP read access. The admin Audit Logs UI and APIs remain admin-only.
+- **Roles in practice:** `admin` has full tools (including audit log APIs). `approver` / `editor` / `viewer` cover the publish and read loop. `auditor` reads SOPs without signing them and reads the audit log (`audit:read`), with the same filters as admins. Auditors cannot open any other part of administration (sessions, users, settings, integrity, backups).
+- **Other users:** Responses outside user administration show other people by public fields only: id, display name and profile picture. Email, role, 2FA status and creation date appear only in user administration (`/api/admin/users`) and in each user's own `/api/auth/me`.
 - **Archiving SOPs:** Only approvers and admins (`sop:sign:approver`) archive or unarchive an SOP, and archiving requires a reason that goes into the audit log. Archiving hides an SOP and blocks changes to it on the server; it deletes no content, version, signature or audit record, and any signed-in user can still read the SOP. It is not a way to withdraw information from people who could already read it.
 - **Profile pictures:** Each signed-in user may upload or remove their own picture. Uploads are type-checked (JPEG/PNG/WebP), size-capped (5 MB), and re-encoded to small JPEGs on disk. Any authenticated user can fetch another user's processed avatar the same way they can see display names in acknowledgment lists. Pictures are **not** a confidentiality boundary beyond the existing signed-in access model.
 
@@ -158,6 +159,26 @@ A hash chain catches an edited row, but not someone who rewrites the database an
 - **Already-broken rows are frozen, not fixed.** If rows fail verification when anchoring is switched on, the admin must confirm them. They are recorded in an `integrity_baseline` event, and later scans report them as known.
 - **Restores are explained, not hidden.** A restore replaces the chain. SOPandGO records the overwritten and the restored tip (`backup_restored`), alerts integrations, and anchors again. The scan then lists receipts that no longer match as *replaced by a restore* for a person to review.
 
+
+## Public demo mode
+
+`DEMO_MODE=true` runs an instance as a read-only public demo (see [Deployment → Demo mode](../ops/deployment.md#demo-mode)). It is for a public demonstration only, never for a lab's data.
+
+What demo mode guarantees:
+
+- **Writes are refused in the API, not only in the UI.** A guard in front of every route answers `403 demo_read_only` to anything but a read. The only writes it lets through are opening a demo session, refreshing it and signing out. A request sent straight to `/sopandgo/api/*` is refused the same way. The guard also covers routes added later, because it wraps the whole router.
+- **Password sign-in is disabled.** Password login, both 2FA steps and password reset are refused, so the known demo passwords and `admin`/`admin` give no token. Visitors get a session only through the demo endpoint, which signs in one of two fixed accounts: the researcher (a viewer) or the auditor. It does not exist when demo mode is off.
+- **The admin area is closed** for every role, admin included, except the two audit log reads. Those still need `audit:read`. Admin reads with side effects, such as the integrity scan or the backup export, are refused too.
+- **Visitors do not see each other.** Audit log responses replace IP addresses, browsers (user agents) and email addresses with `redacted`. Stored rows are unchanged, so the hash chain still verifies.
+- **No outbound traffic.** Mail and Slack, Gotify and webhook notifications are no-ops, whatever the stored settings say.
+- **State lasts at most one reset cycle.** Every start wipes and reseeds the data directory. Demo sessions expire after 4 hours, so a leaked refresh token is short-lived even between resets.
+- **A real instance is not wiped by mistake.** The seeder wipes only a data directory carrying the `.demo-instance` marker it wrote itself, and refuses to start on any other directory that holds data.
+
+What it does not guarantee:
+
+- Reads are open to anyone who reaches the demo, including every seeded SOP, PDF and audit event (redacted). Put nothing on a demo that should not be public.
+- The per-address rate limit sees the address Caddy sees. Behind an outer proxy, that is the proxy's address, so the limit is shared.
+- Demo mode does not limit read volume. Abuse protection beyond the session rate limit is the host's job.
 
 ## What SOPandGO protects against
 

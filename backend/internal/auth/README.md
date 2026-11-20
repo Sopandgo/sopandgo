@@ -32,13 +32,13 @@ Login (password verify + session create) is orchestrated in the **API** layer (`
 | **`two_factor_service.go`** | TOTP, email codes, recovery codes, organization policy | `BeginTOTPSetup`, `ConfirmTOTPSetup`, `DisableTwoFactor`, `SecondFactorMethods`, `VerifySecondFactor`, `IssueEmailCode`, `RegenerateRecoveryCodes`, `ResetTwoFactor`, `SetTwoFactorPolicy` |
 | **`two_factor_store.go`** | Unexported 2FA SQL | `getTwoFactorRecord`, `advanceTwoFactorStepRecord`, … |
 | **`break_glass.go`** | Host-only admin recovery (no HTTP route) | `BreakGlassResetAdmin`, `ListAdmins` |
-| **`session_service.go`** | Refresh sessions | `CreateSession`, `ValidateSession`, `RevokeSession`, `RevokeOtherUserSessions`, `RevokeAllUserSessions`, `RevokeAllSessions`, `StartSessionsCleanupTask` |
+| **`session_service.go`** | Refresh sessions | `CreateSession`, `CreateSessionWithLifetime` (demo sessions: 4 hours), `ValidateSession`, `RevokeSession`, `RevokeOtherUserSessions`, `RevokeAllUserSessions`, `RevokeAllSessions`, `StartSessionsCleanupTask` |
 | **`store.go`** | Unexported SQL | `createUserRecord`, `getSessionRecord`, … |
 | **`password.go`** | Hashing / rules | `HashPassword`, `ValidatePassword` |
 | **`token.go`** | PASETO access tokens and 2FA challenge tokens | `GenerateAccessToken`, `GenerateTwoFactorChallenge` |
 | **`rbac.go`** | Role → scopes | `HasScope` |
 | **`bootstrap.go`** | Default admin | `EnsureAdminUser` |
-| **`model.go`** | Types and constants | `User` (includes `has_avatar`, `avatar_content_hash`), `Session`, `ScopeAdminTools` (`admin:integrity`) |
+| **`model.go`** | Types and constants | `User` (includes `has_avatar`, `avatar_content_hash`), `PublicUser` (how other users appear outside user administration: id, display name, avatar), `Session`, `ScopeAdminTools` (`admin:integrity`) |
 
 ## Usage Examples
 

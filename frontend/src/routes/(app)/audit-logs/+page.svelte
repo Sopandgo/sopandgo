@@ -48,11 +48,11 @@
         data.auditFilterOptions.entity_types.map((type) => ({ value: type, label: entityTitle(type) }))
     );
     const actorOptions = $derived<ComboboxOption[]>(
-        data.users.map((user) => ({
+        data.actors.map((user) => ({
             value: user.id,
             label: user.display_name,
-            hint: roleLabels[user.role]?.(),
-            keywords: [user.email]
+            hint: user.role ? roleLabels[user.role]?.() : undefined,
+            keywords: user.email ? [user.email] : []
         }))
     );
     const sopOptions = $derived<ComboboxOption[]>(

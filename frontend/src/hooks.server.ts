@@ -1,5 +1,8 @@
 import { redirect } from '@sveltejs/kit';
+import { DEMO_MODE } from '$app/env/private';
+import { demoSessionToOpen, isDemoMode } from '#lib/demo.js';
 import { createSDK } from '#lib/sdk/index.js';
+import { visitorAddress } from '#lib/server/visitorAddress.js';
 import { paraglideMiddleware } from '#lib/paraglide/server.js';
 import { cookieName, getTextDirection, isLocale } from '#lib/paraglide/runtime.js';
 import { guestThemeFromCookie, themeAttribute, themeCookieName } from '#lib/theme.js';
@@ -8,6 +11,8 @@ import { sequence, type Handle } from '@sveltejs/kit/hooks';
 const handleAuth: Handle = async ({ event, resolve }) => {
     const sdk = createSDK(event);
     event.locals.api = sdk;
+    const demo = isDemoMode(DEMO_MODE);
+    event.locals.demo = demo;
 
     let accessToken = event.cookies.get('access_token');
     const refreshToken = event.cookies.get('refresh_token');
@@ -35,10 +40,29 @@ const handleAuth: Handle = async ({ event, resolve }) => {
         event.locals.user = null;
     }
 
+    // A demo visitor without a session is signed in as the researcher. A
+    // returning visitor keeps the session, and so the role, they had.
+    const demoRole = demoSessionToOpen(demo, !!event.locals.user);
+    if (demoRole) {
+        try {
+            await sdk.auth.openDemoSession(demoRole, visitorAddress(event));
+            event.locals.user = await sdk.auth.getMe();
+        } catch (err) {
+            console.error('Demo session failed:', (err as Error).message);
+        }
+    }
+
     const user = event.locals.user;
+    // In the demo, locale and theme stay in cookies, as for guests. The account
+    // shows what the cookies say, so the settings controls work without a write.
+    if (demo && user) {
+        user.theme = guestThemeFromCookie(event.cookies.get(themeCookieName));
+        const cookieLocale = event.cookies.get(cookieName);
+        if (cookieLocale && isLocale(cookieLocale)) user.locale = cookieLocale;
+    }
     // Kit 3: event.request is readonly — pass a replaced request into resolve().
     let request = event.request;
-    if (user?.locale && isLocale(user.locale)) {
+    if (!demo && user?.locale && isLocale(user.locale)) {
         event.cookies.set(cookieName, user.locale, {
             path: '/',
             httpOnly: false,
@@ -61,6 +85,11 @@ const handleAuth: Handle = async ({ event, resolve }) => {
         throw redirect(303, '/login');
     }
 
+    // The audit log needs audit:read in the API, which admins and auditors hold.
+    if (routeId.startsWith('/(app)/audit-logs') && user && !canReadAuditLog(user.role)) {
+        throw redirect(303, '/dashboard');
+    }
+
     // A forced password change comes first; then, while the organization
     // requires 2FA, setting up an authenticator. Both happen in account settings.
     const mustVisitSettings = !!user && (user.must_change_password || user.must_enroll_two_factor);
@@ -74,7 +103,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
     }
 
     if (routeId.includes('(guest)') && user) {
-        throw redirect(303, mustVisitSettings ? '/profile/settings' : '/dashboard');
+        throw redirect(303, mustVisitSettings ? '/profile/settings' : demo ? '/sops' : '/dashboard');
     }
 
     return resolve({ ...event, request });
@@ -101,6 +130,10 @@ const handleParaglide: Handle = ({ event, resolve }) =>
     );
 
 export const handle = sequence(handleAuth, handleParaglide);
+
+function canReadAuditLog(role: string): boolean {
+    return role === 'admin' || role === 'auditor';
+}
 
 function requestWithLocaleCookie(request: Request, name: string, locale: string): Request {
     const headers = new Headers(request.headers);

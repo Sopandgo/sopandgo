@@ -1,5 +1,6 @@
 // Package errkind marks an error with what kind of failure it is: a conflict
-// with the current state, a missing record, or an invalid request.
+// with the current state, a missing record, an invalid request, or a write
+// refused because the instance is a read-only demo.
 //
 // Domain modules mark the errors a client can cause; callers such as the HTTP
 // module test for the kind instead of reading the message. The message stays
@@ -21,9 +22,11 @@ const (
 	NotFound
 	// Invalid: the request itself is malformed or not allowed.
 	Invalid
+	// DemoReadOnly: the instance is a read-only public demo and refuses the request.
+	DemoReadOnly
 )
 
-var kinds = []Kind{Conflict, NotFound, Invalid}
+var kinds = []Kind{Conflict, NotFound, Invalid, DemoReadOnly}
 
 func (k Kind) Error() string {
 	switch k {
@@ -33,6 +36,8 @@ func (k Kind) Error() string {
 		return "not found"
 	case Invalid:
 		return "invalid"
+	case DemoReadOnly:
+		return "demo read only"
 	default:
 		return "unknown error kind"
 	}

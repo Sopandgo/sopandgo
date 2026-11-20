@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "本服务器",
   "notify_event_anchor_failed": "审计锚定失败",
   "notify_event_anchoring_changed": "审计锚定已开启、关闭或更改",
-  "notify_event_backup_restored": "已恢复备份"
+  "notify_event_backup_restored": "已恢复备份",
+  "demo_region": "演示提示",
+  "demo_banner": "只读演示 · 数据每晚重置",
+  "demo_install": "安装 SOPandGO",
+  "demo_view_as": "查看身份",
+  "demo_role_researcher": "研究人员",
+  "demo_role_auditor": "审计员",
+  "demo_disabled": "演示中已禁用 – 安装 SOPandGO 即可尝试编辑",
+  "demo_switch_failed": "演示无法切换角色。请一分钟后重试。"
 }

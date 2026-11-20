@@ -16,6 +16,8 @@ import (
 type Service struct {
 	store   *SettingsStore
 	auditor Auditor
+	// silent drops every notification (demo mode). Set before serving.
+	silent bool
 }
 
 // NewService creates a notification fan-out service.
@@ -23,10 +25,16 @@ func NewService(store *SettingsStore, auditor Auditor) *Service {
 	return &Service{store: store, auditor: auditor}
 }
 
+// Silence makes Dispatch and SendTest no-ops, whatever the stored Slack,
+// Gotify and webhook settings say. A public demo calls it before serving.
+func (s *Service) Silence() {
+	s.silent = true
+}
+
 // Dispatch sends ev to every enabled channel that subscribes to ev.Type.
 // Errors are audited and logged; they never propagate to the caller.
 func (s *Service) Dispatch(ctx context.Context, ev Event) {
-	if s == nil || s.store == nil {
+	if s == nil || s.store == nil || s.silent {
 		return
 	}
 	if ev.OccurredAt.IsZero() {
@@ -86,6 +94,9 @@ func (s *Service) Dispatch(ctx context.Context, ev Event) {
 // SendTest sends a test notification to a single channel using stored credentials
 // (works even when the channel is currently disabled).
 func (s *Service) SendTest(ctx context.Context, channel, locale string) error {
+	if s != nil && s.silent {
+		return ErrSilenced
+	}
 	if s == nil || s.store == nil {
 		return ErrNotConfigured
 	}

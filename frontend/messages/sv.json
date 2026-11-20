@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "Den här servern",
   "notify_event_anchor_failed": "Granskningsförankring misslyckades",
   "notify_event_anchoring_changed": "Granskningsförankring påslagen, avstängd eller ändrad",
-  "notify_event_backup_restored": "Säkerhetskopia återställd"
+  "notify_event_backup_restored": "Säkerhetskopia återställd",
+  "demo_region": "Demomeddelande",
+  "demo_banner": "Skrivskyddad demo · data återställs varje natt",
+  "demo_install": "Installera SOPandGO",
+  "demo_view_as": "Visa som",
+  "demo_role_researcher": "Forskare",
+  "demo_role_auditor": "Granskare",
+  "demo_disabled": "Inaktiverat i demon – installera SOPandGO för att prova att redigera",
+  "demo_switch_failed": "Demon kunde inte byta roll. Försök igen om en minut."
 }

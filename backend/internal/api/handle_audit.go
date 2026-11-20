@@ -46,6 +46,11 @@ func (s *Server) handleAdminListAuditLogs(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// A public demo never shows visitors' addresses, browsers or emails.
+	if s.Config.DemoMode {
+		events = redactAuditEvents(events)
+	}
+
 	// 2. Wrap the result in a struct to send both list and count
 	response := struct {
 		Events []audit.AuditEventWithVerification `json:"events"`

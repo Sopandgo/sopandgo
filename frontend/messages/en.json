@@ -952,5 +952,13 @@
   "integrity_anchor_source_server": "This server",
   "notify_event_anchor_failed": "Audit anchoring failed",
   "notify_event_anchoring_changed": "Audit anchoring switched on, off or changed",
-  "notify_event_backup_restored": "Backup restored"
+  "notify_event_backup_restored": "Backup restored",
+  "demo_region": "Demo notice",
+  "demo_banner": "Read-only demo · data resets nightly",
+  "demo_install": "Install SOPandGO",
+  "demo_view_as": "View as",
+  "demo_role_researcher": "Researcher",
+  "demo_role_auditor": "Auditor",
+  "demo_disabled": "Disabled in the demo – install SOPandGO to try editing",
+  "demo_switch_failed": "The demo could not switch roles. Try again in a minute."
 }

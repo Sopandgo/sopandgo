@@ -8,15 +8,10 @@ if [ -n "${ORIGIN:-}" ]; then
 	export ORIGIN
 fi
 
-# Only "false" skips demo data. Empty or any other value seeds when app.db
-# is absent. The seeder binary applies the same rule if invoked directly.
-seed_demo=$(printf '%s' "${SEED_DEMO_DATA:-}" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-if [ "$seed_demo" = "false" ]; then
-	echo "--- Step 1: Skipping demo data (SEED_DEMO_DATA=false) ---"
-else
-	echo "--- Step 1: Seeding Data ---"
-	./seeder
-fi
+# The seeder decides from SEED_DEMO_DATA whether to seed, and seeds only when
+# app.db is absent.
+echo "--- Step 1: Demo data ---"
+./seeder || exit 1
 
 echo "--- Step 2: Starting Go Backend ---"
 ./sopandgo &

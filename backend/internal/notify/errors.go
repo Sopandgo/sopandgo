@@ -10,6 +10,9 @@ var (
 	// ErrKeyMissing is returned when saving or sending requires SECRET_ENCRYPTION_KEY but it is unset.
 	ErrKeyMissing = errors.New("SECRET_ENCRYPTION_KEY is not set or invalid")
 
+	// ErrSilenced is returned by SendTest on a silenced service (demo mode).
+	ErrSilenced = errors.New("notifications are switched off on this instance")
+
 	// ErrNotConfigured is returned when a channel is enabled but credentials are missing.
 	ErrNotConfigured = errors.New("integration channel is not configured")
 

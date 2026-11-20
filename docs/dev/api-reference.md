@@ -43,7 +43,7 @@ Protected routes expect `Authorization: Bearer <access_token>`. Login/refresh re
 | --- | --- |
 | `400` | Bad input |
 | `401` | Missing/invalid token |
-| `403` | Missing scope, password-change gate, or wrong current password |
+| `403` | Missing scope, password-change gate, wrong current password, or a write on a read-only demo (`demo_read_only`) |
 | `404` | Missing resource |
 | `409` | Invalid lifecycle or backup conflict; change to an archived SOP (`sop_archived`); 2FA precondition (`required_by_org`, `encryption_key_missing`, `authenticator_unavailable`, `email_transport_off`, `actor_needs_two_factor`) |
 | `412` | Encryption key / credentials precondition |

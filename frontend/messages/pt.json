@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "Este servidor",
   "notify_event_anchor_failed": "Falha na ancoragem da auditoria",
   "notify_event_anchoring_changed": "Ancoragem da auditoria ligada, desligada ou alterada",
-  "notify_event_backup_restored": "Backup restaurado"
+  "notify_event_backup_restored": "Backup restaurado",
+  "demo_region": "Aviso de demonstração",
+  "demo_banner": "Demonstração somente leitura · os dados são redefinidos todas as noites",
+  "demo_install": "Instalar o SOPandGO",
+  "demo_view_as": "Ver como",
+  "demo_role_researcher": "Pesquisador",
+  "demo_role_auditor": "Auditor",
+  "demo_disabled": "Desativado na demonstração – instale o SOPandGO para experimentar a edição",
+  "demo_switch_failed": "A demonstração não conseguiu trocar de função. Tente novamente em um minuto."
 }

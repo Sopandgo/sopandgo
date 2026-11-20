@@ -949,5 +949,13 @@
   "integrity_anchor_source_server": "このサーバー",
   "notify_event_anchor_failed": "監査アンカリングに失敗しました",
   "notify_event_anchoring_changed": "監査アンカリングのオン・オフまたは変更",
-  "notify_event_backup_restored": "バックアップの復元"
+  "notify_event_backup_restored": "バックアップの復元",
+  "demo_region": "デモのお知らせ",
+  "demo_banner": "読み取り専用デモ · データは毎晩リセットされます",
+  "demo_install": "SOPandGO をインストール",
+  "demo_view_as": "表示ロール",
+  "demo_role_researcher": "研究者",
+  "demo_role_auditor": "監査担当者",
+  "demo_disabled": "デモでは無効です – 編集を試すには SOPandGO をインストールしてください",
+  "demo_switch_failed": "デモでロールを切り替えられませんでした。1 分後にもう一度お試しください。"
 }

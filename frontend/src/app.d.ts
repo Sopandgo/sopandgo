@@ -7,6 +7,8 @@ declare global {
         
         interface Locals {
             user: User | null;
+            /** DEMO_MODE: a read-only public demo, read from the server environment. */
+            demo: boolean;
             // FIX: Use 'createSDK' here to match your SDK export
             api: ReturnType<typeof createSDK>; 
         }
@@ -16,6 +18,8 @@ declare global {
             user: User | null;          
             /** Organization name, logo and colour, from the root layout. */
             branding: Branding;
+            /** True on a read-only public demo; shows the banner and disables writes. */
+            demo: boolean;
         }
         
         // interface PageState {}
