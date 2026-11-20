@@ -69,6 +69,8 @@ The state is checked inside the change's transaction, so a version that changes 
 
 Author acknowledgments are recorded when the version is created. Approver acknowledgments are recorded only by **approve**. There is no separate endpoint for either.
 
+Every role with `sop:sign:reader` signs published versions as a reader: admins, approvers, editors and viewers. Training coverage expects each of them to, and the version page offers each of them the reader signature. Auditors read SOPs and never sign.
+
 The reject reason is stored on the `rejected` state row and in that transition's audit event, and `GET .../versions/{id}/summary` returns it as `rejection` (`reason`, `actor_user_id`, `actor_name`, `created_at`; `null` unless the version is rejected). The version page shows who rejected the version, when, and why. Rejections recorded before reasons were stored have `reason: null`; their reason went only to the integration notifications and cannot be recovered.
 
 Only one RC per SOP may be open at a time. When a new version is published, the previously published version becomes `superseded`.

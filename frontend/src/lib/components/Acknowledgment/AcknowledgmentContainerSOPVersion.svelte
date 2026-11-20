@@ -7,6 +7,7 @@
     import AcknowledgmentActionReject from './AcknowledgmentActionReject.svelte';
     import * as m from '#lib/paraglide/messages.js';
     import { getLocale } from '#lib/paraglide/runtime.js';
+    import { versionAction } from '#lib/versionAction.js';
 
     /*
      * What the signed-in user can do with this version: sign it as a reader, see
@@ -41,12 +42,10 @@
         (acks ?? []).find((a: AcknowledgmentWithUser) => a.user_id === user?.id && a.ack_type === 'reader')
     );
 
-    let canAct = $derived(!!user && user.role !== 'viewer' && user.role !== 'auditor');
-    let canReview = $derived(canAct && !archived && status === 'rc' && (user.role === 'approver' || user.role === 'admin'));
-    let canSign = $derived(canAct && status === 'published');
+    let action = $derived(versionAction({ role: user?.role, status, archived, signed: !!ownSignature }));
 </script>
 
-{#if canReview}
+{#if action === 'review'}
     <Card title={m.ack_review_title()}>
         <div class="card-body gap-6">
             <AcknowledgmentActionApprove {user} {form} />
@@ -55,7 +54,7 @@
             </div>
         </div>
     </Card>
-{:else if canSign && ownSignature}
+{:else if action === 'signed' && ownSignature}
     <Card title={m.ack_reader_title()}>
         <div class="card-body">
             <Alert
@@ -65,6 +64,6 @@
             />
         </div>
     </Card>
-{:else if canSign && !archived}
+{:else if action === 'sign'}
     <AcknowledgmentActionReader {user} {form} />
 {/if}
