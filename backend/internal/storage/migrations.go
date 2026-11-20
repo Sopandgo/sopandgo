@@ -663,6 +663,26 @@ var migrations = []migration{
 			return err
 		},
 	},
+	// Error reporting to Sentry or GlitchTip (internal/errreport). One row,
+	// written by an admin; no row means reporting is off. The DSN is not
+	// encrypted: it only allows sending events and is public once reporting
+	// is on (docs/adr/0004).
+	{
+		version: 32,
+		up: func(tx *sql.Tx) error {
+			_, err := tx.Exec(`
+				CREATE TABLE error_reporting_settings (
+					id INTEGER PRIMARY KEY CHECK (id = 1),
+					enabled INTEGER NOT NULL DEFAULT 0,
+					dsn TEXT NOT NULL DEFAULT '',
+					environment TEXT NOT NULL DEFAULT 'production',
+					browser_enabled INTEGER NOT NULL DEFAULT 0,
+					updated_at TEXT NOT NULL
+				);
+			`)
+			return err
+		},
+	},
 }
 
 func LatestSchemaVersion() int {

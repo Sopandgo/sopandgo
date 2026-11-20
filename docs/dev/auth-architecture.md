@@ -108,6 +108,8 @@ Revocation is handled at three levels of granularity. When a revocation event oc
 
 With `DEMO_MODE=true`, a **demo guard** wraps the whole router and runs before routing and before this chain. Reads pass, except under `/api/admin/*`, where only `GET` on the two audit log endpoints passes. Writes pass only for `POST /api/demo/session`, `POST /api/auth/refresh` and `POST /api/auth/logout`. Everything else gets `403` with the error code `demo_read_only` (error kind `DemoReadOnly`).
 
+Outside the demo guard, and so outside everything else, the **error reporting middleware** (`internal/errreport`) recovers panics and, while an admin has error reporting on, reports panics and server errors. It never reads tokens or cookies, and its events carry no request data. `GET /api/error-reporting/config` is public, like branding: it returns the DSN only while reporting is on, and a DSN only allows sending events.
+
 The Go backend uses a "Chain of Responsibility" for API protection:
 
 1. **Rate limiting:**

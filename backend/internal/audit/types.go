@@ -63,6 +63,8 @@ const (
 	EventNotificationSent             = "notification_sent"
 	EventNotificationFailed           = "notification_failed"
 	EventIntegrationSettingsUpdated   = "integration_settings_updated"
+	EventErrorReportingUpdated        = "error_reporting_settings_updated"
+	EventErrorReportingTestSent       = "error_reporting_test_sent"
 	EventTwoFactorEnabled             = "two_factor_enabled"
 	EventTwoFactorDisabled            = "two_factor_disabled"
 	EventTwoFactorReset               = "two_factor_reset"
@@ -133,6 +135,8 @@ var knownEventTypes = map[string]struct{}{
 	EventNotificationSent:             {},
 	EventNotificationFailed:           {},
 	EventIntegrationSettingsUpdated:   {},
+	EventErrorReportingUpdated:        {},
+	EventErrorReportingTestSent:       {},
 	EventTwoFactorEnabled:             {},
 	EventTwoFactorDisabled:            {},
 	EventTwoFactorReset:               {},
