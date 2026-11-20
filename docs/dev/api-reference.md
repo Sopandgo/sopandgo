@@ -49,7 +49,7 @@ Protected routes expect `Authorization: Bearer <access_token>`. Login/refresh re
 | `409` | Invalid lifecycle or backup conflict; change to an archived SOP (`sop_archived`); 2FA precondition (`required_by_org`, `encryption_key_missing`, `authenticator_unavailable`, `email_transport_off`, `actor_needs_two_factor`) |
 | `412` | Encryption key / credentials precondition |
 | `422` | Backup archive validation failed |
-| `429` | Rate limit (strict on login/reset/password change; general elsewhere) |
+| `429` | Rate limit: strict per address on login/reset/password change, per account on password login after ten failures, general elsewhere. Limits are per visitor address; see [auth architecture](auth-architecture.md) |
 | `502` | Upstream mail/integration failure on test send |
 | `503` | PDF disabled or backup maintenance lock |
 

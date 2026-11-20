@@ -227,6 +227,8 @@ The value is a list of addresses or CIDR ranges separated by spaces, for example
 
 **Trust only your proxy.** Any machine connecting from a listed address can choose the address it is limited and logged as. `private_ranges` is exact on a VPS, where the proxy is the only machine with a private address. On a server inside a university or office network, colleagues' computers have private addresses too, so list only the proxy there. A list that is too narrow is safe: users share limits, as without the variable. A list that is too broad lets machines on it get around the sign-in limits.
 
+**Close the published port.** The bundled `docker-compose.yml` publishes `HOST_WEB_PORT` (default `8087`) on the host. Behind a proxy, that is a second way in, over plain HTTP, that skips the proxy and its HTTPS. It does not get around the rate limits, because those connections come from public addresses that are not trusted. Remove the `ports:` lines from your compose file, or block the port in the server's firewall (on a VPS, allow only 22, 80 and 443).
+
 **Check it.** Sign in and open the **Audit log**. Your `login` entry shows the address SOPandGO used. It should be your own public address. A private address (`10.…`, `172.16.…` to `172.31.…`, `192.168.…`) means SOPandGO still sees the proxy. On Docker Desktop (Windows, macOS), every request arrives from Docker's own gateway address, whatever `TRUSTED_PROXIES` says; that is fine for a local trial.
 
 ##### Cloudflare in front of Coolify
@@ -256,7 +258,7 @@ With demo mode on:
 - **The API refuses every write itself,** including requests sent straight to `/sopandgo/api/*`, with `403` and the error code `demo_read_only`. Password sign-in, the 2FA steps and password reset are refused too, so the seeded passwords and `admin`/`admin` cannot be used. The only writes allowed are opening a demo session, refreshing it and signing out.
 - **The admin area is closed** for every role, except the audit log, which the auditor reads. Audit log responses show IP addresses, browsers and email addresses as `redacted`.
 - **Nothing is sent:** mail (SMTP and Resend) and notifications (Slack, Gotify, webhooks) are switched off, whatever the stored settings say.
-- **Restart = reset.** At every start, the seeder wipes the data directory (database, uploads and generated files) and seeds the demo again, including a Demo Auditor account. Visitors' sessions and audit events last at most until the next restart. Schedule a nightly container restart on the demo host to reset it nightly.
+- **Restart = reset.** At every start, the seeder wipes the data directory (database, uploads and generated files) and seeds the demo again, including a Demo Auditor account. Visitors' sessions and audit events last at most until the next restart. Schedule a nightly container restart on the demo host to reset it nightly; see [Resetting the demo nightly](#resetting-the-demo-nightly).
 
 The wipe is guarded by a `.demo-instance` marker the seeder writes into the data directory:
 
@@ -265,6 +267,26 @@ The wipe is guarded by a `.demo-instance` marker the seeder writes into the data
 - A data directory that holds data but no marker is refused: the seeder exits with an error and the container does not start. A mistaken `DEMO_MODE=true` cannot wipe a lab's SOPs.
 
 Demo mode always seeds and ignores `SEED_DEMO_DATA`, so you only set `DEMO_MODE=true`. The shipped `SEED_DEMO_DATA=false` can stay as it is.
+
+#### Resetting the demo nightly
+
+Restart the demo container, and only that one, from cron on the host. Do not match containers by part of a name: Coolify names every SOPandGO container `sopandgo-<uuid>`, so a pattern such as `name=sopandgo-` also restarts any lab instance on the same server.
+
+1. Find the demo container's full name. This prints every running container started with `DEMO_MODE=true`:
+
+   ```bash
+   for c in $(docker ps --format '{{.Names}}'); do
+     docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$c" | grep -qx 'DEMO_MODE=true' && echo "$c"
+   done
+   ```
+
+2. Add a cron entry (`crontab -e` as root) with that exact name. It restarts the container only if it was started with `DEMO_MODE=true`, so a wrong name never restarts a lab's instance:
+
+   ```cron
+   0 4 * * * docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' sopandgo-<uuid> | grep -qx 'DEMO_MODE=true' && docker restart sopandgo-<uuid> >/dev/null 2>&1
+   ```
+
+Coolify keeps the name across redeploys. If the resource is deleted and created again, the name changes, the entry does nothing, and the demo stops resetting until you update it.
 
 #### Analytics on the demo (Umami)
 
