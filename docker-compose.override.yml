@@ -1,0 +1,6 @@
+# Loaded by `docker compose up`. Coolify does not load this file: it runs
+# `docker compose -f docker-compose.yml`, so a Coolify deploy publishes no host port.
+services:
+  sopandgo:
+    ports:
+      - "${HOST_WEB_PORT:-8087}:80"

@@ -1,8 +1,12 @@
 services:
   sopandgo:
     image: ghcr.io/sopandgo/sopandgo:1
-    ports:
-      - "${HOST_WEB_PORT:-8087}:80"
+    # No host port. Coolify runs this file alone (`-f docker-compose.yml`) and
+    # reaches Caddy on :80 through its proxy, so a second instance on the same
+    # server does not fight over 8087. A local `docker compose up` also loads
+    # docker-compose.override.yml, which publishes HOST_WEB_PORT.
+    expose:
+      - "80"
     volumes:
       - ./backend/data:/app/data
     environment:
@@ -17,7 +21,8 @@ services:
       - UMAMI_WEBSITE_ID=${UMAMI_WEBSITE_ID:-}
       - UMAMI_DOMAINS=${UMAMI_DOMAINS:-}
       # Must match the URL users type in the browser (scheme + host + port if non-default).
-      # Override in `.env` for production; default matches HOST_WEB_PORT below.
+      # Override in `.env` for production. The local default matches HOST_WEB_PORT
+      # in docker-compose.override.yml (8087).
       - ORIGIN=${ORIGIN:-http://localhost:8087}
       - BACKEND_URL=${BACKEND_URL:-http://127.0.0.1:8080}
       - HOST_HEADER=${HOST_HEADER:-x-forwarded-host}

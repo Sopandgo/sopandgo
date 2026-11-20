@@ -31,7 +31,7 @@ The directory contains:
 ## Basic deployment (recommended)
 
 ### Using docker compose
-A **`docker-compose.yml`** is in the repository root ( **`sopandgo`** app + **`gotenberg`** for PDF by default). Copy **`.env.example`** to **`.env`** and set variables there; Compose substitutes `${VAR}` from `.env` automatically.
+A **`docker-compose.yml`** is in the repository root ( **`sopandgo`** app + **`gotenberg`** for PDF by default). Copy **`.env.example`** to **`.env`** and set variables there; Compose substitutes `${VAR}` from `.env` automatically. `docker compose up` also loads **`docker-compose.override.yml`**, which publishes **`HOST_WEB_PORT`** (default **8087**) on the host.
 
 Start the stack. The compose file uses the published image `ghcr.io/sopandgo/sopandgo:1`. You do not choose a version number.
 
@@ -72,7 +72,7 @@ A fresh install has no demo accounts. Demo users and sample SOPs are inserted on
 | `UMAMI_WEBSITE_ID` | - | The Umami website ID (a UUID). Ignored unless `DEMO_MODE` is on. |
 | `UMAMI_DOMAINS` | - | Optional comma-separated host names Umami counts, for example `demo.sopandgo.com`. Ignored unless `DEMO_MODE` is on. |
 | `ORIGIN` | `http://localhost:8087` | **CRITICAL for the Go API.** The full public URL of your instance (invite/reset links, CORS-facing URLs). If it does not match the browser URL, login/invites will fail. SvelteKit 3 / adapter-node no longer reads `ORIGIN`; CSRF and request origin use `HOST_HEADER` / `PROTOCOL_HEADER` instead (see below). On a non-default port with no outer proxy, Caddy forwards the browser `Host` value, port included. An outer proxy's `X-Forwarded-Host` is forwarded as sent. |
-| `HOST_WEB_PORT` | `8087` | Host port mapped to Caddy `:80` inside the `sopandgo` container (compose). |
+| `HOST_WEB_PORT` | `8087` | Host port published by `docker-compose.override.yml`, which `docker compose up` loads. Mapped to Caddy `:80` inside the `sopandgo` container. A Coolify deploy runs `docker-compose.yml` alone and does not publish this port. |
 | `BACKEND_URL` | `http://127.0.0.1:8080` | Internal URL the SvelteKit Node server uses to reach the Go API (loopback inside the container). |
 | `HOST_HEADER` | `x-forwarded-host` | Forwarded host header name for SvelteKit behind Caddy. |
 | `PROTOCOL_HEADER` | `x-forwarded-proto` | Forwarded protocol header name for SvelteKit behind Caddy. |
@@ -227,7 +227,11 @@ The value is a list of addresses or CIDR ranges separated by spaces, for example
 
 **Trust only your proxy.** Any machine connecting from a listed address can choose the address it is limited and logged as. `private_ranges` is exact on a VPS, where the proxy is the only machine with a private address. On a server inside a university or office network, colleagues' computers have private addresses too, so list only the proxy there. A list that is too narrow is safe: users share limits, as without the variable. A list that is too broad lets machines on it get around the sign-in limits.
 
-**Close the published port.** The bundled `docker-compose.yml` publishes `HOST_WEB_PORT` (default `8087`) on the host. Behind a proxy, that is a second way in, over plain HTTP, that skips the proxy and its HTTPS. It does not get around the rate limits, because those connections come from public addresses that are not trusted. Remove the `ports:` lines from your compose file, or block the port in the server's firewall (on a VPS, allow only 22, 80 and 443).
+**Close the published port.** Behind a proxy, a host port is a second way in, over plain HTTP, that skips the proxy and its HTTPS. It does not get around the rate limits, because those connections come from public addresses that are not trusted.
+
+Coolify runs `docker-compose.yml` alone, so it publishes no host port. The proxy reaches Caddy on port 80 inside the container. Leave the internal port off the domain (`https://demo.example.com` is port 80). A lab and a demo on the same server can both deploy; they no longer both bind `8087`. `HOST_WEB_PORT` has no effect on that deploy.
+
+A direct install (`docker compose up`) publishes `HOST_WEB_PORT` (default `8087`) from `docker-compose.override.yml`. When your own proxy on that host forwards to this port, keep the file and block the port in the server's firewall so only the proxy can connect (on a VPS, allow only 22, 80 and 443). When the proxy is on the Docker network and nothing else should open the app, remove `docker-compose.override.yml`.
 
 **Check it.** Sign in and open the **Audit log**. Your `login` entry shows the address SOPandGO used. It should be your own public address. A private address (`10.…`, `172.16.…` to `172.31.…`, `192.168.…`) means SOPandGO still sees the proxy. On Docker Desktop (Windows, macOS), every request arrives from Docker's own gateway address, whatever `TRUSTED_PROXIES` says; that is fine for a local trial.
 
