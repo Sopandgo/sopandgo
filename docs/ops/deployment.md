@@ -65,7 +65,7 @@ A fresh install has no demo accounts. Demo users and sample SOPs are inserted on
 | Variable | Default | Description |
 | --- | --- | --- |
 | `DATA_DIR` | `/app/data` | The internal path for SQLite and assets. |
-| `SEED_DEMO_DATA` | `false` | When `true` (any case), the first start with no `app.db` inserts demo users and sample SOPs for a local trial. Any other value inserts nothing. Has no effect once `app.db` exists. |
+| `SEED_DEMO_DATA` | `false` | When `true` (any case), the first start with no `app.db` inserts demo users and sample SOPs for a local trial. Any other value inserts nothing. Has no effect once `app.db` exists. Ignored when `DEMO_MODE` is on. |
 | `DEMO_MODE` | `false` | When `true` (any case), the instance becomes a read-only public demo that is wiped and reseeded at every start. Only for a public demo; see [Demo mode](#demo-mode). |
 | `ORIGIN` | `http://localhost:8087` | **CRITICAL for the Go API.** The full public URL of your instance (invite/reset links, CORS-facing URLs). If it does not match the browser URL, login/invites will fail. SvelteKit 3 / adapter-node no longer reads `ORIGIN`; CSRF and request origin use `HOST_HEADER` / `PROTOCOL_HEADER` instead (see below). On a non-default port with no outer proxy, Caddy forwards the browser `Host` value, port included. An outer proxy's `X-Forwarded-Host` is forwarded as sent. |
 | `HOST_WEB_PORT` | `8087` | Host port mapped to Caddy `:80` inside the `sopandgo` container (compose). |
@@ -196,7 +196,7 @@ The wipe is guarded by a `.demo-instance` marker the seeder writes into the data
 - A data directory with the marker is wiped and reseeded.
 - A data directory that holds data but no marker is refused: the seeder exits with an error and the container does not start. A mistaken `DEMO_MODE=true` cannot wipe a lab's SOPs.
 
-Demo mode always seeds. `DEMO_MODE=true` together with an explicit `SEED_DEMO_DATA=false` is contradictory, so the container refuses to start.
+Demo mode always seeds and ignores `SEED_DEMO_DATA`, so you only set `DEMO_MODE=true`. The shipped `SEED_DEMO_DATA=false` can stay as it is.
 
 The rate limit uses the address Caddy sees. Behind an outer proxy (Coolify, Traefik), that is the proxy's address, so all visitors share one limit of about ten new sessions a minute. Returning visitors keep their session and do not count against it.
 

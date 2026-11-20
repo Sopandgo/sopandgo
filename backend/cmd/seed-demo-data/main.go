@@ -44,6 +44,8 @@ type settings struct {
 // With DEMO_MODE=true, every start resets the instance: an empty directory is
 // seeded, a directory with the demo marker is wiped and reseeded, and a
 // directory with data but no marker is refused, so a real lab is never wiped.
+// SEED_DEMO_DATA is ignored then: docker-compose.yml and .env.example ship it
+// as false, and the marker, not that flag, is what protects a lab's data.
 func run(cfg settings, dataDir, sopsRoot string) error {
 	if !seedDemoEnabled(cfg.DemoMode) {
 		if !seedDemoEnabled(cfg.SeedDemoData) {
@@ -53,9 +55,6 @@ func run(cfg settings, dataDir, sopsRoot string) error {
 		return seed(dataDir, sopsRoot, false)
 	}
 
-	if strings.EqualFold(strings.TrimSpace(cfg.SeedDemoData), "false") {
-		return errors.New("DEMO_MODE=true always seeds demo data, but SEED_DEMO_DATA=false is set; remove one of them")
-	}
 	if err := resetDemoDataDir(dataDir); err != nil {
 		return err
 	}

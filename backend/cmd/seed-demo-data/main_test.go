@@ -365,15 +365,20 @@ func TestRunDemoModeRefusesRealData(t *testing.T) {
 	}
 }
 
-func TestRunDemoModeRefusesExplicitNoSeed(t *testing.T) {
-	for _, value := range []string{"false", " FALSE "} {
+// docker-compose.yml and .env.example both ship SEED_DEMO_DATA=false, so an
+// operator who only adds DEMO_MODE=true passes it too. Demo mode must still start.
+func TestRunDemoModeIgnoresSeedDemoData(t *testing.T) {
+	for _, value := range []string{"false", " FALSE ", "", "true"} {
 		dataDir := t.TempDir()
-		err := run(settings{DemoMode: "true", SeedDemoData: value}, dataDir, shippedSOPs)
-		if err == nil || !strings.Contains(err.Error(), "SEED_DEMO_DATA") {
-			t.Errorf("DEMO_MODE with SEED_DEMO_DATA=%q = %v, want a refusal", value, err)
+		if err := run(settings{DemoMode: "true", SeedDemoData: value}, dataDir, shippedSOPs); err != nil {
+			t.Errorf("DEMO_MODE with SEED_DEMO_DATA=%q: %v", value, err)
+			continue
 		}
-		if exists(filepath.Join(dataDir, "app.db")) {
-			t.Errorf("refused run created app.db")
+		if !exists(filepath.Join(dataDir, demoMarker)) {
+			t.Errorf("SEED_DEMO_DATA=%q: demo mode did not write the marker", value)
+		}
+		if got := countSOPs(t, dataDir); got != 6 {
+			t.Errorf("SEED_DEMO_DATA=%q: seeded %d SOPs, want 6", value, got)
 		}
 	}
 }
