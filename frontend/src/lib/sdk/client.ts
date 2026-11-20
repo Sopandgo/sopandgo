@@ -1,5 +1,6 @@
 import { BACKEND_URL } from '$app/env/private';
 import { DEMO_READ_ONLY } from '#lib/demo.js';
+import { visitorAddress } from '#lib/server/visitorAddress.js';
 import type { RequestEvent } from '@sveltejs/kit';
 
 export interface FetchOptions {
@@ -41,7 +42,16 @@ export function createClient(event: RequestEvent) {
             }
         }
 
-        // 3. Execution with Error Guard
+        // 3. The API rate-limits per address and trusts X-Forwarded-For from
+        // loopback. Without it, every visitor would share this server's limit.
+        // The audit log records both, so pass the browser's user agent too,
+        // not Node's.
+        const address = visitorAddress(event);
+        if (address) headers.set('X-Forwarded-For', address);
+        const userAgent = event.request.headers.get('user-agent');
+        if (userAgent) headers.set('User-Agent', userAgent);
+
+        // 4. Execution with Error Guard
         let res: Response;
         try {
             res = await event.fetch(url, {
@@ -59,7 +69,7 @@ export function createClient(event: RequestEvent) {
             throw new Error('SERVICE_UNAVAILABLE');
         }
 
-        // 4. A read-only demo refuses every write with one error code. Throw it
+        // 5. A read-only demo refuses every write with one error code. Throw it
         // as one error, so form actions can say "disabled in the demo".
         if (res.status === 403) {
             const body = await res.clone().json().catch(() => null);

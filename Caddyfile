@@ -3,6 +3,20 @@
 # Acts as the main entry point and reverse proxy
 # ==========================================
 
+# The visitor's address ({client_ip}) feeds the API's per-address rate limits.
+# By default no outer proxy is trusted, so {client_ip} is the peer that
+# connected to this container. TRUSTED_PROXIES lists the outer proxy's
+# addresses (CIDR ranges, space-separated, or "private_ranges"); Caddy then
+# reads the visitor from X-Forwarded-For. Strict mode walks that header from
+# the right and stops at the first untrusted hop, so a visitor cannot prepend
+# a fake address. Trust only addresses that nothing but your proxy can use.
+{
+	servers {
+		trusted_proxies static {$TRUSTED_PROXIES}
+		trusted_proxies_strict
+	}
+}
+
 # Listen on port 80 inside the container
 :80 {
 	# Trust X-Forwarded-* from an outer reverse proxy (e.g. Coolify, Traefik).
@@ -30,7 +44,11 @@
 	# that need to communicate directly with the Go API.
 	# Usage: POST http://localhost:8087/sopandgo/api/...
 	handle_path /sopandgo/* {
-		reverse_proxy 127.0.0.1:8080
+		reverse_proxy 127.0.0.1:8080 {
+			# The API rate-limits by the last X-Forwarded-For hop from loopback.
+			# Send only the visitor's address, never the outer proxy's.
+			header_up X-Forwarded-For {client_ip}
+		}
 	}
 
 	# --- 2. SvelteKit Frontend ---
@@ -40,7 +58,9 @@
 			# Pass original request headers to SvelteKit.
 			# Crucial for accurate CSRF protection and redirect generation.
 			header_up Host {trusted_host}
-			header_up X-Real-IP {remote_host}
+			# SvelteKit forwards this to the API on every call (see
+			# frontend/src/lib/server/visitorAddress.ts). Overwrites any client value.
+			header_up X-Real-IP {client_ip}
 			header_up X-Forwarded-Host {trusted_host}
 			header_up X-Forwarded-Proto {trusted_proto}
 		}

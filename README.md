@@ -1,6 +1,6 @@
 # SOPandGO
 
-Website: [sopandgo.com](https://sopandgo.com)
+Website: [sopandgo.com](https://sopandgo.com) · Try the read-only demo: [demo.sopandgo.com](https://demo.sopandgo.com)
 
 A self-hosted home for a lab's procedures: write them, publish a version, and have people sign the one they read.
 
@@ -13,7 +13,7 @@ SOPandGO keeps each **standard operating procedure (SOP)** as a structured docum
 - Version content is immutable. Publishing follows **draft → release candidate → published**.
 - Acknowledgments are tied to an exact version.
 - Approvers can archive an SOP that is no longer used. It leaves the list and becomes read-only, and nothing is deleted.
-- All data stays on the host.
+- All data stays on the host unless an admin connects an outside service, such as S3 backups or error reporting.
 
 ## What a lab does with it
 
@@ -21,10 +21,10 @@ SOPandGO keeps each **standard operating procedure (SOP)** as a structured docum
 - Write in the editor, or start from a Word document. Attach images, tag procedures, and compare two versions.
 - Send a draft through review, then publish. People can read it in the app or download a PDF.
 - The home page shows each person what they still need to sign, what was just published, and the procedures they use often.
-- Look back at who signed which version, and at the audit trail of publishes and admin actions.
+- Look back at who signed which version, and at the audit trail of publishes and admin actions. An auditor can read that trail without changing anything.
 - Export a backup from **Settings**, and restore it when you want to rehearse on another copy.
 
-You can require a second sign-in factor, mail a notice when a version is published, and show your organization's name and logo on the sign-in page.
+You can require a second sign-in factor, mail a notice when a version is published, and show your organization's name and logo on the sign-in page. You can also have a timestamp authority sign the audit trail, so a later rewrite can be detected, and send server errors to Sentry or GlitchTip.
 
 From **1.0.0** onward, upgrades are intended to be forward-compatible. See [Upgrading](docs/ops/deployment.md#upgrading).
 

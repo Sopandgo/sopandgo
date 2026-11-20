@@ -5,7 +5,6 @@ import { demoSessionToOpen, isDemoMode } from '#lib/demo.js';
 import { shouldReport } from '#lib/errorReporting.js';
 import { browserReportingHead, reportServerError } from '#lib/server/errorReporting.js';
 import { createSDK } from '#lib/sdk/index.js';
-import { visitorAddress } from '#lib/server/visitorAddress.js';
 import { paraglideMiddleware } from '#lib/paraglide/server.js';
 import { cookieName, getTextDirection, isLocale } from '#lib/paraglide/runtime.js';
 import { guestThemeFromCookie, themeAttribute, themeCookieName } from '#lib/theme.js';
@@ -64,7 +63,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
     const demoRole = demoSessionToOpen(demo, !!event.locals.user);
     if (demoRole) {
         try {
-            await sdk.auth.openDemoSession(demoRole, visitorAddress(event));
+            await sdk.auth.openDemoSession(demoRole);
             event.locals.user = await sdk.auth.getMe();
         } catch (err) {
             console.error('Demo session failed:', (err as Error).message);

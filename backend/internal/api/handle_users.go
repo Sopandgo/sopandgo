@@ -32,7 +32,7 @@ func (s *Server) handleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, auth.ErrWrongCurrentPassword) {
 		s.writeAudit(audit.EventLoginFailed, audit.EntityUser, userID, &userID, map[string]string{
 			"failure_reason": "invalid_current_password",
-			"ip_address":     r.RemoteAddr,
+			"ip_address":     getRealIP(r),
 			"user_agent":     r.UserAgent(),
 		})
 		http.Error(w, err.Error(), http.StatusForbidden)

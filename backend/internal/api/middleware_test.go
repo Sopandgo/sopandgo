@@ -3,6 +3,9 @@ package api
 import (
 	"net/http"
 	"testing"
+	"time"
+
+	"golang.org/x/time/rate"
 )
 
 func TestGetRealIP(t *testing.T) {
@@ -57,5 +60,26 @@ func TestGetRealIP(t *testing.T) {
 				t.Fatalf("getRealIP() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestIPRateLimiterCleanupKeepsDrainedKeys(t *testing.T) {
+	l := &IPRateLimiter{ips: make(map[string]*client), r: rate.Every(time.Hour), b: 2}
+	drained := l.getLimiter("drained")
+	drained.Allow()
+	drained.Allow()
+	l.getLimiter("full")
+
+	later := time.Now().Add(4 * time.Minute)
+	l.cleanup(later)
+
+	if _, ok := l.ips["full"]; ok {
+		t.Error("an idle key with a full bucket should be forgotten")
+	}
+	if _, ok := l.ips["drained"]; !ok {
+		t.Fatal("an idle key with a drained bucket must stay, or waiting would reset it")
+	}
+	if l.getLimiter("drained").Allow() {
+		t.Error("the drained key should still be limited")
 	}
 }

@@ -43,7 +43,12 @@ type Server struct {
 	// twoFactorLimiter is keyed by user, not IP, so second-factor guesses
 	// spread over many addresses still hit a ceiling.
 	twoFactorLimiter *IPRateLimiter
-	mux              *http.ServeMux
+	// loginAccountLimiter is keyed by the email a password sign-in names.
+	// Only failed attempts use it up, so guesses at one account from many
+	// addresses stop after a burst, while the owner's correct password still
+	// works until the account's bucket is empty.
+	loginAccountLimiter *IPRateLimiter
+	mux                 *http.ServeMux
 	// handler is what ServeHTTP and Serve run: the mux, wrapped in the demo
 	// guard when demo mode is on.
 	handler http.Handler
@@ -105,6 +110,7 @@ func New(
 		s3Backup:            s3Backup,
 		brandingService:     brandingService,
 		twoFactorLimiter:    NewIPRateLimiter(rate.Every(time.Minute), 5),
+		loginAccountLimiter: NewIPRateLimiter(rate.Every(time.Minute), 10),
 		mux:                 http.NewServeMux(),
 	}
 

@@ -264,3 +264,40 @@ func TestLogger_VerifyEntireChain(t *testing.T) {
 		t.Errorf("Expected failure error to be 'hash_mismatch', got %q", failure.Error)
 	}
 }
+
+// One action often writes several events within the same timestamp. They must
+// list newest first by write order, the same way on every request.
+func TestLogger_ListBreaksTimestampTiesByWriteOrder(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	for range 5 {
+		if _, err := db.Exec(
+			`INSERT INTO audit_events (event_type, entity_type, entity_id, payload, created_at, hash, prev_hash)
+			 VALUES ('login', 'user', 'u1', '{}', '2026-11-20T12:00:00Z', '', '')`,
+		); err != nil {
+			t.Fatal(err)
+		}
+	}
+	logger, err := audit.New(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	events, _, err := logger.List(10, 0, audit.ListFilters{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, ev := range events {
+		if want := int64(5 - i); int64(ev.ID) != want {
+			t.Fatalf("position %d: id %d, want %d (newest first)", i, ev.ID, want)
+		}
+	}
+
+	page, _, err := logger.List(2, 2, audit.ListFilters{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page) != 2 || page[0].ID != 3 || page[1].ID != 2 {
+		t.Fatalf("second page of two: got %v, want ids 3 and 2", page)
+	}
+}
