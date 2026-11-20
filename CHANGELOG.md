@@ -2,6 +2,35 @@
 
 All notable releases of SOPandGO are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
 
+## 1.3.0
+
+Labs can anchor the audit trail with a timestamp authority, report server errors to Sentry or GlitchTip, and let auditors read the audit log. Sign-in limits and the audit log now see each person instead of the server itself.
+
+- **Audit anchoring.** Under Settings → Audit anchoring, an admin can have a Time Stamping Authority (RFC 3161) sign the newest audit hash at a set interval. Receipts are copied to the S3 bucket from Settings → Backup. An auditor can check them without SOPandGO, using `docs/ops/verify_anchors.py`; see [Verifying audit anchors](docs/ops/verifying-anchors.md). Off by default.
+- **Audit rows cover more.** New audit rows are hashed together with the entity type and the actor, so who did something is protected by the chain too. Existing rows keep their original hash and still verify.
+- **Error reporting.** Under Settings → Error reporting, an admin can send server errors to Sentry or GlitchTip, and optionally browser errors. No users, IP addresses, cookies, headers, request bodies or query strings are sent. Off by default.
+- **Auditors read the audit log.** The audit log moves to `/audit-logs` and is open to admins and auditors. `/admin/audit-logs` redirects there.
+- **Viewers can sign published SOPs.** The version page now offers the reader signature to viewers, as the API always allowed. Before, viewers had no way to sign.
+- **Per-person sign-in limits.** Every request from SvelteKit reached the API as `127.0.0.1`, so a whole lab shared one sign-in limit: a few wrong passwords from anyone could block everyone. Limits now apply per visitor address. Behind Coolify, Traefik or another reverse proxy, set the new `TRUSTED_PROXIES`; see [Behind a reverse proxy](docs/ops/deployment.md#behind-a-reverse-proxy).
+- **Per-account sign-in limit.** After ten failed password attempts at one email address, from any number of addresses, that account gets one more attempt a minute. Successful sign-ins do not count. Someone who knows a user's email can delay that user's sign-in this way, but cannot get in.
+- **The audit log records who signed in from where.** Sign-in events store the visitor's IP address and browser. Before, they stored `127.0.0.1` and `node`. Audit entries cannot be deleted without breaking the chain; labs that keep records of personal data (GDPR) should list the audit log. See the [security model](docs/concepts/security-model.md).
+- **Audit log order.** Events written in the same moment, such as a publish and the supersede it causes, now list in the order they happened.
+- **Co-workers' details.** Signature lists and other shared views send other users' names and pictures only, no longer their email address, role or two-factor status.
+- **Database.** Every database connection enforces foreign keys and waits for a busy database. Set the wait with `DB_BUSY_TIMEOUT` (default `5s`). At startup, the log warns about each table with rows that point at missing records. It repairs nothing.
+- **Version changes** answer `409` when the version is in the wrong state and `404` when it does not exist, not `500`. A draft can no longer be rejected.
+- **S3 backups.** Saving the settings no longer contacts S3. A failed automatic backup is retried after 1, 2, 4… minutes. Slow notifications no longer hold up "Back up now".
+- **Public demo mode** (`DEMO_MODE=true`) runs a read-only demo, as at [demo.sopandgo.com](https://demo.sopandgo.com). It wipes its data at every start. Never set it on a lab's instance; see [Demo mode](docs/ops/deployment.md#demo-mode).
+- Frontend dependencies are updated, including the security fixes in DOMPurify 3.4.17 and undici 8.12.3, and SvelteKit 3.2.0.
+
+### Upgrading from 1.2.x
+
+- Migrations 30 to 32 run on startup. Export a backup, then `docker compose pull` and `docker compose up -d`.
+- New variables only reach the container when your `docker-compose.yml` passes them. Copy the new `docker-compose.yml` from this release, or add the lines you need, such as `- TRUSTED_PROXIES=${TRUSTED_PROXIES:-}`. A Coolify resource that reads the compose file from the repository picks it up on the next deploy.
+- Behind a reverse proxy: set `TRUSTED_PROXIES` (`private_ranges` for Coolify on a server of its own), then sign in and check that the audit log shows your own IP address.
+- Rename `AUDIT_BUSY_TIMEOUT` to `DB_BUSY_TIMEOUT`. The old name still works and logs a deprecation warning. A `docker-compose.yml` from an older release sets `AUDIT_BUSY_TIMEOUT=5s` itself, so the warning appears until you replace that line.
+- Demo data is now opt-in. A new install seeds demo users and sample SOPs only with `SEED_DEMO_DATA=true`; before, an unset value seeded them. Existing installs are not affected.
+- Bookmarks to `/admin/audit-logs` still work; they redirect to `/audit-logs`.
+
 ## 1.2.2
 
 Publishes the 1.2.1 sign-in fix. The v1.2.1 image was not published: compiling translations for the arm64 image timed out under emulation.
