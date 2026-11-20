@@ -10,6 +10,7 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
 	"github.com/sopandgo/sopandgo/backend/internal/branding"
+	"github.com/sopandgo/sopandgo/backend/internal/errreport"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
 	"github.com/sopandgo/sopandgo/backend/internal/sop"
@@ -37,7 +38,8 @@ type Server struct {
 	s3Settings          *backup.S3SettingsStore
 	s3Backup            *backup.S3Scheduler
 	brandingService     *branding.Service
-	anchoring           *anchor.Service // nil until SetAuditAnchoring
+	anchoring           *anchor.Service    // nil until SetAuditAnchoring
+	errReport           *errreport.Service // nil until SetErrorReporting
 	// twoFactorLimiter is keyed by user, not IP, so second-factor guesses
 	// spread over many addresses still hit a ceiling.
 	twoFactorLimiter *IPRateLimiter
@@ -132,6 +134,10 @@ func (s *Server) registerRoutes() {
 	// branding (public: the sign-in page shows the organization's name and logo)
 	s.handle("GET /api/branding", generalLimiter.Middleware(s.handleGetBranding))
 	s.handle("GET /api/branding/logo", generalLimiter.Middleware(s.handleGetBrandingLogo))
+
+	// error reporting (public: the SvelteKit server and browsers report with it;
+	// a DSN only allows sending events, see docs/adr/0004)
+	s.handle("GET /api/error-reporting/config", generalLimiter.Middleware(s.handleGetErrorReportingConfig))
 
 	// auth
 	s.handle("POST /api/auth/login", loginLimiter.Middleware(s.handleLogin))
@@ -366,6 +372,16 @@ func (s *Server) registerRoutes() {
 	)
 	s.handle("POST /api/admin/settings/integrations/{channel}/test", protected(
 		s.requireScope(auth.ScopeAdminTools, s.handleAdminPostIntegrationTest)),
+	)
+	// admin / error reporting (Sentry or GlitchTip)
+	s.handle("GET /api/admin/settings/error-reporting", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminGetErrorReporting)),
+	)
+	s.handle("PUT /api/admin/settings/error-reporting", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminPutErrorReporting)),
+	)
+	s.handle("POST /api/admin/settings/error-reporting/test", protected(
+		s.requireScope(auth.ScopeAdminTools, s.handleAdminPostErrorReportingTest)),
 	)
 	// admin / backups
 	s.handle("GET /api/admin/backups/status", protected(

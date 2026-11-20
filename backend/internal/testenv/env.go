@@ -11,6 +11,7 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
 	"github.com/sopandgo/sopandgo/backend/internal/branding"
+	"github.com/sopandgo/sopandgo/backend/internal/errreport"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
 	"github.com/sopandgo/sopandgo/backend/internal/objectstore"
@@ -34,8 +35,10 @@ type Env struct {
 	MockMailSender      *MockMailSender
 	// ObjectStore is the bucket "Back up now" and the connection test reach.
 	ObjectStore *objectstore.Memory
-	DataDir     string
-	Ctx         context.Context
+	// ErrorReporting is off until a test saves settings for it.
+	ErrorReporting *errreport.Service
+	DataDir        string
+	Ctx            context.Context
 }
 
 // Option changes how New builds the environment.
@@ -118,6 +121,13 @@ func New(t *testing.T, opts ...Option) *Env {
 
 	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler, brandingService)
 
+	errorReporting, err := errreport.NewService(store.DB, errreport.Options{Release: "test"})
+	if err != nil {
+		t.Fatalf("failed to initialize error reporting: %v", err)
+	}
+	t.Cleanup(errorReporting.Close)
+	apiServer.SetErrorReporting(errorReporting)
+
 	return &Env{
 		Store:               store,
 		AuditLogger:         auditLogger,
@@ -131,6 +141,7 @@ func New(t *testing.T, opts ...Option) *Env {
 		API:                 apiServer,
 		MockMailSender:      mockSender,
 		ObjectStore:         objectStore,
+		ErrorReporting:      errorReporting,
 		DataDir:             dataDir,
 		Ctx:                 ctx,
 	}

@@ -7,6 +7,8 @@
      * Shown on every page of a read-only public demo: what it is, where to
      * install SOPandGO, and a switch between the researcher and auditor views.
      * The switch posts to /demo?/switch, which replaces the session.
+     * The data-umami-event attributes count clicks when the demo loads Umami
+     * (see $lib/analytics); without it they do nothing.
      */
     let { role, error = null }: { role: string | null; error?: string | null } = $props();
 
@@ -31,6 +33,7 @@
             href={DEMO_INSTALL_URL}
             target="_blank"
             rel="noopener noreferrer"
+            data-umami-event="demo-install-click"
         >
             {m.demo_install()}
             <ArrowRightIcon size={16} aria-hidden="true" />
@@ -48,6 +51,8 @@
                             class:btn-active={role === option.value}
                             aria-pressed={role === option.value}
                             disabled={role === option.value}
+                            data-umami-event="demo-switch-role"
+                            data-umami-event-to={option.value}
                         >
                             {option.label()}
                         </button>

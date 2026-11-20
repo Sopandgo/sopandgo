@@ -17,6 +17,10 @@
         pathname === '/admin/settings/integrations' ||
             pathname.startsWith('/admin/settings/integrations/')
     );
+    const errorReporting = $derived(
+        pathname === '/admin/settings/error-reporting' ||
+            pathname.startsWith('/admin/settings/error-reporting/')
+    );
     const backup = $derived(
         pathname === '/admin/settings/backup' || pathname.startsWith('/admin/settings/backup/')
     );
@@ -61,6 +65,15 @@
         aria-current={integrations ? 'page' : undefined}
     >
         {m.settings_integrations()}
+    </a>
+    <a
+        href={resolve('admin/settings/error-reporting')}
+        class="tab"
+        class:tab-active={errorReporting}
+        role="tab"
+        aria-current={errorReporting ? 'page' : undefined}
+    >
+        {m.settings_error_reporting()}
     </a>
     <a
         href={resolve('admin/settings/backup')}

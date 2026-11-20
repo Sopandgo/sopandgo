@@ -67,6 +67,9 @@ A fresh install has no demo accounts. Demo users and sample SOPs are inserted on
 | `DATA_DIR` | `/app/data` | The internal path for SQLite and assets. |
 | `SEED_DEMO_DATA` | `false` | When `true` (any case), the first start with no `app.db` inserts demo users and sample SOPs for a local trial. Any other value inserts nothing. Has no effect once `app.db` exists. Ignored when `DEMO_MODE` is on. |
 | `DEMO_MODE` | `false` | When `true` (any case), the instance becomes a read-only public demo that is wiped and reseeded at every start. Only for a public demo; see [Demo mode](#demo-mode). |
+| `UMAMI_SCRIPT_URL` | - | Umami tracker script for the public demo, for example `https://cloud.umami.is/script.js`. Must be `https` (`http` only for `localhost`). Ignored unless `DEMO_MODE` is on; see [Demo mode](#demo-mode). |
+| `UMAMI_WEBSITE_ID` | - | The Umami website ID (a UUID). Ignored unless `DEMO_MODE` is on. |
+| `UMAMI_DOMAINS` | - | Optional comma-separated host names Umami counts, for example `demo.sopandgo.com`. Ignored unless `DEMO_MODE` is on. |
 | `ORIGIN` | `http://localhost:8087` | **CRITICAL for the Go API.** The full public URL of your instance (invite/reset links, CORS-facing URLs). If it does not match the browser URL, login/invites will fail. SvelteKit 3 / adapter-node no longer reads `ORIGIN`; CSRF and request origin use `HOST_HEADER` / `PROTOCOL_HEADER` instead (see below). On a non-default port with no outer proxy, Caddy forwards the browser `Host` value, port included. An outer proxy's `X-Forwarded-Host` is forwarded as sent. |
 | `HOST_WEB_PORT` | `8087` | Host port mapped to Caddy `:80` inside the `sopandgo` container (compose). |
 | `BACKEND_URL` | `http://127.0.0.1:8080` | Internal URL the SvelteKit Node server uses to reach the Go API (loopback inside the container). |
@@ -117,6 +120,19 @@ Channel credentials are **not** set via env vars (no `SLACK_WEBHOOK_URL` / `GOTI
 **Events:** `sop_published`, `sop_rc`, `sop_rejected`, `backup_s3_failed`, `integrity_check_failed`, `break_glass_used` (an admin was reset with `recover-admin`), `audit_anchor_failed`, `audit_anchoring_changed` (anchoring switched on, off, or reconfigured), and `backup_restored` (a restore replaced the audit log). New channels subscribe to all of them. Channels saved before these events existed keep their saved choice, so tick the new events on each channel. Use **Send test** per channel to verify. Delivery failures are audited and never roll back SOP publish/promote/reject.
 
 If you **rotate** `SECRET_ENCRYPTION_KEY`, existing ciphertext becomes undecryptable; sign in as admin and **re-enter the SMTP password and/or Resend API key**, plus any Slack/Gotify/webhook secrets, then save. Authenticator apps stop working too: admins sign in with a recovery code, users with an emailed code if the policy allows email, and then set up their app again; reset normal users from **Admin → Users** and admins with [`recover-admin`](#locked-out-admin-break-glass).
+
+### Error reporting (Sentry, GlitchTip)
+
+SOPandGO can send unexpected errors to [Sentry](https://sentry.io) or to a self-hosted [GlitchTip](https://glitchtip.com), which speaks the same protocol. It is off until an admin turns it on under **Settings → Error reporting** (`/admin/settings/error-reporting`). There are no environment variables for it, and it does not need `SECRET_ENCRYPTION_KEY`.
+
+1. In Sentry or GlitchTip, create a project and copy its DSN from **Client Keys (DSN)**. It looks like `https://<key>@<host>/<project>`. `http` works for a GlitchTip on the lab network; the page warns that events then travel unencrypted.
+2. Paste it, set an **Environment** (default `production`), switch **Report errors** on and save. The change applies at once in the Go API, and within a minute in the SvelteKit server.
+3. Click **Send test**. The page shows the event ID, or says the event was not delivered. The container must reach the DSN's host.
+4. Optionally tick **Also report errors in users' browsers**. Browsers then load a small Sentry script and report to the DSN themselves, so the DSN host must be reachable from users' machines too.
+
+What is and is not sent is listed in the [security model](../concepts/security-model.md#error-reporting). In short: error type and message, stack trace, route pattern, method and status, version and environment; never users, IP addresses, cookies, headers, bodies or query strings. Error messages are sent as they are.
+
+Panics in the Go API are always recovered and logged with a stack trace, whether reporting is on or off. The API reports 5xx responses except 502 (a service you configured failed, such as SMTP, S3, Slack or a test button) and 503 (maintenance lock). Restoring a backup keeps this instance's error reporting settings.
 
 ### Audit anchoring
 
@@ -197,6 +213,12 @@ The wipe is guarded by a `.demo-instance` marker the seeder writes into the data
 - A data directory that holds data but no marker is refused: the seeder exits with an error and the container does not start. A mistaken `DEMO_MODE=true` cannot wipe a lab's SOPs.
 
 Demo mode always seeds and ignores `SEED_DEMO_DATA`, so you only set `DEMO_MODE=true`. The shipped `SEED_DEMO_DATA=false` can stay as it is.
+
+#### Analytics on the demo (Umami)
+
+The demo can count visits with [Umami](https://umami.is). Set `UMAMI_SCRIPT_URL` and `UMAMI_WEBSITE_ID`, and optionally `UMAMI_DOMAINS`, next to `DEMO_MODE=true`. Every page then loads the tracker. It does not count query strings or `#` fragments, so SOP searches and filters stay out of Umami, and it skips browsers that send Do Not Track. It also counts two demo events: `demo-switch-role` (with the role switched to) and `demo-install-click`.
+
+The variables work only in demo mode. On any other instance the tracker never loads, and the SvelteKit server logs `Umami analytics is off: demo mode is off` at startup. An invalid value is logged the same way, with the reason, and nothing loads.
 
 The rate limit uses the address Caddy sees. Behind an outer proxy (Coolify, Traefik), that is the proxy's address, so all visitors share one limit of about ten new sessions a minute. Returning visitors keep their session and do not count against it.
 

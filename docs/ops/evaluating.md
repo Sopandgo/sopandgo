@@ -69,7 +69,7 @@ Six short sample SOPs, each tagged *Demo* plus topic tags (*Molecular Biology*, 
 4. Open a published version: read the Markdown, and check acknowledgments if your role allows it.
 5. Sign in as **`manager@demo.local`** and continue the *Bacterial Glycerol Stock Preparation* **draft** (Word import is available in the editor when you want to try it).
 6. Sign in as **`qa@demo.local`** (or admin) and approve the waiting *Autoclave Operation* release candidate. The researcher then has a new SOP version to sign.
-7. As **admin**, skim **Settings** (language, the required second factor, email, branding, optional Slack / Gotify / webhook integrations, and **Backup** — export a `.zip` once so you know the path works), **Audit**, and **Integrity** (run the system check once; it re-hashes every file and verifies the audit chain).
+7. As **admin**, skim **Settings** (language, the required second factor, email, branding, optional Slack / Gotify / webhook integrations, optional error reporting to Sentry or GlitchTip, and **Backup** — export a `.zip` once so you know the path works), **Audit**, and **Integrity** (run the system check once; it re-hashes every file and verifies the audit chain).
 
 You do not need real SMTP for a first look: with no email transport switched on, inviting another user gives you a **manual link** to share.
 

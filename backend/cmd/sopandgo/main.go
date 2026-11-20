@@ -15,6 +15,7 @@ import (
 	"github.com/sopandgo/sopandgo/backend/internal/auth"
 	"github.com/sopandgo/sopandgo/backend/internal/backup"
 	"github.com/sopandgo/sopandgo/backend/internal/branding"
+	"github.com/sopandgo/sopandgo/backend/internal/errreport"
 	"github.com/sopandgo/sopandgo/backend/internal/i18n"
 	"github.com/sopandgo/sopandgo/backend/internal/mail"
 	"github.com/sopandgo/sopandgo/backend/internal/notify"
@@ -68,6 +69,10 @@ func main() {
 	// Likewise this instance's audit anchoring settings.
 	if err := anchor.ApplyCarriedSettings(store.DB, dataDir); err != nil {
 		log.Fatalf("failed to keep audit anchoring settings across restore: %v", err)
+	}
+	// And this instance's error reporting settings: the DSN names its project.
+	if err := errreport.ApplyCarriedSettings(store.DB, dataDir); err != nil {
+		log.Fatalf("failed to keep error reporting settings across restore: %v", err)
 	}
 
 	// 3. Initialize Core Services (Dependency Injection)
@@ -197,6 +202,18 @@ func main() {
 	}
 
 	backupService.AddStageHook(anchor.WriteCarryOver)
+	backupService.AddStageHook(errreport.WriteCarryOver)
+
+	// Error reporting to Sentry or GlitchTip: configured under Settings →
+	// Error reporting, applied without a restart. Off until an admin saves it.
+	errorReporting, err := errreport.NewService(store.DB, errreport.Options{Release: appVersion})
+	if err != nil {
+		log.Fatalf("failed to load error reporting settings: %v", err)
+	}
+	if cfg := errorReporting.PublicConfig(); cfg.Enabled {
+		host, _ := errreport.DSNTarget(cfg.DSN)
+		log.Printf("error reporting enabled: host=%s environment=%s browser=%t", host, cfg.Environment, cfg.Browser)
+	}
 
 	// External anchoring of the audit chain: configured under Settings → Backup.
 	anchorService := anchor.NewService(anchor.NewStore(store.DB, encKey), auditLogger, s3Settings.OpenObjectStore, nil)
@@ -270,6 +287,7 @@ func main() {
 
 	apiServer := api.New(config, auditLogger, authService, sopService, mailService, smtpSettingsStore, notifyService, integrationSettings, backupService, s3Settings, s3Scheduler, brandingService)
 	apiServer.SetAuditAnchoring(anchorService)
+	apiServer.SetErrorReporting(errorReporting)
 	log.Println("backend initialized successfully")
 
 	go s3Scheduler.Start(ctx)
@@ -293,5 +311,7 @@ func main() {
 
 	// Optional: Give background tasks a moment to finish current work.
 	time.Sleep(500 * time.Millisecond)
+	// Send any queued error events (waits up to 2 seconds).
+	errorReporting.Close()
 	log.Println("Goodbye.")
 }

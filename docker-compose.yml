@@ -12,6 +12,10 @@ services:
       # Read-only public demo. Wipes and reseeds the data directory at every start.
       # Never set it on a real lab; see docs/ops/deployment.md#demo-mode.
       - DEMO_MODE=${DEMO_MODE:-false}
+      # Umami analytics for the public demo. Ignored unless DEMO_MODE is true.
+      - UMAMI_SCRIPT_URL=${UMAMI_SCRIPT_URL:-}
+      - UMAMI_WEBSITE_ID=${UMAMI_WEBSITE_ID:-}
+      - UMAMI_DOMAINS=${UMAMI_DOMAINS:-}
       # Must match the URL users type in the browser (scheme + host + port if non-default).
       # Override in `.env` for production; default matches HOST_WEB_PORT below.
       - ORIGIN=${ORIGIN:-http://localhost:8087}

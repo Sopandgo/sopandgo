@@ -112,6 +112,19 @@ Admins may configure instance-level destinations (Slack Incoming Webhooks, Gotif
 - **Best-effort delivery:** failed notification sends are audited (`notification_failed`) and do not undo publish/promote/reject.
 - **Not a bot platform:** Incoming Webhooks / HTTP push only — no OAuth Slack apps, slash commands, or interactive components.
 
+## Error reporting
+
+An admin can send unexpected errors to Sentry or GlitchTip under **Settings → Error reporting** (see [Deployment → Error reporting](../ops/deployment.md#error-reporting-sentry-glitchtip) and [ADR 0004](../adr/0004-error-reporting-configured-by-admins.md)). It is off by default and has no environment variable.
+
+- **Admin-controlled and audited:** only admins can turn it on, change it, or send a test event. Each change is audited as `error_reporting_settings_updated`, each test as `error_reporting_test_sent`. The audit log records the DSN's host and project, not the DSN.
+- **What is sent:** for the Go API, panics and 5xx responses (except 502, a failed service the admin configured, and 503); for the SvelteKit server, and for browsers when that separate switch is on, unexpected errors. An event holds the error type and message, the stack trace, the route pattern (`GET /api/sops/{sopID}`, `/(app)/sops/[id]`), the HTTP method and status, the SOPandGO version and the environment.
+- **What is never sent:** names, email addresses, IP addresses, cookies, tokens, headers, request bodies, query strings, SOP content or breadcrumbs. The SDKs are configured to collect none of it, and every event is scrubbed again before it leaves.
+- **What can still leak:** error messages and panic values are sent as they are. A message that includes an ID, a file name or a value the user typed sends it too. Treat the Sentry or GlitchTip project as holding operational data about the lab.
+- **The DSN is public while reporting is on.** `GET /api/error-reporting/config` returns it without a session, because the SvelteKit server reads it there and browsers need it. A DSN only allows sending events to one project; anyone who can reach the instance can send noise to it.
+- **Browser reporting** is a separate switch, off by default. When it is on, every page carries the DSN and browsers load the Sentry script and send their errors directly, so the Sentry or GlitchTip server sees each browser's IP address, as with any web request.
+- **Kept across a restore:** restoring a backup keeps the running instance's settings, so a lab's errors never go to the project named in another instance's backup.
+- **Not on the public demo:** the demo's admin area is closed and its database is wiped at every start, so it never reports errors.
+
 ## Branding
 
 Admins can set the organization's name, logo, and primary colour under **Settings → Branding**.
@@ -170,7 +183,8 @@ What demo mode guarantees:
 - **Password sign-in is disabled.** Password login, both 2FA steps and password reset are refused, so the known demo passwords and `admin`/`admin` give no token. Visitors get a session only through the demo endpoint, which signs in one of two fixed accounts: the researcher (a viewer) or the auditor. It does not exist when demo mode is off.
 - **The admin area is closed** for every role, admin included, except the two audit log reads. Those still need `audit:read`. Admin reads with side effects, such as the integrity scan or the backup export, are refused too.
 - **Visitors do not see each other.** Audit log responses replace IP addresses, browsers (user agents) and email addresses with `redacted`. Stored rows are unchanged, so the hash chain still verifies.
-- **No outbound traffic.** Mail and Slack, Gotify and webhook notifications are no-ops, whatever the stored settings say.
+- **No outbound traffic from the server.** Mail and Slack, Gotify and webhook notifications are no-ops, whatever the stored settings say. If the operator configures Umami, visitors' browsers load its tracker and send it page views (paths without query strings or fragments) and two demo events.
+- **Analytics stays on the demo.** The Umami variables are ignored unless demo mode is on, so a lab instance never loads analytics, whatever its environment says.
 - **State lasts at most one reset cycle.** Every start wipes and reseeds the data directory. Demo sessions expire after 4 hours, so a leaked refresh token is short-lived even between resets.
 - **A real instance is not wiped by mistake.** The seeder wipes only a data directory carrying the `.demo-instance` marker it wrote itself, and refuses to start on any other directory that holds data.
 
