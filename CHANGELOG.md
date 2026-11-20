@@ -2,6 +2,19 @@
 
 All notable releases of SOPandGO are documented here. The project follows semantic versioning for tagged releases from **1.0.0** onward.
 
+## 1.3.1
+
+A second SOPandGO on the same server can start. Coolify no longer publishes host port 8087, which the first instance already holds.
+
+- The host port moves to `docker-compose.override.yml`. A local `docker compose up` still opens 8087. Coolify runs `docker-compose.yml` alone and reaches the app on port 80 through its proxy.
+- A lab and a demo on one machine no longer fail because port 8087 is already taken.
+
+### Upgrading from 1.3.0
+
+- No migrations. Export a backup, then `docker compose pull` and `docker compose up -d`.
+- Copy `docker-compose.override.yml` as well as `docker-compose.yml`. A Coolify resource that reads the repository picks this up on the next deploy and stops publishing 8087. The proxy keeps serving the app. The domain's internal port is 80: leave `:8087` off the URL.
+- A direct install keeps the published port when the override file is present.
+
 ## 1.3.0
 
 Labs can anchor the audit trail with a timestamp authority, report server errors to Sentry or GlitchTip, and let auditors read the audit log. Sign-in limits and the audit log now see each person instead of the server itself.

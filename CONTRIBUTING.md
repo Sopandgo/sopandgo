@@ -10,7 +10,7 @@ The product name is always **SOPandGO**, never split or re-cased; identifiers st
 2. Build the app from this checkout (labs pull the published image instead; see [docs/ops/releasing.md](docs/ops/releasing.md)):
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.dev.yml up -d --build
 ```
 
 That local image is tagged `ghcr.io/sopandgo/sopandgo:1` on your machine. Run `docker compose pull` when you want the published image back.

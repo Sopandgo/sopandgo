@@ -1,5 +1,7 @@
-# Source builds for contributors. Lab installs use docker-compose.yml only.
-# docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+# Source builds for contributors. Lab installs use docker compose up, which
+# also loads docker-compose.override.yml. This command names its files, so
+# include the override or the app has no host port:
+# docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.dev.yml up -d --build
 services:
   sopandgo:
     build:
